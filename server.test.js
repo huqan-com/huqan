@@ -125,6 +125,24 @@ describe('Server - API', () => {
     assert.strictEqual(r.headers.get('cache-control'), 'no-cache');
   });
 
+  it('GET /health servis bilgisini döndürür', async () => {
+    const r = await fetch(`${BASE}/health`);
+    assert.strictEqual(r.status, 200);
+    const j = await r.json();
+    assert.strictEqual(j.ok, true);
+    assert.strictEqual(j.service, 'axiom');
+    assert.ok(['sqlite', 'json'].includes(j.backend));
+    assert.ok(Number.isInteger(j.nodes));
+    assert.ok(Number.isInteger(j.edges));
+    assert.ok(Number.isInteger(j.uptimeSec));
+    assert.ok(typeof j.timestamp === 'string');
+  });
+
+  it('Method not allowed: POST /health', async () => {
+    const r = await fetch(`${BASE}/health`, { method: 'POST' });
+    assert.strictEqual(r.status, 405);
+  });
+
   it('GET / HTML döndürür', async () => {
     const r = await fetch(`${BASE}`);
     assert.strictEqual(r.status, 200);

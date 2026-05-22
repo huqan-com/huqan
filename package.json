@@ -1,0 +1,36 @@
+{
+  "name": "axiom",
+  "version": "1.0.0",
+  "description": "Türkçe doğal dil ile çalışan, kendi kendine öğrenen bilgi grafiği motoru",
+  "main": "kernel.js",
+  "scripts": {
+    "start": "node cli.js",
+    "server": "node server.js",
+    "train": "node egitim.js",
+    "test": "node --test",
+    "test:watch": "node --test --watch",
+    "test:graph": "node --test graph.test.js",
+    "test:kernel": "node --test kernel.test.js",
+    "test:cli": "node --test cli.test.js",
+    "test:dream": "node --test dream.test.js",
+    "test:plugin": "node --test plugin.test.js",
+    "test:rust": "node --test rustGraph.test.js",
+    "test:server": "node --test server.test.js"
+  },
+  "keywords": [
+    "knowledge-graph",
+    "nlp",
+    "turkish",
+    "ai",
+    "reasoning"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {},
+  "optionalDependencies": {
+    "better-sqlite3": "^12.10.0"
+  }
+}

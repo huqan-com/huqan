@@ -62,6 +62,19 @@ function getGraphData() {
   return { nodes: topNodes, links };
 }
 
+function getHealthData() {
+  const stats = cli.kernel.graph.getStats();
+  return {
+    ok: true,
+    service: 'axiom',
+    backend: stats.backend,
+    nodes: stats.nodes,
+    edges: stats.edges,
+    uptimeSec: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+  };
+}
+
 const HTML = `<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -383,6 +396,21 @@ const server = http.createServer(async (req, res) => {
       'Cache-Control': 'no-cache',
     });
     res.end(JSON.stringify(data));
+    return;
+  }
+
+  if (reqUrl.pathname === '/health') {
+    if (req.method !== 'GET') {
+      res.writeHead(405, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Method not allowed' }));
+      return;
+    }
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-cache',
+    });
+    res.end(JSON.stringify(getHealthData()));
     return;
   }
 
