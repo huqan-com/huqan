@@ -1,5 +1,10 @@
 # ◇ AXIOM
 
+> **English:** A symbolic AI reasoning engine that works without
+> LLMs, GPUs, or cloud. Learns from natural language,
+> verifies LLM outputs, detects contradictions, and generates
+> hypotheses autonomously. Zero external dependencies.
+
 Türkçe doğal dil ile çalışan, kendi kendine öğrenen bilgi grafiği motoru.
 
 LLM yanıtlarını doğrular, çelişkileri tespit eder ve kişisel hafıza katmanı olarak çalışır. Ollama veya OpenAI ile entegre olur, öğrenilen bilgileri SQLite'ta kalıcı olarak saklar.
