@@ -7,6 +7,33 @@ const PROTOCOL_VERSION = '2025-06-18';
 const SERVER_NAME = 'axiom';
 const SERVER_VERSION = pkg.version;
 
+const ENVELOPE_OUTPUT_SCHEMA = {
+  type: 'object',
+  properties: {
+    ok: { type: 'boolean' },
+    type: { type: 'string' },
+    data: { type: ['object', 'null'] },
+    evidence: { type: 'array' },
+    error: {
+      anyOf: [
+        { type: 'null' },
+        {
+          type: 'object',
+          properties: {
+            code: { type: 'string' },
+            message: { type: 'string' },
+          },
+          required: ['code', 'message'],
+          additionalProperties: false,
+        },
+      ],
+    },
+    meta: { type: 'object' },
+  },
+  required: ['ok', 'type', 'data', 'evidence', 'error', 'meta'],
+  additionalProperties: true,
+};
+
 function buildKernelOptsFromEnv() {
   const kernelOpts = {};
   if (process.env.AXIOM_MEMORY_PATH) kernelOpts.memoryPath = process.env.AXIOM_MEMORY_PATH;
@@ -20,80 +47,85 @@ const TOOL_SCHEMAS = [
   {
     name: 'axiom.learn',
     title: 'Axiom Learn',
-    description: 'Learn a natural-language fact into the local symbolic knowledge graph.',
+    description: 'Learn a natural-language fact into the local symbolic knowledge graph. Returns a stable AXIOM envelope with learn counts and evidence.',
     inputSchema: {
       type: 'object',
       properties: {
-        text: { type: 'string', description: 'Natural-language statement to learn.' },
-        skipConflicts: { type: 'boolean', description: 'Skip conflicting statements when true.' },
-        maxSentences: { type: 'number', description: 'Maximum number of sentences to ingest.' },
+        text: { type: 'string', description: 'Natural-language statement to learn, for example: "kedi hayvandir".' },
+        skipConflicts: { type: 'boolean', description: 'Skip conflicting statements when true. Defaults to true.' },
+        maxSentences: { type: 'number', description: 'Maximum number of sentences to ingest from the input text.' },
       },
       required: ['text'],
       additionalProperties: false,
     },
+    outputSchema: ENVELOPE_OUTPUT_SCHEMA,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   },
   {
     name: 'axiom.ask',
     title: 'Axiom Ask',
-    description: 'Ask a grounded question against the local knowledge graph.',
+    description: 'Ask a grounded question against the local knowledge graph and return a stable AXIOM envelope.',
     inputSchema: {
       type: 'object',
       properties: {
-        question: { type: 'string', description: 'Question to answer from local knowledge.' },
+        question: { type: 'string', description: 'Question to answer from local knowledge, for example: "kedi nedir".' },
       },
       required: ['question'],
       additionalProperties: false,
     },
+    outputSchema: ENVELOPE_OUTPUT_SCHEMA,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   {
     name: 'axiom.verify',
     title: 'Axiom Verify',
-    description: 'Verify whether a statement is supported, contradictory, or unknown.',
+    description: 'Verify whether a statement is supported, contradictory, or unknown and return evidence references.',
     inputSchema: {
       type: 'object',
       properties: {
-        statement: { type: 'string', description: 'Statement to verify.' },
+        statement: { type: 'string', description: 'Statement to verify, for example: "kedi hayvandir".' },
       },
       required: ['statement'],
       additionalProperties: false,
     },
+    outputSchema: ENVELOPE_OUTPUT_SCHEMA,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   {
     name: 'axiom.reason',
     title: 'Axiom Reason',
-    description: 'Return forward and backward reasoning traces for a subject.',
+    description: 'Return forward and backward reasoning traces for a subject with stable evidence references.',
     inputSchema: {
       type: 'object',
       properties: {
-        subject: { type: 'string', description: 'Subject to reason about.' },
+        subject: { type: 'string', description: 'Subject to reason about, for example: "kedi".' },
       },
       required: ['subject'],
       additionalProperties: false,
     },
+    outputSchema: ENVELOPE_OUTPUT_SCHEMA,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   {
     name: 'axiom.compare',
     title: 'Axiom Compare',
-    description: 'Compare two concepts using the knowledge graph.',
+    description: 'Compare two concepts using the knowledge graph and return similarities, differences, and path evidence.',
     inputSchema: {
       type: 'object',
       properties: {
-        left: { type: 'string', description: 'First concept.' },
-        right: { type: 'string', description: 'Second concept.' },
+        left: { type: 'string', description: 'First concept, for example: "kedi".' },
+        right: { type: 'string', description: 'Second concept, for example: "kopek".' },
       },
       required: ['left', 'right'],
       additionalProperties: false,
     },
+    outputSchema: ENVELOPE_OUTPUT_SCHEMA,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   {
     name: 'axiom.dream',
     title: 'Axiom Dream',
-    description: 'Generate hypotheses from the current graph.',
+    description: 'Generate hypotheses from the current graph and return ranked speculative links.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -101,6 +133,7 @@ const TOOL_SCHEMAS = [
       },
       additionalProperties: false,
     },
+    outputSchema: ENVELOPE_OUTPUT_SCHEMA,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
 ];

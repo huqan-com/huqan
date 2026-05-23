@@ -176,7 +176,7 @@ Fixture sizes live under `benchmarks/fixtures/` and are intentionally stable so 
 
 ## Release Notes
 
-For the current v2 shipping status and next-phase priorities, see [RELEASE_V2.md](./RELEASE_V2.md) and [ROADMAP_V2.md](./ROADMAP_V2.md).
+For the current v2 shipping status and next-phase priorities, see [RELEASE_V2.md](./RELEASE_V2.md), [ROADMAP_V2.md](./ROADMAP_V2.md), and [RELEASE_NOTES_v2.0.0.md](./RELEASE_NOTES_v2.0.0.md).
 
 ### Belge Yükleme
 
