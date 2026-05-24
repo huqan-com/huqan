@@ -26,43 +26,10 @@ jobs:
         run: node benchmarks/bench.js --json --quick > benchmarks/current-results.json
 
       - name: Check regression
+        run: node benchmarks/check-regression.js benchmarks/results.json benchmarks/current-results.json --multiplier=1.75
+
+      - name: Publish benchmark summary
+        if: always()
         run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const baseline = JSON.parse(fs.readFileSync('benchmarks/results.json', 'utf8'));
-          const current = JSON.parse(fs.readFileSync('benchmarks/current-results.json', 'utf8'));
-
-          const allowedMultiplier = 1.75;
-          const regressions = [];
-
-          for (const [name, base] of Object.entries(baseline.fixtures)) {
-            const cur = current.results.find(item => item.label === name);
-            if (!cur) {
-              regressions.push(`Missing benchmark fixture: ${name}`);
-              continue;
-            }
-
-            for (const metric of ['learn', 'ask', 'verify', 'reason', 'compare', 'dream']) {
-              const curValue = cur[metric].avgMs;
-              const baseValue = base[metric];
-              if (typeof curValue !== 'number' || typeof baseValue !== 'number') {
-                regressions.push(`${name}.${metric} is not numeric`);
-                continue;
-              }
-              if (curValue > baseValue * allowedMultiplier) {
-                regressions.push(`${name}.${metric}: ${curValue.toFixed(3)}ms > ${(
-                  baseValue * allowedMultiplier
-                ).toFixed(3)}ms (baseline ${baseValue.toFixed(3)}ms)`);
-              }
-            }
-          }
-
-          if (regressions.length > 0) {
-            console.error('❌ Benchmark regression detected:');
-            for (const line of regressions) console.error(`- ${line}`);
-            process.exit(1);
-          }
-
-          console.log('✅ Benchmark regression check passed');
-          NODE
-
+          echo "## Benchmark Summary" >> $GITHUB_STEP_SUMMARY
+          node benchmarks/check-regression.js benchmarks/results.json benchmarks/current-results.json --multiplier=1.75 >> $GITHUB_STEP_SUMMARY
