@@ -78,8 +78,19 @@ describe('MCP Server', () => {
     assert.ok(list.result.tools.some(t => t.name === 'axiom.learn'));
     assert.ok(list.result.tools.some(t => t.name === 'axiom.ask'));
     const verifyTool = list.result.tools.find(t => t.name === 'axiom.verify');
+    const learnTool = list.result.tools.find(t => t.name === 'axiom.learn');
+    const askTool = list.result.tools.find(t => t.name === 'axiom.ask');
+    const reasonTool = list.result.tools.find(t => t.name === 'axiom.reason');
+    const compareTool = list.result.tools.find(t => t.name === 'axiom.compare');
+    const dreamTool = list.result.tools.find(t => t.name === 'axiom.dream');
+    assert.ok(learnTool);
+    assert.ok(askTool);
+    assert.ok(reasonTool);
+    assert.ok(compareTool);
+    assert.ok(dreamTool);
     assert.ok(verifyTool);
     assert.ok(verifyTool.outputSchema);
+    assert.match(verifyTool.description, /structured evidence trail/i);
     assert.deepStrictEqual(
       verifyTool.outputSchema.properties.data.anyOf[1].properties.status.enum,
       ['dogrulandi', 'celiski', 'bilinmiyor']
@@ -93,6 +104,18 @@ describe('MCP Server', () => {
         'negated_statement_conflicts_with_type_chain',
       ]
     );
+    assert.ok(learnTool.outputSchema.properties.data.anyOf[1].properties.learned);
+    assert.ok(learnTool.outputSchema.properties.data.anyOf[1].properties.conflicts);
+    assert.ok(learnTool.outputSchema.properties.data.anyOf[1].properties.alternatives);
+    assert.ok(askTool.outputSchema.properties.data.anyOf[1].properties.answer);
+    assert.ok(askTool.outputSchema.properties.data.anyOf[1].properties.alternatives);
+    assert.ok(reasonTool.outputSchema.properties.data.anyOf[1].properties.forward);
+    assert.ok(reasonTool.outputSchema.properties.data.anyOf[1].properties.backward);
+    assert.ok(compareTool.outputSchema.properties.data.anyOf[1].properties.common);
+    assert.ok(compareTool.outputSchema.properties.data.anyOf[1].properties.onlyA);
+    assert.ok(compareTool.outputSchema.properties.data.anyOf[1].properties.onlyB);
+    assert.ok(dreamTool.outputSchema.properties.data.anyOf[1].properties.hypotheses);
+    assert.ok(dreamTool.outputSchema.properties.data.anyOf[1].properties.cycle);
   });
 
   it('can learn and ask through tools/call', async () => {
@@ -120,5 +143,6 @@ describe('MCP Server', () => {
     assert.ok(dataSchema.properties.pathLength);
     assert.ok(dataSchema.properties.confidenceSource);
     assert.ok(dataSchema.properties.knownTypes);
+    assert.ok(verifyTool.description.includes('contradictory'));
   });
 });

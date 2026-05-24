@@ -15,74 +15,262 @@ const CONTRADICTION_REASONS = [
   'negated_statement_conflicts_with_type_chain',
 ];
 
-const ENVELOPE_OUTPUT_SCHEMA = {
+const EVIDENCE_SCHEMA = {
   type: 'object',
   properties: {
-    ok: { type: 'boolean' },
-    type: { type: 'string' },
-    data: { type: ['object', 'null'] },
-    evidence: { type: 'array' },
-    error: {
-      anyOf: [
-        { type: 'null' },
-        {
-          type: 'object',
-          properties: {
-            code: { type: 'string' },
-            message: { type: 'string' },
-          },
-          required: ['code', 'message'],
-          additionalProperties: false,
-        },
-      ],
+    kind: {
+      type: 'string',
+      enum: ['direct_edge', 'path', 'contradiction', 'partial_match', 'hypothesis'],
     },
-    meta: { type: 'object' },
+    text: { type: 'string' },
+    confidence: { type: 'number', minimum: 0, maximum: 1 },
+    nodes: { type: 'array', items: { type: 'string' } },
+    edges: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          from: { type: 'string' },
+          to: { type: 'string' },
+          relation: { type: 'string' },
+        },
+        required: ['from', 'to', 'relation'],
+        additionalProperties: false,
+      },
+    },
   },
-  required: ['ok', 'type', 'data', 'evidence', 'error', 'meta'],
+  required: ['kind', 'text', 'confidence', 'nodes', 'edges'],
+  additionalProperties: false,
+};
+
+const EDGE_REF_SCHEMA = {
+  type: 'object',
+  properties: {
+    from: { type: 'string' },
+    to: { type: 'string' },
+    relation: { type: 'string' },
+  },
+  required: ['from', 'to', 'relation'],
+  additionalProperties: false,
+};
+
+const PATH_SCHEMA = {
+  type: 'array',
+  items: { type: 'string' },
+};
+
+const META_SCHEMA = {
+  type: 'object',
+  properties: {
+    contractVersion: { type: 'string' },
+    backend: { type: 'string' },
+    paranoidMode: { type: 'boolean' },
+    source: { type: 'string' },
+    learnedAt: { type: 'string' },
+    mode: { type: 'string' },
+    inferredBy: { type: 'string' },
+  },
+  required: ['contractVersion', 'backend', 'paranoidMode'],
   additionalProperties: true,
 };
 
-const VERIFY_ENVELOPE_OUTPUT_SCHEMA = {
-  ...ENVELOPE_OUTPUT_SCHEMA,
-  properties: {
-    ...ENVELOPE_OUTPUT_SCHEMA.properties,
-    data: {
-      anyOf: [
-        { type: 'null' },
-        {
-          type: 'object',
-          properties: {
-            status: { type: 'string', enum: VERIFY_STATUS },
-            confidence: { type: 'number', minimum: 0, maximum: 1 },
-            inferred: { type: 'boolean' },
-            contradictionReason: { type: 'string', enum: CONTRADICTION_REASONS },
-            confidenceSource: { type: 'string' },
-            pathLength: { type: 'integer', minimum: 1 },
-            reasoningPath: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  from: { type: 'string' },
-                  relation: { type: 'string' },
-                  to: { type: 'string' },
-                },
-                required: ['from', 'relation', 'to'],
-                additionalProperties: false,
-              },
+function buildEnvelopeSchema(dataSchema) {
+  return {
+    type: 'object',
+    properties: {
+      ok: { type: 'boolean' },
+      type: { type: 'string' },
+      data: { anyOf: [{ type: 'null' }, dataSchema] },
+      evidence: { type: 'array', items: EVIDENCE_SCHEMA },
+      error: {
+        anyOf: [
+          { type: 'null' },
+          {
+            type: 'object',
+            properties: {
+              code: { type: 'string' },
+              message: { type: 'string' },
             },
-            knownTypes: { type: 'array', items: { type: 'string' } },
-            requestedType: { type: 'string' },
-            requestedTarget: { type: 'string' },
-            conflictTarget: { type: 'string' },
+            required: ['code', 'message'],
+            additionalProperties: false,
           },
-          required: ['status'],
-          additionalProperties: true,
+        ],
+      },
+      meta: META_SCHEMA,
+    },
+    required: ['ok', 'type', 'data', 'evidence', 'error', 'meta'],
+    additionalProperties: true,
+  };
+}
+
+const LEARN_DATA_SCHEMA = {
+  type: 'object',
+  properties: {
+    learned: { type: 'integer', minimum: 0 },
+    skipped: { type: 'integer', minimum: 0 },
+    conflicts: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          type: { type: 'string' },
+          subject: { type: 'string' },
+          relation: { type: 'string' },
+          current: { type: 'string' },
+          existing: { type: 'string' },
+          confidence: { type: 'number', minimum: 0, maximum: 1 },
+          message: { type: 'string' },
         },
-      ],
+        required: ['type', 'subject', 'relation', 'current', 'existing'],
+        additionalProperties: true,
+      },
+    },
+    alternatives: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          subject: { type: 'string' },
+          relation: { type: 'string' },
+          current: { type: 'string' },
+          existing: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['subject', 'relation', 'current', 'existing'],
+        additionalProperties: true,
+      },
     },
   },
+  required: ['learned', 'skipped', 'conflicts', 'alternatives'],
+  additionalProperties: true,
 };
+
+const ASK_DATA_SCHEMA = {
+  type: 'object',
+  properties: {
+    answer: { type: 'string' },
+    subject: { type: 'string' },
+    unknown: { type: 'boolean' },
+    alternatives: { type: 'integer', minimum: 0 },
+  },
+  required: ['answer', 'subject', 'unknown', 'alternatives'],
+  additionalProperties: true,
+};
+
+const REASON_DATA_SCHEMA = {
+  type: 'object',
+  properties: {
+    subject: { type: 'string' },
+    answer: { type: 'string' },
+    forward: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          from: { type: 'string' },
+          to: { type: 'string' },
+          relation: { type: 'string' },
+        },
+        required: ['from', 'to', 'relation'],
+        additionalProperties: false,
+      },
+    },
+    backward: {
+      type: 'array',
+      items: EDGE_REF_SCHEMA,
+    },
+    cycles: { type: 'array', items: PATH_SCHEMA },
+  },
+  required: ['subject', 'answer', 'forward', 'backward', 'cycles'],
+  additionalProperties: true,
+};
+
+const COMPARE_DATA_SCHEMA = {
+  type: 'object',
+  properties: {
+    a: { type: 'string' },
+    b: { type: 'string' },
+    answer: { type: 'string' },
+    common: { type: 'array', items: EDGE_REF_SCHEMA },
+    onlyA: { type: 'array', items: EDGE_REF_SCHEMA },
+    onlyB: { type: 'array', items: EDGE_REF_SCHEMA },
+    paths: { type: 'array', items: PATH_SCHEMA },
+  },
+  required: ['a', 'b', 'answer', 'common', 'onlyA', 'onlyB', 'paths'],
+  additionalProperties: true,
+};
+
+const DREAM_DATA_SCHEMA = {
+  type: 'object',
+  properties: {
+    hypotheses: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          from: { type: 'string' },
+          to: { type: 'string' },
+          relation: { type: 'string' },
+          confidence: { type: 'number', minimum: 0, maximum: 1 },
+          type: { type: 'string' },
+          node: { type: 'string' },
+          targets: { type: 'array', items: { type: 'string' } },
+        },
+        additionalProperties: true,
+      },
+    },
+    learned: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          from: { type: 'string' },
+          to: { type: 'string' },
+          confidence: { type: 'number', minimum: 0, maximum: 1 },
+          relation: { type: 'string' },
+        },
+        required: ['from', 'to', 'confidence', 'relation'],
+        additionalProperties: true,
+      },
+    },
+    cycle: { type: 'integer', minimum: 0 },
+  },
+  required: ['hypotheses', 'learned', 'cycle'],
+  additionalProperties: true,
+};
+
+const VERIFY_DATA_SCHEMA = {
+  type: 'object',
+  properties: {
+    status: { type: 'string', enum: VERIFY_STATUS },
+    confidence: { type: 'number', minimum: 0, maximum: 1 },
+    inferred: { type: 'boolean' },
+    contradictionReason: { type: 'string', enum: CONTRADICTION_REASONS },
+    confidenceSource: { type: 'string' },
+    pathLength: { type: 'integer', minimum: 1 },
+    reasoningPath: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          from: { type: 'string' },
+          relation: { type: 'string' },
+          to: { type: 'string' },
+        },
+        required: ['from', 'relation', 'to'],
+        additionalProperties: false,
+      },
+    },
+    knownTypes: { type: 'array', items: { type: 'string' } },
+    requestedType: { type: 'string' },
+    requestedTarget: { type: 'string' },
+    conflictTarget: { type: 'string' },
+  },
+  required: ['status', 'confidence'],
+  additionalProperties: true,
+};
+
+const ENVELOPE_OUTPUT_SCHEMA = buildEnvelopeSchema({ type: 'object' });
+const VERIFY_ENVELOPE_OUTPUT_SCHEMA = buildEnvelopeSchema(VERIFY_DATA_SCHEMA);
 
 function buildKernelOptsFromEnv() {
   const kernelOpts = {};
@@ -105,28 +293,28 @@ const TOOL_SCHEMAS = [
   {
     name: 'axiom.learn',
     title: 'Axiom Learn',
-    description: 'Learn a natural-language fact into the local symbolic knowledge graph. Returns a stable AXIOM envelope with learn counts and evidence.',
+    description: 'Learn a natural-language fact into the local symbolic knowledge graph. Returns a stable AXIOM envelope with learn counts, conflicts, alternatives, and evidence references.',
     inputSchema: {
       type: 'object',
       properties: {
-        text: { type: 'string', description: 'Natural-language statement to learn, for example: "kedi hayvandir".' },
-        skipConflicts: { type: 'boolean', description: 'Skip conflicting statements when true. Defaults to true.' },
+        text: { type: 'string', description: 'Natural-language statement or short text block to learn, for example: "kedi hayvandir".' },
+        skipConflicts: { type: 'boolean', description: 'Skip conflicting statements when true. Defaults to true for safer ingestion.' },
         maxSentences: {
           type: 'integer',
           minimum: 1,
-          description: 'Maximum number of sentences to ingest from the input text.',
+          description: 'Maximum number of sentences to ingest from the input text. Useful for multi-line notes.',
         },
       },
       required: ['text'],
       additionalProperties: false,
     },
-    outputSchema: ENVELOPE_OUTPUT_SCHEMA,
+    outputSchema: buildEnvelopeSchema(LEARN_DATA_SCHEMA),
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   },
   {
     name: 'axiom.ask',
     title: 'Axiom Ask',
-    description: 'Ask a grounded question against the local knowledge graph and return a stable AXIOM envelope.',
+    description: 'Ask a grounded question against the local knowledge graph and return a stable AXIOM envelope with subject, answer, and alternative count.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -135,13 +323,13 @@ const TOOL_SCHEMAS = [
       required: ['question'],
       additionalProperties: false,
     },
-    outputSchema: ENVELOPE_OUTPUT_SCHEMA,
+    outputSchema: buildEnvelopeSchema(ASK_DATA_SCHEMA),
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   {
     name: 'axiom.verify',
     title: 'Axiom Verify',
-    description: 'Verify whether a statement is supported, contradictory, or unknown and return evidence references.',
+    description: 'Verify whether a statement is supported, contradictory, or unknown and return a structured evidence trail with contradiction metadata when relevant.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -156,7 +344,7 @@ const TOOL_SCHEMAS = [
   {
     name: 'axiom.reason',
     title: 'Axiom Reason',
-    description: 'Return forward and backward reasoning traces for a subject with stable evidence references.',
+    description: 'Return forward and backward reasoning traces for a subject with stable evidence references and cycle detection.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -165,7 +353,7 @@ const TOOL_SCHEMAS = [
       required: ['subject'],
       additionalProperties: false,
     },
-    outputSchema: ENVELOPE_OUTPUT_SCHEMA,
+    outputSchema: buildEnvelopeSchema(REASON_DATA_SCHEMA),
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   {
@@ -181,13 +369,13 @@ const TOOL_SCHEMAS = [
       required: ['left', 'right'],
       additionalProperties: false,
     },
-    outputSchema: ENVELOPE_OUTPUT_SCHEMA,
+    outputSchema: buildEnvelopeSchema(COMPARE_DATA_SCHEMA),
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   {
     name: 'axiom.dream',
     title: 'Axiom Dream',
-    description: 'Generate hypotheses from the current graph and return ranked speculative links.',
+    description: 'Generate hypotheses from the current graph and return ranked speculative links with evidence references.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -195,7 +383,7 @@ const TOOL_SCHEMAS = [
       },
       additionalProperties: false,
     },
-    outputSchema: ENVELOPE_OUTPUT_SCHEMA,
+    outputSchema: buildEnvelopeSchema(DREAM_DATA_SCHEMA),
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
 ];

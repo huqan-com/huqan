@@ -190,6 +190,18 @@ function getV2StatusData() {
         'Structured REST tests',
       ],
     },
+    {
+      id: 'v2.6',
+      title: 'v2.6 MCP Schema Polish',
+      status: 'done',
+      summary: 'MCP tool descriptions and output schemas now mirror the real payload shapes more closely.',
+      items: [
+        'Concrete tool descriptions',
+        'Per-tool output schemas',
+        'Evidence and meta schema details',
+        'Developer-friendly MCP docs',
+      ],
+    },
   ];
 
   const counts = phases.reduce((acc, phase) => {
@@ -211,8 +223,8 @@ function getV2StatusData() {
     updatedAt: new Date().toISOString(),
     counts,
     phases,
-    currentFocus: 'v2.5 REST Structured Verify',
-    nextAction: 'Use /v2/verify for structured integrations; keep /dogrula for legacy clients.',
+    currentFocus: 'v2.6 MCP Schema Polish',
+    nextAction: 'Use the richer MCP schemas and descriptions to wire external clients with fewer assumptions.',
   };
 }
 

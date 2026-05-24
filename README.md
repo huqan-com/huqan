@@ -1,5 +1,11 @@
 # ◇ AXIOM
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/Node-%3E%3D18-brightgreen)](https://nodejs.org)
+[![Tests](https://img.shields.io/badge/Tests-160%2F160-green)]()
+[![Dependencies](https://img.shields.io/badge/Dependencies-0-blue)]()
+[![Platform](https://img.shields.io/badge/Platform-Windows%20|%20macOS%20|%20Linux-lightgrey)]()
+
 > **English:** A symbolic AI reasoning engine that works without
 > LLMs, GPUs, or cloud. Learns from natural language,
 > verifies LLM outputs, detects contradictions, and generates
@@ -186,6 +192,8 @@ The adapter returns both human-readable `content` and structured MCP `structured
 
 Set `AXIOM_KERNEL_VERSION=v2` to expose the newer `KernelV2.verify` behavior through MCP. The `axiom.verify` output schema includes v2.1 fields such as `inferred`, `reasoningPath`, `pathLength`, `confidenceSource`, and `contradictionReason`.
 
+The MCP tool catalog is now described with concrete payload shapes for `learn`, `ask`, `reason`, `compare`, `dream`, and `verify`, so external clients can wire against the schema instead of guessing the response shape.
+
 The same flag also enables `KernelV2` for CLI and REST flows:
 
 ```bash
@@ -218,6 +226,7 @@ For the current v2 shipping status and next-phase priorities, see [RELEASE_V2.md
 - v2.3 CLI/REST Runtime: done
 - v2.4 Status Dashboard: done
 - v2.5 REST Structured Verify: done
+- v2.6 MCP Schema Polish: done
 - Test status: `160/160`
 
 ## Benchmark Baseline
@@ -274,7 +283,7 @@ Web arayüzündeki Graf sekmesi bu endpoint'i kullanır.
 ## Testler
 
 ```bash
-# Tüm testler (106 test)
+# Tüm testler (160 test)
 npm test
 
 # Modül bazlı

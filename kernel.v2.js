@@ -229,6 +229,17 @@ class KernelV2 {
       }));
   }
 
+  _collectPredicateTargets(subject) {
+    return this.kernel.graph
+      .getEdges(subject)
+      .map(edge => ({
+        relation: edge.relation,
+        target: this._normalizePredicateToken(edge.to),
+        rawTarget: edge.to,
+        weight: edge.weight,
+      }));
+  }
+
   _buildDirectTypeEvidence(subject) {
     return this.kernel.graph
       .getEdges(subject)
@@ -255,6 +266,18 @@ class KernelV2 {
       }));
   }
 
+  _buildPredicateEvidence(subject) {
+    return this.kernel.graph
+      .getEdges(subject)
+      .map(edge => ({
+        kind: 'direct_edge',
+        text: `${edge.from} --[${edge.relation}]--> ${edge.to}`,
+        confidence: Math.max(0.4, Math.min(0.9, edge.weight || 0.5)),
+        nodes: [edge.from, edge.to],
+        edges: [{ from: edge.from, to: edge.to, relation: edge.relation }],
+      }));
+  }
+
   verify(statement, opts = {}) {
     const parsed = parseSimpleTurkishStatement(statement);
     if (!parsed) return this.kernel.verify(statement, opts);
@@ -264,6 +287,7 @@ class KernelV2 {
     const normalizedTargetToken = this._normalizePredicateToken(normalizedTarget);
 
     const knownFacts = this._collectFactTargets(parsed.subject);
+    const knownPredicates = this._collectPredicateTargets(parsed.subject);
     if (parsed.isNegated && knownFacts.length > 0) {
       const directPositive = knownFacts.find(item => item.target === normalizedTargetToken);
       if (directPositive) {
@@ -288,28 +312,28 @@ class KernelV2 {
     const base = this.kernel.verify(statement, opts);
     if (base?.data?.status !== 'bilinmiyor') return base;
 
-    if (knownFacts.length > 0 && !parsed.isNegated) {
+    if (knownPredicates.length > 0 && !parsed.isNegated) {
       const opposite = OPPOSITE_PREDICATES.get(normalizedTargetToken);
       if (opposite) {
-        const oppositeFact = knownFacts.find(item => item.target === opposite);
+        const oppositeFact = knownPredicates.find(item => item.target === opposite);
         if (oppositeFact) {
           return this._ok(
             'verify',
             {
               status: 'celiski',
-              confidence: Math.max(0.65, Math.min(0.9, oppositeFact.weight || 0.72)),
-              inferred: true,
-              contradictionReason: 'opposite_predicate_conflict',
-              conflictTarget: oppositeFact.rawTarget,
-              requestedTarget: normalizedTarget,
-              confidenceSource: 'opposite-predicate-map',
-            },
-            this._buildDirectFactEvidence(parsed.subject),
-            {
-              ...base.meta,
-              inferredBy: 'opposite-predicate-conflict',
-            }
-          );
+            confidence: Math.max(0.65, Math.min(0.9, oppositeFact.weight || 0.72)),
+            inferred: true,
+            contradictionReason: 'opposite_predicate_conflict',
+            conflictTarget: oppositeFact.rawTarget,
+            requestedTarget: normalizedTarget,
+            confidenceSource: 'opposite-predicate-map',
+          },
+          this._buildPredicateEvidence(parsed.subject),
+          {
+            ...base.meta,
+            inferredBy: 'opposite-predicate-conflict',
+          }
+        );
         }
       }
     }

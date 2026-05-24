@@ -204,7 +204,7 @@ describe('Server - API', () => {
     assert.ok(Array.isArray(j.phases));
     assert.ok(j.counts.total >= 1);
     assert.strictEqual(typeof j.currentFocus, 'string');
-    assert.strictEqual(j.currentFocus, 'v2.5 REST Structured Verify');
+    assert.strictEqual(j.currentFocus, 'v2.6 MCP Schema Polish');
     assert.strictEqual(j.activeKernel, 'v2');
     assert.strictEqual(j.testStatus, '160/160');
     assert.ok(['sqlite', 'json'].includes(j.backend));

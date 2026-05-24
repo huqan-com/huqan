@@ -60,6 +60,12 @@ class CLI {
     if (['optimize', 'temizle', 'hafızayı optimize et'].includes(trimmed)) {
       return { command: 'optimize', args: '' };
     }
+    if (['birleştir', 'konsolide et', 'toparla'].includes(trimmed)) {
+      return { command: 'konsolide', args: '' };
+    }
+    if (['evolve', 'evrim', 'geliş', 'kendini geliştir', 'kendilik'].includes(trimmed)) {
+      return { command: 'evolve', args: '' };
+    }
 
     // "neden X" → sebep analizi
     const nedenMatch = trimmed.match(/^neden\s+(.+)/i);
@@ -156,6 +162,22 @@ class CLI {
         const result = this.kernel.graph.optimize();
         return `🧹 Optimize: ${result.pruned} kenar budandı, ${result.removedNodes} düğüm silindi.`;
       }
+      case 'konsolide': {
+        const dryResult = this.kernel.consolidate(true);
+        if (dryResult.removed === 0) {
+          return '🧼 Temizlenecek çelişkili kenar bulunamadı.';
+        }
+        const realResult = this.kernel.consolidate(false);
+        return `🧼 ${realResult.removed} çelişkili kenar temizlendi.`;
+      }
+      case 'evolve': {
+        const result = this.kernel.selfEvolve();
+        let msg = `🌱 Kendilik döngüsü tamam: ${result.dreams} hipotez incelendi`;
+        if (result.added > 0) msg += `, ${result.added} yeni bilgi eklendi`;
+        msg += `, ${result.consolidated} çelişki temizlendi`;
+        msg += `, ${result.optimized} kenar budandı.`;
+        return msg;
+      }
       case 'durum': {
         const nodes = Object.keys(this.kernel.graph._nodes).length;
         const edges = this.kernel.graph._edges.length;
@@ -195,6 +217,8 @@ class CLI {
           '  "rüya" / "ne düşünüyorsun"→ hipotez üretirim',
           '  "açık düşün"              → arka planda öğrenirim',
           '  "optimize"                → hafızayı temizlerim',
+          '  "birleştir"               → çelişkili kenarları temizlerim',
+          '  "evolve"                  → kendimi geliştiririm',
           '  "kaydet"                  → hafızayı kaydederim',
           '  "llm-sor: soru"           → LLM\'ye sor (Ollama)',
           '  "yükle: dosya.txt"        → .txt/.md dosyasından öğren',
