@@ -8,12 +8,20 @@
 - CLI and legacy REST behavior remain user-facing compatible.
 - Minimal stdio MCP adapter is available with `tools/list` and `tools/call`.
 - Deterministic benchmark fixtures are available for repeatable local performance checks.
+- Benchmark regression gate is active in CI with fixture-aware checks.
 
 ## Current verification
 
-- Test suite: `145/145`
+- Test suite: `150/150`
 - Benchmark runner: `npm run bench`
 - Main branch: pushed and synchronized
+
+## Current phase status
+
+- Phase 1 (Core Contract): Completed
+- Phase 2 (MCP Polish): Completed
+- Phase 3 (Benchmark Regression): Completed
+- Phase 4 (Packaging/Docs): In progress
 
 ## Performance snapshot
 
@@ -25,9 +33,9 @@ npm run bench -- --quick
 
 ## Next phase priorities
 
-1. Benchmark interpretation and regression tracking.
-2. MCP polish: richer tool metadata, stronger schema docs, and optional output schemas.
-3. Release packaging: changelog automation, tagged release notes, and public-facing roadmap.
+1. Final packaging polish: keep release docs and README fully synchronized.
+2. v2.1 scope lock: inference depth and contradiction rules in `KernelV2`.
+3. Optional Rust-vs-JS production threshold decision with real workload data.
 
 ## Non-goals for v2 Phase 1
 

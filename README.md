@@ -178,6 +178,14 @@ Fixture sizes live under `benchmarks/fixtures/` and are intentionally stable so 
 
 For the current v2 shipping status and next-phase priorities, see [RELEASE_V2.md](./RELEASE_V2.md), [ROADMAP_V2.md](./ROADMAP_V2.md), [RELEASE_NOTES_v2.0.0.md](./RELEASE_NOTES_v2.0.0.md), and [PUBLIC_RELEASE_POST.md](./PUBLIC_RELEASE_POST.md).
 
+## V2 Status (Single View)
+
+- Phase 1 Core Contract: done
+- Phase 2 MCP Polish: done
+- Phase 3 Benchmark Regression: done
+- Phase 4 Packaging/Docs: in progress
+- Test status: `150/150`
+
 ## Benchmark Baseline
 
 Committed benchmark summaries live in [benchmarks/results.json](./benchmarks/results.json). The regression workflow compares fresh runs against that baseline on every push to `main`.
