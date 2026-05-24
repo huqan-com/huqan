@@ -228,7 +228,8 @@ For the current v2 shipping status and next-phase priorities, see [RELEASE_V2.md
 - v2.4 Status Dashboard: done
 - v2.5 REST Structured Verify: done
 - v2.6 MCP Schema Polish: done
-- Test status: `161/161`
+- v2.7 Manipulation Guard: done
+- Test status: `167/167`
 
 ## Benchmark Baseline
 

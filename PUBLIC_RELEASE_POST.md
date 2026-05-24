@@ -136,7 +136,7 @@ mcpServer.js  — MCP stdio for AI tool integration
 
 ## Status
 
-- 161/161 tests passing
+- 167/167 tests passing
 - Zero external runtime dependencies
 - REST API with rate limiting, sanitization, paranoid mode
 - Web UI with D3.js interactive graph visualization

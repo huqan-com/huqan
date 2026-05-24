@@ -138,6 +138,12 @@ class CLI {
         let out = `\u{1F916} AXIOM do\u011frulamas\u0131: ${emoji} ${dogrulama.status} (g\u00fcven: ${dogrulama.confidence.toFixed(2)})`;
         if (axiomCevap !== 'Bilmiyorum') out += `\n\u{1F4AC} AXIOM: ${axiomCevap}`;
         if (dogrulamaResult.evidence.length > 0) out += `\n\u{1F4CE} Kan\u0131t: ${dogrulamaResult.evidence[0].text}`;
+        if (dogrulama.risk && dogrulama.risk.manipulation) {
+          const labels = Array.isArray(dogrulama.risk.labels) && dogrulama.risk.labels.length > 0
+            ? dogrulama.risk.labels.join(', ')
+            : 'manipulation';
+          out += `\n\u26A0\uFE0F Risk: ${labels} (skor: ${dogrulama.risk.score.toFixed(2)})`;
+        }
         out += `\n\u23F3 LLM yan\u0131t\u0131 i\u00e7in: ollama run ${this.llm.model} "${args}"`;
         return out;
       }

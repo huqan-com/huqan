@@ -30,8 +30,15 @@ Status: Completed (threshold decision remains optional)
 - Developer onboarding flow
 Status: Completed
 
-## Next Active Track (v2.1)
+## Phase 5
 
-- Deepen `KernelV2.verify` inference and contradiction rules.
-- Expand evidence quality for multi-hop reasoning.
+- Manipulation / adversarial risk layer
+- Explainable risk metadata
+- Risk-aware `learnFromLLM` filtering
+Status: Completed
+
+## Next Active Track (v2.8 TBD)
+
+- Scope not locked yet.
+- Candidate areas: risk telemetry tuning, evidence detail polish, and product UI cleanup.
 - Keep CLI/REST compatibility while extending core behavior.

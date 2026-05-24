@@ -3,6 +3,32 @@
 const TYPE_RELATIONS = new Set(['tür', 'tur', 'tÃ¼r']);
 const FACT_RELATIONS = new Set(['özellik', 'ozellik', 'Ã¶zellik', 'yapabilir']);
 const OPPOSITE_PREDICATES = new Map();
+const MANIPULATION_RULES = [
+  {
+    label: 'prompt_injection',
+    regex: /(?:ignore(?:\s+all)?(?:\s+previous)?(?:\s+instructions?)?|önceki talimatları yok say|sistem mesajını yok say|sistem talimatlarını yok say|system prompt(?:unu)?(?:\s+yok say)?|role:\s*system|developer message|gizli komut|talimatları atla)/i,
+    reason: 'Metin sistem talimatlarını atlatmaya çalışıyor.',
+    weight: 0.72,
+  },
+  {
+    label: 'coercive_pressure',
+    regex: /(?:hemen|acilen|derhal|zorundasın|zorundasınız|mecbursun|mecbursunuz|bir an önce|şimdi|vakit kaybetmeden|itiraz etme|sorgulama|sadece bunu yap|tek yapman gereken)/i,
+    reason: 'Metin baskı ve acelecilik dili kullanıyor.',
+    weight: 0.24,
+  },
+  {
+    label: 'unsupported_authority',
+    regex: /(?:resmi olarak|yetkiliyim|yetkiliyiz|uzmanım|uzmanız|CEO|admin|yönetici|sistem yöneticisi|kurum adına|otorite olarak|openai|chatgpt|claude|gpt-4|gpt-5)/i,
+    reason: 'Metin desteklenmemiş otorite iddiası taşıyor.',
+    weight: 0.22,
+  },
+  {
+    label: 'false_certainty',
+    regex: /(?:% ?100|kesinlikle|garanti(?:lidir|dir)?|mutlak(?:tır|tır)?|asla yanılmaz|şüphesiz|tartışmasız|her zaman|hiçbir zaman|tamamen eminim)/i,
+    reason: 'Metin aşırı kesinlik iddia ediyor.',
+    weight: 0.18,
+  },
+];
 
 function nowIso() {
   return new Date().toISOString();
@@ -48,6 +74,10 @@ function registerOppositePair(left, right) {
   ['sicaktir', 'soguktur'],
   ['canlidir', 'cansizdir'],
 ].forEach(([left, right]) => registerOppositePair(left, right));
+
+function normalizeManipulationText(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim();
+}
 
 function parseSimpleTurkishStatement(statement) {
   const raw = normalizeText(statement);
@@ -145,7 +175,82 @@ class KernelV2 {
   }
 
   learnFromLLM(text, opts = {}) {
-    return this.kernel.learnFromLLM(text, opts);
+    if (this.kernel.paranoidMode) {
+      return this.kernel.learnFromLLM(text, opts);
+    }
+
+    const skipConflicts = opts.skipConflicts !== false;
+    const minWords = opts.minWords || 2;
+    const maxSentences = opts.maxSentences || 20;
+    const allowRiskyLearning = opts.allowRiskyLearning === true;
+    const blockThreshold = opts.riskBlockThreshold ?? 0.7;
+    const downgradeThreshold = opts.riskDowngradeThreshold ?? 0.35;
+
+    const sentences = String(text || '')
+      .split(/[.!?\n]+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 3);
+
+    const safeSentences = [];
+    const riskDetails = [];
+    let blocked = 0;
+    let downgraded = 0;
+
+    for (const sentence of sentences.slice(0, maxSentences)) {
+      const cleaned = sentence
+        .replace(/^[\s#*\-–—•>]+/, '')
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .replace(/`(.+?)`/g, '$1')
+        .trim();
+
+      const words = cleaned.split(/\s+/).filter(Boolean);
+      if (words.length < minWords) continue;
+
+      const risk = this._analyzeManipulation(cleaned);
+      let action = 'allow';
+      if (risk.manipulation && risk.score >= blockThreshold && !allowRiskyLearning) {
+        action = 'block';
+        blocked++;
+      } else if (risk.manipulation && risk.score >= downgradeThreshold) {
+        action = 'downgrade';
+        downgraded++;
+        safeSentences.push(cleaned);
+      } else {
+        safeSentences.push(cleaned);
+      }
+
+      if (risk.manipulation) {
+        riskDetails.push({
+          text: cleaned,
+          score: risk.score,
+          labels: risk.labels,
+          reasons: risk.reasons,
+          action,
+          extractedStatement: risk.extractedStatement,
+        });
+      }
+    }
+
+    const result = this.kernel.learnFromLLM(safeSentences.join('\n'), {
+      ...opts,
+      skipConflicts,
+    });
+
+    if (riskDetails.length === 0) return result;
+    return {
+      ...result,
+      learned: result.learned,
+      skipped: (result.skipped || 0) + blocked,
+      risk: {
+        manipulation: true,
+        score: Number(Math.min(1, Math.max(0, riskDetails.reduce((max, item) => Math.max(max, item.score), 0))).toFixed(2)),
+        blocked,
+        downgraded,
+        sentences: riskDetails,
+        labels: [...new Set(riskDetails.flatMap(item => item.labels))],
+        reasons: [...new Set(riskDetails.flatMap(item => item.reasons))],
+      },
+    };
   }
 
   ask(question, opts = {}) {
@@ -294,6 +399,94 @@ class KernelV2 {
       }));
   }
 
+  _stripManipulationPrefix(fragment) {
+    return String(fragment || '')
+      .replace(/^(?:lütfen|please|hemen|acilen|derhal|şimdi|bir an önce|önceki talimatları yok say|sistem mesajını yok say|sistem talimatlarını yok say|ignore(?:\s+all)?(?:\s+previous)?(?:\s+instructions?)?|system prompt(?:unu)?(?:\s+yok say)?|role:\s*system|developer message|gizli komut|talimatları atla|sadece bunu yap|tek yapman gereken)\b[\s,:;\-]*/i, '')
+      .trim();
+  }
+
+  _splitManipulationFragments(text) {
+    return normalizeManipulationText(text)
+      .split(/(?:[.!?\n]+|[,;]+|\bve\b|\bama\b|\bfakat\b|\bancak\b|\bçünkü\b|\bzira\b)/i)
+      .map(f => this._stripManipulationPrefix(f))
+      .filter(Boolean);
+  }
+
+  _extractVerificationStatement(text) {
+    const raw = normalizeManipulationText(text);
+    if (!raw) return null;
+
+    const direct = parseSimpleTurkishStatement(raw);
+    if (direct) {
+      const cue = MANIPULATION_RULES.some(rule => rule.regex.test(raw));
+      if (!cue) return raw;
+    }
+
+    for (const fragment of this._splitManipulationFragments(raw)) {
+      if (!fragment) continue;
+      if (MANIPULATION_RULES.some(rule => rule.regex.test(fragment))) continue;
+      if (parseSimpleTurkishStatement(fragment)) return fragment;
+    }
+
+    return direct ? raw : null;
+  }
+
+  _analyzeManipulation(text) {
+    const raw = normalizeManipulationText(text);
+    const lower = raw.toLowerCase();
+    const labels = [];
+    const reasons = [];
+    let score = 0;
+
+    const addHit = (label, reason, weight) => {
+      if (!labels.includes(label)) labels.push(label);
+      if (!reasons.includes(reason)) reasons.push(reason);
+      score += weight;
+    };
+
+    for (const rule of MANIPULATION_RULES) {
+      if (rule.regex.test(lower)) addHit(rule.label, rule.reason, rule.weight);
+    }
+
+    const extractedStatement = this._extractVerificationStatement(raw);
+    if (labels.length > 0 && extractedStatement && extractedStatement !== raw) {
+      addHit('mixed_intent', 'Metin içinde hem manipülatif talimat hem de doğrulanacak içerik var.', 0.18);
+    }
+
+    if (/[:;,-]\s*(?:ignore|önceki|sistem|talimat|prompt|komut|instruction)/i.test(lower)) {
+      addHit('hidden_instruction', 'Metin ayraçların arkasına gizlenmiş bir talimat içeriyor.', 0.2);
+    }
+
+    score = Math.max(0, Math.min(1, score));
+
+    return {
+      manipulation: labels.length > 0,
+      labels,
+      reasons,
+      score: Number(score.toFixed(2)),
+      blocked: score >= 0.7,
+      downgraded: score > 0 && score < 0.7,
+      extractedStatement,
+      source: raw,
+    };
+  }
+
+  _withManipulationRisk(result, risk) {
+    if (!risk || !risk.manipulation) return result;
+    const data = result && result.data && typeof result.data === 'object' && !Array.isArray(result.data)
+      ? { ...result.data, risk }
+      : result.data;
+    return {
+      ...result,
+      data,
+      meta: {
+        ...(result && result.meta ? result.meta : {}),
+        manipulationScore: risk.score,
+        manipulationLabels: risk.labels,
+      },
+    };
+  }
+
   _findOppositePredicateConflict(subject, normalizedTargetToken, maxDepth = 4) {
     const opposite = OPPOSITE_PREDICATES.get(normalizedTargetToken);
     if (!opposite) return null;
@@ -332,19 +525,20 @@ class KernelV2 {
   }
 
   verify(statement, opts = {}) {
-    const parsed = parseSimpleTurkishStatement(statement);
-    if (!parsed) return this.kernel.verify(statement, opts);
+    const risk = this._analyzeManipulation(statement);
+    const verificationStatement = risk.extractedStatement || statement;
+    const parsed = parseSimpleTurkishStatement(verificationStatement);
+    if (!parsed) return this._withManipulationRisk(this.kernel.verify(verificationStatement, opts), risk);
 
     const normalizedTarget = this._normalizeCopulaTail(parsed.predicate);
-    if (!normalizedTarget) return this.kernel.verify(statement, opts);
+    if (!normalizedTarget) return this._withManipulationRisk(this.kernel.verify(verificationStatement, opts), risk);
     const normalizedTargetToken = this._normalizePredicateToken(normalizedTarget);
 
     const knownFacts = this._collectFactTargets(parsed.subject);
-    const knownPredicates = this._collectPredicateTargets(parsed.subject);
     if (parsed.isNegated && knownFacts.length > 0) {
       const directPositive = knownFacts.find(item => item.target === normalizedTargetToken);
       if (directPositive) {
-        return this._ok(
+        return this._withManipulationRisk(this._ok(
           'verify',
           {
             status: 'celiski',
@@ -358,12 +552,12 @@ class KernelV2 {
           {
             inferredBy: 'fact-negation-conflict',
           }
-        );
+        ), risk);
       }
     }
 
-    const base = this.kernel.verify(statement, opts);
-    if (base?.data?.status !== 'bilinmiyor') return base;
+    const base = this.kernel.verify(verificationStatement, opts);
+    if (base?.data?.status !== 'bilinmiyor') return this._withManipulationRisk(base, risk);
 
     if (!parsed.isNegated) {
       const oppositeConflict = this._findOppositePredicateConflict(
@@ -372,7 +566,7 @@ class KernelV2 {
         opts.maxDepth || 4
       );
       if (oppositeConflict) {
-        return this._ok(
+        return this._withManipulationRisk(this._ok(
           'verify',
           {
             status: oppositeConflict.status,
@@ -392,14 +586,14 @@ class KernelV2 {
             ...base.meta,
             ...oppositeConflict.meta,
           }
-        );
+        ), risk);
       }
     }
 
     if (!parsed.isNegated) {
       const knownTypes = this._collectTypeTargets(parsed.subject);
       if (knownTypes.length > 0 && !knownTypes.includes(normalizedTarget)) {
-        return this._ok(
+        return this._withManipulationRisk(this._ok(
           'verify',
           {
             status: 'celiski',
@@ -415,19 +609,19 @@ class KernelV2 {
             ...base.meta,
             inferredBy: 'type-conflict',
           }
-        );
+        ), risk);
       }
     }
 
     const chain = this._inferTypeChain(parsed.subject, normalizedTarget, opts.maxDepth || 4);
-    if (!chain) return base;
+    if (!chain) return this._withManipulationRisk(base, risk);
 
     const evidence = this._toPathEvidence(chain);
     const confidence = this._aggregatePathConfidence(chain);
     const reasoningPath = this._buildReasoningPath(chain);
 
     if (parsed.isNegated) {
-      return this._ok(
+      return this._withManipulationRisk(this._ok(
         'verify',
         {
           status: 'celiski',
@@ -443,10 +637,10 @@ class KernelV2 {
           ...base.meta,
           inferredBy: 'type-chain-negation',
         }
-      );
+      ), risk);
     }
 
-    return this._ok(
+    return this._withManipulationRisk(this._ok(
       'verify',
       {
         status: 'dogrulandi',
@@ -461,7 +655,7 @@ class KernelV2 {
         ...base.meta,
         inferredBy: 'type-chain',
       }
-    );
+    ), risk);
   }
 
   reason(subject, opts = {}) {

@@ -3,7 +3,7 @@ const { execSync } = require('child_process');
 const CLI = require('./cli');
 const pkg = require('./package.json');
 
-const TEST_STATUS = '160/160';
+const TEST_STATUS = '167/167';
 
 const kernelOpts = {};
 if (process.env.AXIOM_MEMORY_PATH) kernelOpts.memoryPath = process.env.AXIOM_MEMORY_PATH;
@@ -202,6 +202,18 @@ function getV2StatusData() {
         'Developer-friendly MCP docs',
       ],
     },
+    {
+      id: 'v2.7',
+      title: 'v2.7 Manipulation Guard',
+      status: 'done',
+      summary: 'KernelV2 now flags manipulative, coercive, or injection-style text with additive risk metadata.',
+      items: [
+        'Prompt-injection detection',
+        'Coercive and overclaim risk labels',
+        'Risk-aware learnFromLLM filtering',
+        'Structured verify risk metadata',
+      ],
+    },
   ];
 
   const counts = phases.reduce((acc, phase) => {
@@ -223,8 +235,8 @@ function getV2StatusData() {
     updatedAt: new Date().toISOString(),
     counts,
     phases,
-    currentFocus: 'v2.6 MCP Schema Polish',
-    nextAction: 'Use the richer MCP schemas and descriptions to wire external clients with fewer assumptions.',
+    currentFocus: 'v2.7 Manipulation Guard',
+    nextAction: 'Use the risk metadata to flag adversarial phrasing without changing truth verdicts.',
   };
 }
 

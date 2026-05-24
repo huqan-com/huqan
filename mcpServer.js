@@ -43,6 +43,22 @@ const EVIDENCE_SCHEMA = {
   additionalProperties: false,
 };
 
+const RISK_SCHEMA = {
+  type: 'object',
+  properties: {
+    manipulation: { type: 'boolean' },
+    score: { type: 'number', minimum: 0, maximum: 1 },
+    blocked: { type: 'boolean' },
+    downgraded: { type: 'boolean' },
+    labels: { type: 'array', items: { type: 'string' } },
+    reasons: { type: 'array', items: { type: 'string' } },
+    extractedStatement: { type: 'string' },
+    source: { type: 'string' },
+  },
+  required: ['manipulation', 'score', 'labels', 'reasons', 'blocked', 'downgraded'],
+  additionalProperties: true,
+};
+
 const EDGE_REF_SCHEMA = {
   type: 'object',
   properties: {
@@ -264,6 +280,7 @@ const VERIFY_DATA_SCHEMA = {
     requestedType: { type: 'string' },
     requestedTarget: { type: 'string' },
     conflictTarget: { type: 'string' },
+    risk: { anyOf: [{ type: 'null' }, RISK_SCHEMA] },
   },
   required: ['status', 'confidence'],
   additionalProperties: true,
@@ -329,7 +346,7 @@ const TOOL_SCHEMAS = [
   {
     name: 'axiom.verify',
     title: 'Axiom Verify',
-    description: 'Verify whether a statement is supported, contradictory, or unknown and return a structured evidence trail with contradiction metadata when relevant.',
+    description: 'Verify whether a statement is supported, contradictory, or unknown and return a structured evidence trail, plus manipulation risk metadata when the text looks adversarial.',
     inputSchema: {
       type: 'object',
       properties: {

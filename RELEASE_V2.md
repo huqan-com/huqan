@@ -22,6 +22,7 @@
 - Phase 2 (MCP Polish): Completed
 - Phase 3 (Benchmark Regression): Completed
 - Phase 4 (Packaging/Docs): Completed
+- Phase 5 (Manipulation Guard): Completed
 
 ## Performance snapshot
 
@@ -33,7 +34,7 @@ npm run bench -- --quick
 
 ## Next phase priorities
 
-1. v2.1 scope lock: inference depth and contradiction rules in `KernelV2`.
+1. Tune manipulation risk labels and evidence detail from real usage.
 2. Expand evidence quality for multi-hop reasoning.
 3. Optional Rust-vs-JS production threshold decision with real workload data.
 
