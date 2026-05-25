@@ -12,7 +12,7 @@
 
 ## Current verification
 
-- Test suite: `178/178`
+- Test suite: `195/195`
 - Benchmark runner: `npm run bench`
 - Main branch: pushed and synchronized
 
@@ -41,9 +41,10 @@ npm run bench -- --quick
 
 ## Next phase priorities
 
-1. Tune manipulation risk labels and evidence detail from real usage.
-2. Expand evidence quality for multi-hop reasoning.
-3. Optional Rust-vs-JS production threshold decision with real workload data.
+1. Finish the stronger v3 agent loop and tool policy layer.
+2. Harden security and request handling for public-facing usage.
+3. Add operational packaging such as Docker, CI, and backup/restore.
+4. Expand evidence quality for multi-hop reasoning and real workloads.
 
 ## Non-goals for v2 Phase 1
 

@@ -54,5 +54,5 @@ Status: Completed
 ## Next Active Track (v3.0 Agent Workflow)
 
 - Scope: lightweight multi-step agent planner, persistent goal memory, tool selection policy, and execution reports.
-- Candidate areas after this phase: language packs, richer workflow policies, and longer autonomous loops.
+- Candidate areas after this phase: [NEXT_STEPS.md](./NEXT_STEPS.md) for security, packaging, scale, and DX polish.
 - Keep CLI/REST compatibility while extending core behavior.

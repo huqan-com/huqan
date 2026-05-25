@@ -261,7 +261,16 @@ For the current v2 shipping status and next-phase priorities, see [RELEASE_V2.md
 - v2.8 Status Dashboard Polish: done
 - v2.9 Evidence Polish: done
 - v3.0 Agent Workflow: in progress
-- Test status: `178/178`
+- Test status: `195/195`
+
+## Current Remaining Work
+
+The next practical work is captured in [NEXT_STEPS.md](./NEXT_STEPS.md). In short:
+
+- finish the stronger agent loop and policy layer
+- harden security and request handling
+- add basic operational packaging such as Docker and CI
+- keep language packs lightweight and only expand where they create clear user value
 
 ## Benchmark Baseline
 
