@@ -181,4 +181,24 @@ describe('Dream - Node2Vec Gömmeler', () => {
       assert.strictEqual(k.graph._nodes[id].embedding.length, 16);
     }
   });
+
+  it('embedding: simetrik düğümleri aynı vektöre kilitlemez', () => {
+    const { k, d } = fresh();
+    k.learn('Kedi memelidir');
+    k.learn('Köpek memelidir');
+    k.learn('Aslan memelidir');
+    k.learn('Kedi avlanır');
+    k.learn('Köpek havlar');
+    k.learn('Aslan kükrer');
+
+    d.embedding({ walksPerNode: 8, walkLength: 15 });
+
+    const kedi = Array.from(k.graph._nodes['kedi'].embedding);
+    const kopek = Array.from(k.graph._nodes['köpek'].embedding);
+    const aslan = Array.from(k.graph._nodes['aslan'].embedding);
+
+    assert.notDeepStrictEqual(kedi, kopek);
+    assert.notDeepStrictEqual(kopek, aslan);
+    assert.notDeepStrictEqual(kedi, aslan);
+  });
 });

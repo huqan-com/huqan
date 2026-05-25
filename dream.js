@@ -53,12 +53,14 @@ class Dream {
     for (const id of nodes) {
       const ctx = cooc.get(id) || new Map();
       const vec = new Float64Array(dims);
+      const node = this.graph._nodes[id];
       for (let d = 0; d < dims; d++) {
         let sum = 0;
         for (const [contextId, count] of ctx) {
           sum += count * this._projectionWeight(contextId, d, dims);
         }
-        vec[d] = sum;
+        const signature = this._nodeSignatureWeight(node, d, dims);
+        vec[d] = sum + signature * 0.18;
       }
       // L2 normalize
       let mag = 0;
@@ -93,6 +95,28 @@ class Dream {
 
     // [-1, 1] aralığına normalize
     return (h2 / 2147483648) - 1;
+  }
+
+  _nodeSignatureWeight(node, dim, totalDims) {
+    const edges = this.graph.getEdges(node.id);
+    const inEdges = this.graph.getInEdges(node.id);
+    const label = String(node.label || node.id || '');
+    const relationProfile = edges
+      .map(e => `${e.relation}:${e.to}`)
+      .sort()
+      .join('|');
+    const seed = [
+      `id:${node.id}`,
+      `label:${label}`,
+      `deg:${edges.length}`,
+      `indeg:${inEdges.length}`,
+      `rels:${relationProfile}`,
+    ].join('::');
+
+    const idSignal = this._projectionWeight(seed, dim, totalDims);
+    const labelSignal = this._projectionWeight(`label:${label}`, dim, totalDims);
+    const degreeSignal = this._projectionWeight(`degree:${edges.length}:${inEdges.length}`, dim, totalDims);
+    return (idSignal * 0.58) + (labelSignal * 0.27) + (degreeSignal * 0.15);
   }
 
   nodeSimilarity(a, b) {

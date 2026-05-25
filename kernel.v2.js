@@ -1,7 +1,7 @@
 ﻿const Kernel = require('./kernel');
 
-const TYPE_RELATIONS = new Set(['tür', 'tur', 'tÃ¼r']);
-const FACT_RELATIONS = new Set(['özellik', 'ozellik', 'Ã¶zellik', 'yapabilir']);
+const TYPE_RELATIONS = new Set(['tür', 'tur']);
+const FACT_RELATIONS = new Set(['özellik', 'ozellik', 'yapabilir']);
 const OPPOSITE_PREDICATES = new Map();
 const MANIPULATION_RULES = [
   {
