@@ -14,7 +14,7 @@ const {
   sanitizeInput,
 } = require('./requestGuards');
 
-const TEST_STATUS = '209/209';
+const TEST_STATUS = '210/210';
 
 const kernelOpts = {};
 if (process.env.AXIOM_MEMORY_PATH) kernelOpts.memoryPath = process.env.AXIOM_MEMORY_PATH;
