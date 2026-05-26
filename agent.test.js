@@ -211,6 +211,9 @@ describe('Agent', () => {
     assert.ok(runResult.data.report.includes('Durum: blocked'));
     assert.ok(runResult.data.report.includes('Öneri:'));
     assert.ok(runResult.data.report.includes('Araç sağlığı:'));
+    assert.ok(runResult.data.recommendations);
+    assert.ok(runResult.data.nextAction);
+    assert.strictEqual(runResult.data.nextAction.action, 'revise');
   });
 
   it('switches to dream when progress stalls across successful steps', () => {

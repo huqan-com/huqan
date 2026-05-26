@@ -558,6 +558,46 @@ class Agent {
     };
   }
 
+  _suggestNextAction(state) {
+    const lastStep = state.steps[state.steps.length - 1] || null;
+    const blocked = state.status === 'blocked' || lastStep?.status === 'blocked';
+    const stalledCount = Number(state.progress?.stalledCount || 0);
+
+    if (blocked) {
+      return {
+        action: 'revise',
+        tool: 'ask',
+        reason: 'Blocked execution detected; refine the request and use only allowed tools.',
+      };
+    }
+    if (stalledCount >= 2) {
+      return {
+        action: 'reframe',
+        tool: 'dream',
+        reason: 'Progress stalled; reframe the target or add new context.',
+      };
+    }
+    if (state.objective === 'verify') {
+      return {
+        action: 'verify',
+        tool: 'verify',
+        reason: 'Verify objective benefits from a focused follow-up check.',
+      };
+    }
+    if (state.objective === 'reason') {
+      return {
+        action: 'reason',
+        tool: 'reason',
+        reason: 'Reasoning objective should continue with a cause/evidence chain.',
+      };
+    }
+    return {
+      action: 'continue',
+      tool: state.selectedTools?.[0] || 'ask',
+      reason: 'Current flow is healthy; continue with the selected tool mix.',
+    };
+  }
+
   _chooseFollowUp(step, summary, state) {
     if (step.action === 'verify') {
       if (summary.status === 'bilinmiyor') return { action: 'dream', tool: 'dream', input: {} };
@@ -780,6 +820,8 @@ class Agent {
     state.completedSteps = state.steps.length;
     state.remainingSteps = queued.length;
     state.report = this._renderReport(state);
+    state.recommendations = this._buildRunRecommendations(state);
+    state.nextAction = this._suggestNextAction(state);
     state.memory = {
       path: this.memoryPath,
       goals: this.memory.goals.length,
