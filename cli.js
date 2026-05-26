@@ -186,10 +186,18 @@ class CLI {
         }).join('\n');
         const nextAction = data.nextAction ? `${data.nextAction.action} -> ${data.nextAction.tool}` : 'yok';
         const recommendations = Array.isArray(data.recommendations?.items) ? data.recommendations.items : [];
+        const checkpointLine = data.checkpointId
+          ? `Checkpoint: ${data.checkpointId}${data.resumed ? ' (resume)' : ''}`
+          : 'Checkpoint: yok';
+        const budgetLine = typeof data.budgetRemaining === 'number'
+          ? `Kalan bütçe: ${data.budgetRemaining}`
+          : 'Kalan bütçe: bilinmiyor';
         return [
           `🤖 Ajan durumu: ${data.status}`,
           `Hedef: ${data.goal}`,
           `Amaç: ${data.objective}`,
+          checkpointLine,
+          budgetLine,
           `Araçlar: ${(data.selectedTools || []).join(', ') || 'yok'}`,
           `Sonraki adım: ${nextAction}`,
           `Öneriler: ${recommendations.length > 0 ? recommendations.join(' | ') : 'yok'}`,

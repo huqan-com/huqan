@@ -14,7 +14,7 @@ const {
   sanitizeInput,
 } = require('./requestGuards');
 
-const TEST_STATUS = '177/177';
+const TEST_STATUS = '209/209';
 
 const kernelOpts = {};
 if (process.env.AXIOM_MEMORY_PATH) kernelOpts.memoryPath = process.env.AXIOM_MEMORY_PATH;
@@ -175,6 +175,8 @@ function getLastCommit() {
 function getV2StatusData() {
   const stats = cli.kernel.graph.getStats();
   const activeKernel = process.env.AXIOM_KERNEL_VERSION === 'v2' ? 'v2' : 'v1';
+  const agentRuntime = String(process.env.AXIOM_AGENT_VERSION || 'v2').toLowerCase();
+  const checkpointBackend = agentRuntime === 'v3' ? 'sqlite' : 'json';
   const phases = [
     {
       id: 'v2.0',
@@ -335,6 +337,9 @@ function getV2StatusData() {
     phases,
     currentFocus: 'v3.0 Agent Workflow',
     nextAction: 'Use the planner to run goal-driven multi-step tasks, persist the goal history, and report each tool decision clearly.',
+    agentRuntime,
+    checkpointBackend,
+    agentCheckpointPath: agentRuntime === 'v3' ? (process.env.AXIOM_DB_PATH || 'memory.db') : 'agent.memory.json',
   };
 }
 

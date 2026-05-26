@@ -322,7 +322,7 @@ describe('Server - API', () => {
     assert.strictEqual(typeof j.currentFocus, 'string');
     assert.strictEqual(j.currentFocus, 'v3.0 Agent Workflow');
     assert.strictEqual(j.activeKernel, 'v2');
-    assert.strictEqual(j.testStatus, '177/177');
+    assert.strictEqual(j.testStatus, '209/209');
     assert.ok(['sqlite', 'json'].includes(j.backend));
     assert.ok(Number.isInteger(j.nodes));
     assert.ok(Number.isInteger(j.edges));
