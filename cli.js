@@ -180,6 +180,9 @@ class CLI {
       case 'ajan': {
         const result = this.agent.run(args);
         const data = result.data;
+        const agentStatus = typeof this.agent.getStatus === 'function' ? this.agent.getStatus() : null;
+        const lastPlan = agentStatus && agentStatus.lastPlan ? agentStatus.lastPlan : null;
+        const lastRun = agentStatus && agentStatus.lastRun ? agentStatus.lastRun : null;
         const steps = (data.steps || []).map((step, index) => {
           const status = step.result?.ok === false ? 'hata' : 'tamam';
           return `  ${index + 1}. ${step.action} -> ${status}${step.summary ? ` | ${step.summary}` : ''}`;
@@ -198,6 +201,8 @@ class CLI {
           `Amaç: ${data.objective}`,
           checkpointLine,
           budgetLine,
+          lastPlan ? `Son plan: ${lastPlan.goal} (${lastPlan.steps} adım)` : 'Son plan: yok',
+          lastRun ? `Son çalışma: ${lastRun.status} · ${lastRun.goal}` : 'Son çalışma: yok',
           `Araçlar: ${(data.selectedTools || []).join(', ') || 'yok'}`,
           `Sonraki adım: ${nextAction}`,
           `Öneriler: ${recommendations.length > 0 ? recommendations.join(' | ') : 'yok'}`,

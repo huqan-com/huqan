@@ -570,10 +570,16 @@ function renderStatus(d) {
   const phases = document.getElementById('status-phases');
   if (!dashboard || !phases) return;
 
+  const agentV3 = d.agentV3Status || null;
+  const lastPlan = agentV3 && agentV3.lastPlan ? agentV3.lastPlan : null;
+  const lastRun = agentV3 && agentV3.lastRun ? agentV3.lastRun : null;
+
   dashboard.innerHTML =
     '<div class="metric"><div class="label">Sürüm</div><div class="value">' + escapeHtml(d.version || '?') + '</div><div class="sub">Contract: ' + escapeHtml(d.contractVersion || '?') + '</div></div>' +
     '<div class="metric"><div class="label">Kernel</div><div class="value">' + escapeHtml(d.activeKernel || '?') + '</div><div class="sub">Backend: ' + escapeHtml(d.backend || '?') + ' · ' + d.nodes + ' node / ' + d.edges + ' edge</div></div>' +
-    (d.agentV3Status ? '<div class="metric"><div class="label">Agent V3</div><div class="value">' + d.agentV3Status.goals + ' hedef</div><div class="sub">' + d.agentV3Status.runs + ' çalışma · ' + d.agentV3Status.checkpoints + ' kontrol noktası</div></div>' : '') +
+    (agentV3 ? '<div class="metric"><div class="label">Agent V3</div><div class="value">' + agentV3.goals + ' hedef</div><div class="sub">' + agentV3.runs + ' çalışma · ' + agentV3.checkpoints + ' kontrol noktası</div></div>' : '') +
+    (lastPlan ? '<div class="metric"><div class="label">Son Plan</div><div class="value">' + escapeHtml(lastPlan.goal || '?') + '</div><div class="sub">' + escapeHtml(String(lastPlan.steps || 0)) + ' adım</div></div>' : '') +
+    (lastRun ? '<div class="metric"><div class="label">Son Çalışma</div><div class="value">' + escapeHtml(lastRun.status || '?') + '</div><div class="sub">' + escapeHtml(lastRun.goal || '?') + ' · ' + escapeHtml(String(lastRun.completedSteps || 0)) + ' adım</div></div>' : '') +
     '<div class="metric"><div class="label">Test</div><div class="value">' + escapeHtml(d.testStatus || '?') + '</div><div class="sub">Son commit: ' + escapeHtml(d.lastCommit || '?') + '</div></div>' +
     '<div class="metric"><div class="label">Fazlar</div><div class="value">' + d.counts.total + '</div><div class="sub">' + d.counts.done + ' tamam, ' + d.counts.in_progress + ' aktif, ' + d.counts.pending + ' bekliyor</div></div>' +
     '<div class="metric"><div class="label">İlerleme</div><div class="value">' + escapeHtml(String(d.progressPercent || 0)) + '%</div><div class="sub">' +

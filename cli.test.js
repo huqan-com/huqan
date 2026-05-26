@@ -198,5 +198,7 @@ describe('CLI - Komut Çalıştırma', () => {
     const result = cli.execute('ajan', 'kedi hayvandir mi');
     assert.ok(result.includes('Checkpoint'));
     assert.ok(result.includes('Kalan bütçe'));
+    assert.ok(result.includes('Son plan'));
+    assert.ok(result.includes('Son çalışma'));
   });
 });
