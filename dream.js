@@ -292,8 +292,8 @@ class Dream {
 
         const sim = this.graph.cosineSimilarity(a.id, b.id);
         if (sim > 0.5) {
-          const hasEdge = this.graph.getEdge(a.id, b.id)
-                       || this.graph.getEdge(b.id, a.id);
+          const hasEdge = this.graph.hasAnyEdge(a.id, b.id)
+                       || this.graph.hasAnyEdge(b.id, a.id);
           if (!hasEdge) {
             hypotheses.push({
               type: 'vektör-benzerlik',
@@ -375,7 +375,7 @@ class Dream {
       for (const edge of edges) {
         if (added >= 50) break;
         const reverse    = this.graph.getEdge(edge.to, node.id, edge.relation);
-        const reverseAny = this.graph.getEdge(edge.to, node.id);
+        const reverseAny = this.graph.hasAnyEdge(edge.to, node.id);
         if (!reverse && !reverseAny) {
           hypotheses.push({
             type: 'simetri',

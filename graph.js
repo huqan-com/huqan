@@ -237,6 +237,15 @@ class Graph {
     return null;
   }
 
+  getEdgesBetween(fromId, toId) {
+    const out = this._outIndex.get(fromId) || [];
+    return out.filter(e => e.to === toId);
+  }
+
+  hasAnyEdge(fromId, toId) {
+    return this.getEdgesBetween(fromId, toId).length > 0;
+  }
+
   getEdges(nodeId) {
     return this._outIndex.get(nodeId) || [];
   }

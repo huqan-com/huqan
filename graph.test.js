@@ -61,6 +61,42 @@ describe('Graph - Kenar Yönetimi', () => {
     g = new Graph({ useSQLite: false });
     assert.strictEqual(g.getEdge('x', 'y', 'z'), null);
   });
+
+  it('getEdgesBetween: iki düğüm arasındaki tüm kenarları döndürür', () => {
+    g = new Graph({ useSQLite: false });
+    g.addNode('a', 'x'); g.addNode('b', 'y');
+    g.addEdge('a', 'b', 'tür');
+    g.addEdge('a', 'b', 'benzer');
+    const edges = g.getEdgesBetween('a', 'b');
+    assert.strictEqual(edges.length, 2);
+  });
+
+  it('getEdgesBetween: kenar yoksa boş dizi döner', () => {
+    g = new Graph({ useSQLite: false });
+    g.addNode('a', 'x'); g.addNode('b', 'y');
+    assert.deepStrictEqual(g.getEdgesBetween('a', 'b'), []);
+  });
+
+  it('hasAnyEdge: iki düğüm arasında en az bir kenar varsa true', () => {
+    g = new Graph({ useSQLite: false });
+    g.addNode('a', 'x'); g.addNode('b', 'y');
+    g.addEdge('a', 'b', 'tür');
+    assert.strictEqual(g.hasAnyEdge('a', 'b'), true);
+  });
+
+  it('hasAnyEdge: kenar yoksa false', () => {
+    g = new Graph({ useSQLite: false });
+    g.addNode('a', 'x'); g.addNode('b', 'y');
+    assert.strictEqual(g.hasAnyEdge('a', 'b'), false);
+  });
+
+  it('hasAnyEdge: relation bilinmezken edge var mı kontrolü (regresyon: P0 bug fix)', () => {
+    g = new Graph({ useSQLite: false });
+    g.addNode('a', 'x'); g.addNode('b', 'y');
+    g.addEdge('a', 'b', 'tür');
+    assert.strictEqual(g.hasAnyEdge('a', 'b'), true);
+    assert.strictEqual(g.hasAnyEdge('b', 'a'), false);
+  });
 });
 
 describe('Graph - Sorgu', () => {
