@@ -21,6 +21,17 @@ const AXIOM_ERROR = Object.freeze({
 });
 
 const CONTRACT_VERSION = '1.0.0';
+const DEFAULT_CAPABILITIES = Object.freeze({
+  graph: true,
+  temporal: false,
+  pluginCapabilities: false,
+  llm: true,
+  contradictionDetection: true,
+  evidenceRanking: false,
+  agentApi: false,
+  companyMode: false,
+  discoveryLoop: false,
+});
 
 class Kernel {
   /**
@@ -42,6 +53,7 @@ class Kernel {
     this.contractVersion = CONTRACT_VERSION;
     this.lang = opts.lang || process.env.AXIOM_LANG || 'tr';
     this.nlp = createNlp(this.lang);
+    this.capabilities = { ...DEFAULT_CAPABILITIES, ...(opts.capabilities || {}) };
     this._rust = hasRust ? new RustGraph() : null;
     this.plugins = new PluginManager(this);
     if (opts.loadPlugins !== false) {
@@ -49,6 +61,24 @@ class Kernel {
       if (fs.existsSync(pDir)) this.plugins.load(pDir);
     }
     this._verifyService = new VerifyService(this);
+  }
+
+  hasCapability(name) {
+    return Boolean(this.capabilities && this.capabilities[name] === true);
+  }
+
+  enableCapability(name) {
+    if (!name) return false;
+    this.capabilities[name] = true;
+    return true;
+  }
+
+  requireCapability(name) {
+    if (this.hasCapability(name)) return true;
+    const error = new Error(`Required capability is not enabled: ${name}`);
+    error.code = 'CAPABILITY_REQUIRED';
+    error.capability = name;
+    throw error;
   }
 
   normalizeWord(word) {

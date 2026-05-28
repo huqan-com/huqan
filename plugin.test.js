@@ -205,4 +205,59 @@ describe('Plugin - Yonetici', () => {
       try { fs.unlinkSync(manifestPath); } catch {}
     }
   });
+
+  it('register: blocks plugins with missing required capabilities', () => {
+    const k = new Kernel({ noLoad: true, loadPlugins: false });
+    assert.throws(() => {
+      k.usePlugin({
+        name: 'needsTemporal',
+        requires: ['temporal'],
+      });
+    }, /requires missing capability: temporal/);
+  });
+
+  it('register: accepts plugins when required capabilities are enabled', () => {
+    const k = new Kernel({ noLoad: true, loadPlugins: false });
+    k.enableCapability('temporal');
+    k.usePlugin({
+      name: 'temporalOk',
+      requires: ['temporal'],
+    });
+    assert.ok(k.plugins.plugins.some(plugin => plugin.name === 'temporalOk'));
+  });
+
+  it('listCapabilities/getCapability/runCapability: exposes plugin capability runner', async () => {
+    const k = new Kernel({ noLoad: true, loadPlugins: false });
+    k.enableCapability('pluginCapabilities');
+    k.usePlugin({
+      name: 'ideaMriMock',
+      requires: [],
+      optional: ['llm'],
+      capabilities: [
+        {
+          name: 'ideaMri',
+          command: 'mri',
+          description: 'Idea MRI mock',
+        },
+      ],
+      async run(kernel, input, opts = {}) {
+        return {
+          ok: true,
+          input,
+          capability: opts.capability?.name,
+        };
+      },
+    });
+
+    const listed = k.plugins.listCapabilities();
+    assert.strictEqual(listed.length, 1);
+    assert.strictEqual(listed[0].plugin, 'ideaMriMock');
+    assert.strictEqual(k.plugins.getCapability('ideaMri').command, 'mri');
+    assert.strictEqual(k.plugins.getCapability('mri').name, 'ideaMri');
+
+    const result = await k.plugins.runCapability('ideaMri', { text: 'foo' });
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.capability, 'ideaMri');
+    assert.deepStrictEqual(result.input, { text: 'foo' });
+  });
 });

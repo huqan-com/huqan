@@ -311,3 +311,29 @@ describe('Kernel - Core API Contract', () => {
     assert.strictEqual(Kernel.AXIOM_ERROR.LLM_DISABLED, 'LLM_DISABLED');
   });
 });
+
+describe('Kernel - Capability System', () => {
+  it('defaults expose the planned core capability set', () => {
+    const k = freshKernel();
+    assert.strictEqual(k.hasCapability('graph'), true);
+    assert.strictEqual(k.hasCapability('llm'), true);
+    assert.strictEqual(k.hasCapability('contradictionDetection'), true);
+    assert.strictEqual(k.hasCapability('temporal'), false);
+    assert.strictEqual(k.hasCapability('pluginCapabilities'), false);
+    assert.strictEqual(k.hasCapability('evidenceRanking'), false);
+  });
+
+  it('enableCapability: toggles a capability on', () => {
+    const k = freshKernel();
+    assert.strictEqual(k.hasCapability('temporal'), false);
+    assert.strictEqual(k.enableCapability('temporal'), true);
+    assert.strictEqual(k.hasCapability('temporal'), true);
+  });
+
+  it('requireCapability: throws for missing capabilities', () => {
+    const k = freshKernel();
+    assert.throws(() => k.requireCapability('temporal'), /Required capability is not enabled: temporal/);
+    k.enableCapability('temporal');
+    assert.strictEqual(k.requireCapability('temporal'), true);
+  });
+});

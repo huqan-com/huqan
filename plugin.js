@@ -150,6 +150,10 @@ class PluginManager {
 
   register(plugin) {
     if (!plugin || !plugin.name) return;
+    const dependencyCheck = this._validatePluginDependencies(plugin);
+    if (!dependencyCheck.ok) {
+      throw new Error(dependencyCheck.reason);
+    }
     this.plugins.push(plugin);
     if (typeof plugin.init === 'function') {
       plugin.init(this.kernel, this);
@@ -170,6 +174,49 @@ class PluginManager {
       }
     }
     return data;
+  }
+
+  _validatePluginDependencies(plugin) {
+    const required = Array.isArray(plugin.requires) ? plugin.requires : [];
+    for (const capability of required) {
+      if (!this.kernel || typeof this.kernel.hasCapability !== 'function' || !this.kernel.hasCapability(capability)) {
+        return {
+          ok: false,
+          reason: `Plugin "${plugin.name}" requires missing capability: ${capability}`,
+        };
+      }
+    }
+    return { ok: true };
+  }
+
+  listCapabilities() {
+    return this.plugins.flatMap(plugin => {
+      const capabilities = Array.isArray(plugin.capabilities) ? plugin.capabilities : [];
+      return capabilities.map(capability => ({
+        plugin: plugin.name,
+        ...capability,
+      }));
+    });
+  }
+
+  getCapability(name) {
+    if (!name) return null;
+    return this.listCapabilities().find(capability => capability.name === name || capability.command === name) || null;
+  }
+
+  async runCapability(name, input, opts = {}) {
+    const capability = this.getCapability(name);
+    if (!capability) {
+      throw new Error(`Unknown plugin capability: ${name}`);
+    }
+    const plugin = this.plugins.find(item => item.name === capability.plugin);
+    if (!plugin || typeof plugin.run !== 'function') {
+      throw new Error(`Plugin "${capability.plugin}" cannot run capability: ${name}`);
+    }
+    return plugin.run(this.kernel, input, {
+      ...opts,
+      capability,
+    });
   }
 }
 
