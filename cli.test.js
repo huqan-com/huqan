@@ -8,9 +8,9 @@ const Kernel = require('./kernel');
 const KernelV2 = require('./kernel.v2');
 const Dream = require('./dream');
 
-function freshCLI() {
+function freshCLI(kernelOpts = {}) {
   const cli = new CLI();
-  cli.kernel = new Kernel({ noLoad: true });
+  cli.kernel = new Kernel({ noLoad: true, ...kernelOpts });
   cli.dream = new Dream(cli.kernel);
   return cli;
 }
@@ -130,6 +130,13 @@ describe('CLI - Komut Çalıştırma', () => {
     assert.strictEqual(result.args, 'bilgi.txt');
   });
 
+  it('parse: backup ve restore komutlarini tanir', () => {
+    const cli = freshCLI();
+    assert.strictEqual(cli.parse('backup').command, 'backup');
+    assert.strictEqual(cli.parse('restore').command, 'restore');
+    assert.strictEqual(cli.parse('restore: ./backups/last').args, './backups/last');
+  });
+
   it('execute: "yükle:" dosyadan öğrenir', () => {
     const tmp = path.join(os.tmpdir(), 'axiom-test-' + Date.now() + '.txt');
     fs.writeFileSync(tmp, 'kedi balık yer\nköpek kemik sever\nkuş uçar', 'utf-8');
@@ -144,6 +151,25 @@ describe('CLI - Komut Çalıştırma', () => {
     const cli = freshCLI();
     const result = cli.execute('yükle', 'yok.txt');
     assert.ok(result.includes('Dosya okunamadı'));
+  });
+
+  it('execute: backup ve restore komutlari memory dosyasini geri yukler', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'axiom-cli-backup-'));
+    const memoryPath = path.join(tmpDir, 'memory.json');
+    const dbPath = path.join(tmpDir, 'memory.db');
+    fs.writeFileSync(memoryPath, JSON.stringify({ nodes: {}, edges: [] }), 'utf8');
+    fs.writeFileSync(dbPath, 'db-v1', 'utf8');
+
+    const cli = freshCLI({ memoryPath, dbPath, useSQLite: false });
+    const backupResult = cli.execute('backup', '');
+    assert.ok(backupResult.includes('Backup tamamlandi'));
+
+    fs.writeFileSync(memoryPath, JSON.stringify({ nodes: { bozuldu: true }, edges: [] }), 'utf8');
+    const restoreResult = cli.execute('restore', '');
+    assert.ok(restoreResult.includes('Restore tamamlandi'));
+
+    const restored = JSON.parse(fs.readFileSync(memoryPath, 'utf8'));
+    assert.deepStrictEqual(restored, { nodes: {}, edges: [] });
   });
 
   it('execute: "llm-sor:" AXIOM cevabı döndürür', () => {

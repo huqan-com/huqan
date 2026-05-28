@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "description": "Deterministic symbolic AI reasoning engine — verifies LLM outputs, detects contradictions, learns from natural language. Zero external LLM/GPU/cloud dependencies.",
   "main": "kernel.js",
+  "types": "kernel.d.ts",
   "bin": {
     "axiom": "./cli.js"
   },
@@ -10,6 +11,8 @@
     "start": "node cli.js",
     "server": "node server.js",
     "mcp": "node mcpServer.js",
+    "backup": "node scripts/backup.js",
+    "restore": "node scripts/restore.js",
     "bench": "node benchmarks/bench.js",
     "bench:verify": "node benchmarks/verifBench.js",
     "train": "node egitim.js",
@@ -20,6 +23,7 @@
     "test:cli": "node --test cli.test.js",
     "test:dream": "node --test dream.test.js",
     "test:plugin": "node --test plugin.test.js",
+    "test:backup": "node --test backupRestore.test.js",
     "test:rust": "node --test rustGraph.test.js",
     "test:server": "node --test server.test.js"
   },

@@ -6,6 +6,12 @@ function resolveAgentVersion(opts = {}) {
   return String(opts.version || process.env.AXIOM_AGENT_VERSION || 'v2').toLowerCase();
 }
 
+/**
+ * Creates the requested agent runtime and wires optional persistent storage.
+ *
+ * @param {object} [opts]
+ * @returns {Agent|AgentV3}
+ */
 function createAgent(opts = {}) {
   const version = resolveAgentVersion(opts);
   const storage = opts.storage || (() => {
