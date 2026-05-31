@@ -16,6 +16,10 @@ function dedupe(items) {
   return [...new Set((items || []).filter(Boolean))];
 }
 
+function withSource(items, source) {
+  return dedupe(items).map(text => ({ text, source }));
+}
+
 function createIdeaMriPlugin() {
   return {
     name: 'idea-mri',
@@ -34,23 +38,24 @@ function createIdeaMriPlugin() {
       const text = normalizeInput(input);
       const sentences = splitSentences(text);
       const facts = typeof kernel.extractFacts === 'function' ? kernel.extractFacts(text, kernel.graph?._nodes) || [] : [];
+      const baseSource = facts.length > 0 ? 'graph' : 'parsed';
       const mainClaim = sentences[0] || text || '';
-      const claims = dedupe(sentences.length ? sentences : facts.map(fact => `${fact.subject} ${fact.predicate}`));
-      const assumptions = dedupe(facts.map(fact => `${fact.subject} ile ilgili iddia icin dayanak gerekli: ${fact.predicate}`));
-      const risks = dedupe([
+      const claims = withSource(sentences.length ? sentences : facts.map(fact => `${fact.subject} ${fact.predicate}`), baseSource);
+      const assumptions = withSource(facts.map(fact => `${fact.subject} ile ilgili iddia icin dayanak gerekli: ${fact.predicate}`), baseSource);
+      const risks = withSource([
         claims.length <= 1 ? 'Tek iddiaya dayaniyor; alternatif senaryo eksik.' : '',
         text.length < 40 ? 'Fikir kisa; baglam ve sinirlar net degil.' : '',
         assumptions.length > 0 ? 'Varsayimlar acik kanit ile baglanmamis.' : '',
-      ]);
-      const evidenceGaps = dedupe([
+      ], baseSource);
+      const missingEvidence = withSource([
         facts.length === 0 ? 'Sembolik olarak cikarilabilen net bir olgu bulunamadi.' : '',
         'Basari metri gi ve red kriteri yazilmamis.',
         'Kaynak veya deney referansi eksik.',
-      ]);
-      const strengths = dedupe([
+      ], baseSource);
+      const strengths = withSource([
         facts.length > 0 ? 'Fikir sembolik olgulara ayrilabiliyor.' : '',
         claims.length > 1 ? 'Birden fazla alt iddia iceriyor.' : 'Tek odakli bir iddia sunuyor.',
-      ]);
+      ], baseSource);
 
       return {
         ok: true,
@@ -62,7 +67,8 @@ function createIdeaMriPlugin() {
           claims,
           assumptions,
           risks,
-          evidenceGaps,
+          missingEvidence,
+          evidenceGaps: missingEvidence,
           strengths,
         },
       };

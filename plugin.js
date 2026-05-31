@@ -154,6 +154,12 @@ class PluginManager {
     if (!dependencyCheck.ok) {
       throw new Error(dependencyCheck.reason);
     }
+    const optional = Array.isArray(plugin.optional) ? plugin.optional : [];
+    for (const capability of optional) {
+      if (!this.kernel || typeof this.kernel.hasCapability !== 'function' || !this.kernel.hasCapability(capability)) {
+        console.warn(`[Plugin] ${plugin.name}: optional capability disabled: ${capability}`);
+      }
+    }
     this.plugins.push(plugin);
     if (typeof plugin.init === 'function') {
       plugin.init(this.kernel, this);

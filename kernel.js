@@ -68,8 +68,21 @@ class Kernel {
   }
 
   enableCapability(name) {
-    if (!name) return false;
+    if (!name || !(name in DEFAULT_CAPABILITIES)) {
+      const error = new Error(`Unknown capability: ${name}`);
+      error.code = 'CAPABILITY_UNKNOWN';
+      error.capability = name;
+      throw error;
+    }
     this.capabilities[name] = true;
+    if (
+      this.plugins &&
+      typeof this.plugins.emit === 'function' &&
+      this.plugins._handlers &&
+      Array.isArray(this.plugins._handlers['capability:enabled'])
+    ) {
+      this.plugins.emit('capability:enabled', { name });
+    }
     return true;
   }
 
@@ -99,6 +112,24 @@ class Kernel {
 
   usePlugin(plugin) {
     this.plugins.register(plugin);
+  }
+
+  listCapabilities() {
+    if (!this.plugins || typeof this.plugins.listCapabilities !== 'function') return [];
+    return this.plugins.listCapabilities();
+  }
+
+  getCapability(name) {
+    if (!this.plugins || typeof this.plugins.getCapability !== 'function') return null;
+    return this.plugins.getCapability(name);
+  }
+
+  async runCapability(name, input, opts = {}) {
+    this.requireCapability('pluginCapabilities');
+    if (!this.plugins || typeof this.plugins.runCapability !== 'function') {
+      throw new Error('Plugin manager is unavailable.');
+    }
+    return this.plugins.runCapability(name, input, opts);
   }
 
   _ok(type, data = null, evidence = [], meta = {}) {
@@ -328,11 +359,11 @@ class Kernel {
     this.plugins.emit('afterLearn', { text, conflicts, alternatives });
 
     if (this._rust) {
-      this._rust.learn(text).catch(() => {});
+      this._rust.learn(text).catch((e) => { console.error("[Kernel] Rust learn hatası:", e?.message || e); });
     }
 
     if (learned > 0) {
-      try { this.graph.save(); } catch (_) {}
+      try { this.graph.save(); } catch (e) { console.error("[Kernel] Graph save hatası:", e.message); }
       if (typeof setImmediate !== 'undefined') setImmediate(() => this._autoMaintain());
     }
 
@@ -1283,7 +1314,7 @@ if (verbSuffix.test(predicate)) {
     if (!dryRun && removed.length > 0) {
       this.graph._edges = edges.filter((_, i) => !marked.has(i));
       this.graph._rebuildIndex();
-      try { this.graph.save(); } catch (_) {}
+      try { this.graph.save(); } catch (e) { console.error("[Kernel] Graph save hatası:", e.message); }
     }
 
     return {
@@ -1330,7 +1361,7 @@ if (verbSuffix.test(predicate)) {
     const opt = this.graph.optimize();
 
     if (added.length > 0 || cons.removed > 0) {
-      try { this.graph.save(); } catch (_) {}
+      try { this.graph.save(); } catch (e) { console.error("[Kernel] Graph save hatası:", e.message); }
     }
 
     this._dreamCount = (this._dreamCount || 0) + 1;

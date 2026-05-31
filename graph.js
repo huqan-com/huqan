@@ -5,6 +5,10 @@ const path = require('path');
 let Database;
 try { Database = require('better-sqlite3'); } catch (_) { Database = null; }
 
+function nowIso() {
+  return new Date().toISOString();
+}
+
 class Graph {
   /**
    * @param {object|string} [opts]
@@ -29,6 +33,7 @@ class Graph {
     // SQLite kurulumu
     const wantSQLite = opts.useSQLite !== false && Database !== null;
     this._db = null;
+    this._stmts = null; // SQLite statement güvenliği için null init
     if (wantSQLite) {
       const dbPath = opts.dbPath || this.memoryPath.replace(/\.json$/, '.db');
       try {
@@ -37,6 +42,7 @@ class Graph {
       } catch (e) {
         console.error('[Graph] SQLite başlatılamadı, JSON fallback:', e.message);
         this._db = null;
+        this._stmts = null; // Hata durumunda da null yap
       }
     }
   }
@@ -52,7 +58,9 @@ class Graph {
         label TEXT NOT NULL,
         weight REAL NOT NULL DEFAULT 0.5,
         created INTEGER NOT NULL,
+        created_at TEXT NOT NULL DEFAULT '',
         last_accessed INTEGER NOT NULL,
+        last_seen TEXT NOT NULL DEFAULT '',
         vector TEXT NOT NULL DEFAULT '{}'
       );
       CREATE TABLE IF NOT EXISTS edges (
@@ -63,7 +71,12 @@ class Graph {
         weight REAL NOT NULL DEFAULT 0.5,
         confidence REAL NOT NULL DEFAULT 0.5,
         source TEXT NOT NULL DEFAULT 'manual',
+        source_ref TEXT NOT NULL DEFAULT '',
+        session_id TEXT NOT NULL DEFAULT '',
         evidence TEXT NOT NULL DEFAULT '[]',
+        confidence_history TEXT NOT NULL DEFAULT '[]',
+        updated_at TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL DEFAULT '',
         created INTEGER NOT NULL,
         UNIQUE(from_id, to_id, relation)
       );
@@ -72,32 +85,45 @@ class Graph {
     `);
 
     const edgeColumns = this._db.prepare('PRAGMA table_info(edges)').all().map(c => c.name);
+    const nodeColumns = this._db.prepare('PRAGMA table_info(nodes)').all().map(c => c.name);
+    if (!nodeColumns.includes('created_at')) this._db.exec("ALTER TABLE nodes ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
+    if (!nodeColumns.includes('last_seen')) this._db.exec("ALTER TABLE nodes ADD COLUMN last_seen TEXT NOT NULL DEFAULT ''");
     if (!edgeColumns.includes('confidence')) this._db.exec('ALTER TABLE edges ADD COLUMN confidence REAL NOT NULL DEFAULT 0.5');
     if (!edgeColumns.includes('source')) this._db.exec("ALTER TABLE edges ADD COLUMN source TEXT NOT NULL DEFAULT 'manual'");
+    if (!edgeColumns.includes('source_ref')) this._db.exec("ALTER TABLE edges ADD COLUMN source_ref TEXT NOT NULL DEFAULT ''");
+    if (!edgeColumns.includes('session_id')) this._db.exec("ALTER TABLE edges ADD COLUMN session_id TEXT NOT NULL DEFAULT ''");
     if (!edgeColumns.includes('evidence')) this._db.exec("ALTER TABLE edges ADD COLUMN evidence TEXT NOT NULL DEFAULT '[]'");
+    if (!edgeColumns.includes('confidence_history')) this._db.exec("ALTER TABLE edges ADD COLUMN confidence_history TEXT NOT NULL DEFAULT '[]'");
+    if (!edgeColumns.includes('updated_at')) this._db.exec("ALTER TABLE edges ADD COLUMN updated_at TEXT NOT NULL DEFAULT ''");
+    if (!edgeColumns.includes('created_at')) this._db.exec("ALTER TABLE edges ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
 
     // Prepared statements
     this._stmts = {
       upsertNode: this._db.prepare(`
-        INSERT INTO nodes (id, label, weight, created, last_accessed, vector)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO nodes (id, label, weight, created, created_at, last_accessed, last_seen, vector)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           label = excluded.label,
           weight = MIN(1.0, weight + 0.1),
-          last_accessed = excluded.last_accessed
+          last_accessed = excluded.last_accessed,
+          last_seen = excluded.last_seen
       `),
       getNode: this._db.prepare('SELECT * FROM nodes WHERE id = ?'),
       deleteNode: this._db.prepare('DELETE FROM nodes WHERE id = ?'),
       deleteEdgesOf: this._db.prepare('DELETE FROM edges WHERE from_id = ? OR to_id = ?'),
       touchNode: this._db.prepare('UPDATE nodes SET last_accessed = ? WHERE id = ?'),
       upsertEdge: this._db.prepare(`
-        INSERT INTO edges (from_id, to_id, relation, weight, confidence, source, evidence, created)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO edges (from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, confidence_history, updated_at, created_at, created)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(from_id, to_id, relation) DO UPDATE SET
           weight = excluded.weight,
           confidence = excluded.confidence,
           source = excluded.source,
-          evidence = excluded.evidence
+          source_ref = excluded.source_ref,
+          session_id = excluded.session_id,
+          evidence = excluded.evidence,
+          confidence_history = excluded.confidence_history,
+          updated_at = excluded.updated_at
       `),
       getEdge: this._db.prepare('SELECT * FROM edges WHERE from_id = ? AND to_id = ? AND relation = ?'),
       getEdges: this._db.prepare('SELECT * FROM edges WHERE from_id = ?'),
@@ -107,7 +133,7 @@ class Graph {
       countEdges: this._db.prepare('SELECT COUNT(*) as c FROM edges'),
       allNodes: this._db.prepare('SELECT * FROM nodes'),
       allEdges: this._db.prepare('SELECT * FROM edges'),
-      updateEdgeWeight: this._db.prepare('UPDATE edges SET weight = ?, confidence = ?, source = ?, evidence = ? WHERE from_id = ? AND to_id = ? AND relation = ?'),
+      updateEdgeWeight: this._db.prepare('UPDATE edges SET weight = ?, confidence = ?, source = ?, source_ref = ?, session_id = ?, evidence = ?, confidence_history = ?, updated_at = ? WHERE from_id = ? AND to_id = ? AND relation = ?'),
       updateNodeVector: this._db.prepare('UPDATE nodes SET vector = ? WHERE id = ?'),
     };
   }
@@ -116,26 +142,40 @@ class Graph {
 
   addNode(id, label) {
     const now = Date.now();
-    if (this._db) {
+    const isoNow = nowIso();
+    if (this._db && this._stmts) {
       // SQLite path
       const existing = this._stmts.getNode.get(id);
       const vector = existing ? existing.vector : '{}';
-      this._stmts.upsertNode.run(id, label, 0.5, now, now, vector);
+      const createdAt = existing && existing.created_at ? existing.created_at : isoNow;
+      this._stmts.upsertNode.run(id, label, 0.5, now, createdAt, now, isoNow, vector);
       // In-memory sync
       if (this._nodes[id]) {
         this._nodes[id].label = label;
         this._nodes[id].weight = Math.min(1, this._nodes[id].weight + 0.1);
         this._nodes[id].lastAccessed = now;
+        this._nodes[id].lastSeen = isoNow;
+        this._nodes[id].last_seen = isoNow;
       } else {
-        this._nodes[id] = { id, label, tags: [], vector: {}, weight: 0.5, created: now, lastAccessed: now };
+        this._nodes[id] = {
+          id, label, tags: [], vector: {}, weight: 0.5,
+          created: now, created_at: createdAt, lastAccessed: now,
+          lastSeen: isoNow, last_seen: isoNow,
+        };
       }
     } else {
       if (this._nodes[id]) {
         this._nodes[id].label = label;
         this._nodes[id].weight = Math.min(1, this._nodes[id].weight + 0.1);
         this._nodes[id].lastAccessed = now;
+        this._nodes[id].lastSeen = isoNow;
+        this._nodes[id].last_seen = isoNow;
       } else {
-        this._nodes[id] = { id, label, tags: [], vector: {}, weight: 0.5, created: now, lastAccessed: now };
+        this._nodes[id] = {
+          id, label, tags: [], vector: {}, weight: 0.5,
+          created: now, created_at: isoNow, lastAccessed: now,
+          lastSeen: isoNow, last_seen: isoNow,
+        };
       }
     }
     return this._nodes[id];
@@ -144,7 +184,7 @@ class Graph {
   getNode(id) {
     if (!this._nodes[id]) return null;
     this._nodes[id].lastAccessed = Date.now();
-    if (this._db) {
+    if (this._db && this._stmts) {
       this._stmts.touchNode.run(Date.now(), id);
     }
     return this._nodes[id];
@@ -155,7 +195,7 @@ class Graph {
     delete this._nodes[id];
     this._edges = this._edges.filter(e => e.from !== id && e.to !== id);
     this._rebuildIndex();
-    if (this._db) {
+    if (this._db && this._stmts) {
       this._stmts.deleteEdgesOf.run(id, id);
       this._stmts.deleteNode.run(id);
     }
@@ -182,18 +222,31 @@ class Graph {
   addEdge(fromId, toId, relation, opts = {}) {
     if (!this._nodes[fromId] || !this._nodes[toId]) return null;
     const existing = this.getEdge(fromId, toId, relation);
+    const isoNow = nowIso();
     const nextEvidence = Array.isArray(opts.evidence) ? opts.evidence : [];
     if (existing) {
+      const oldConfidence = existing.confidence ?? existing.weight ?? 0.5;
       existing.weight = Math.min(1, opts.weight ?? existing.weight + 0.1);
       existing.confidence = Math.max(existing.confidence ?? existing.weight, opts.confidence ?? existing.confidence ?? existing.weight);
       if (opts.source) existing.source = opts.source;
+      if (typeof opts.sourceRef === 'string') existing.source_ref = opts.sourceRef;
+      if (typeof opts.sessionId === 'string') existing.session_id = opts.sessionId;
       existing.evidence = [...new Set([...(existing.evidence || []), ...nextEvidence])];
-      if (this._db) {
+      existing.updated_at = isoNow;
+      if (!Array.isArray(existing.confidence_history)) existing.confidence_history = [];
+      if (existing.confidence !== oldConfidence) {
+        existing.confidence_history.push({ value: oldConfidence, updated_at: isoNow });
+      }
+      if (this._db && this._stmts) {
         this._stmts.updateEdgeWeight.run(
           existing.weight,
           existing.confidence,
           existing.source || 'manual',
+          existing.source_ref || '',
+          existing.session_id || '',
           JSON.stringify(existing.evidence || []),
+          JSON.stringify(existing.confidence_history || []),
+          existing.updated_at || isoNow,
           fromId,
           toId,
           relation
@@ -208,12 +261,17 @@ class Graph {
       weight: opts.weight ?? 0.5,
       confidence: opts.confidence ?? opts.weight ?? 0.5,
       source: opts.source || 'manual',
+      source_ref: opts.sourceRef || '',
+      session_id: opts.sessionId || '',
       evidence: nextEvidence,
+      confidence_history: [],
+      updated_at: isoNow,
+      created_at: isoNow,
       created: Date.now(),
     };
     this._edges.push(edge);
     this._indexEdge(edge);
-    if (this._db) {
+    if (this._db && this._stmts) {
       this._stmts.upsertEdge.run(
         fromId,
         toId,
@@ -221,7 +279,12 @@ class Graph {
         edge.weight,
         edge.confidence,
         edge.source,
+        edge.source_ref || '',
+        edge.session_id || '',
         JSON.stringify(edge.evidence || []),
+        JSON.stringify(edge.confidence_history || []),
+        edge.updated_at || isoNow,
+        edge.created_at || isoNow,
         edge.created
       );
     }
@@ -342,33 +405,41 @@ class Graph {
     this.prune();
     const embeddings = this._stripEmbeddings();
 
-    if (this._db) {
+    if (this._db && this._stmts) {
       // SQLite: toplu yazma (transaction)
       const saveAll = this._db.transaction(() => {
         for (const node of Object.values(this._nodes)) {
           this._db.prepare(`
-            INSERT INTO nodes (id, label, weight, created, last_accessed, vector)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO nodes (id, label, weight, created, created_at, last_accessed, last_seen, vector)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
               label = excluded.label,
               weight = excluded.weight,
               last_accessed = excluded.last_accessed,
+              last_seen = excluded.last_seen,
               vector = excluded.vector
           `).run(
             node.id, node.label, node.weight,
-            node.created, node.lastAccessed,
+            node.created,
+            node.created_at || nowIso(),
+            node.lastAccessed,
+            node.last_seen || node.lastSeen || nowIso(),
             JSON.stringify(node.vector || {})
           );
         }
         for (const edge of this._edges) {
           this._db.prepare(`
-            INSERT INTO edges (from_id, to_id, relation, weight, confidence, source, evidence, created)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO edges (from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, confidence_history, updated_at, created_at, created)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(from_id, to_id, relation) DO UPDATE SET
               weight = excluded.weight,
               confidence = excluded.confidence,
               source = excluded.source,
-              evidence = excluded.evidence
+              source_ref = excluded.source_ref,
+              session_id = excluded.session_id,
+              evidence = excluded.evidence,
+              confidence_history = excluded.confidence_history,
+              updated_at = excluded.updated_at
           `).run(
             edge.from,
             edge.to,
@@ -376,7 +447,12 @@ class Graph {
             edge.weight,
             edge.confidence ?? edge.weight ?? 0.5,
             edge.source || 'manual',
+            edge.source_ref || '',
+            edge.session_id || '',
             JSON.stringify(edge.evidence || []),
+            JSON.stringify(edge.confidence_history || []),
+            edge.updated_at || nowIso(),
+            edge.created_at || nowIso(),
             edge.created
           );
         }
@@ -398,7 +474,7 @@ class Graph {
   }
 
   load() {
-    if (this._db) {
+    if (this._db && this._stmts) {
       // SQLite'tan yükle
       try {
         const nodes = this._stmts.allNodes.all();
@@ -412,7 +488,10 @@ class Graph {
               label: row.label,
               weight: row.weight,
               created: row.created,
+              created_at: row.created_at || '',
               lastAccessed: row.last_accessed,
+              lastSeen: row.last_seen || '',
+              last_seen: row.last_seen || '',
               tags: [],
               vector: JSON.parse(row.vector || '{}'),
             };
@@ -424,7 +503,12 @@ class Graph {
             weight: row.weight,
             confidence: row.confidence ?? row.weight ?? 0.5,
             source: row.source || 'manual',
+            source_ref: row.source_ref || '',
+            session_id: row.session_id || '',
             evidence: JSON.parse(row.evidence || '[]'),
+            confidence_history: JSON.parse(row.confidence_history || '[]'),
+            updated_at: row.updated_at || '',
+            created_at: row.created_at || '',
             created: row.created,
           }));
           this._rebuildIndex();
@@ -452,8 +536,28 @@ class Graph {
         ...edge,
         confidence: edge.confidence ?? edge.weight ?? 0.5,
         source: edge.source || 'manual',
+        source_ref: edge.source_ref || '',
+        session_id: edge.session_id || '',
         evidence: Array.isArray(edge.evidence) ? edge.evidence : [],
+        confidence_history: Array.isArray(edge.confidence_history) ? edge.confidence_history : [],
+        updated_at: edge.updated_at || '',
+        created_at: edge.created_at || '',
       }));
+      for (const node of Object.values(this._nodes)) {
+        if (!node.created_at && typeof node.created === 'number') {
+          node.created_at = new Date(node.created).toISOString();
+        }
+        if (!node.last_seen) {
+          if (typeof node.lastSeen === 'string' && node.lastSeen) {
+            node.last_seen = node.lastSeen;
+          } else if (typeof node.lastSeen === 'number') {
+            node.last_seen = new Date(node.lastSeen).toISOString();
+          } else {
+            node.last_seen = node.created_at || nowIso();
+          }
+        }
+        node.lastSeen = node.last_seen;
+      }
       this._rebuildIndex();
 
       if (fs.existsSync(this._embeddingPath)) {
@@ -490,7 +594,7 @@ class Graph {
   // ─── Temizlik ─────────────────────────────────────────────────────────────
 
   close() {
-    if (this._db) {
+    if (this._db && this._stmts) {
       try { this._db.close(); } catch (_) {}
       this._db = null;
     }

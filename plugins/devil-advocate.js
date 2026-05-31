@@ -1,4 +1,5 @@
 const LLMAdapter = require('../llmAdapter');
+const { adjustedConfidence } = require('../evidence-ranker');
 
 function normalizeInput(input) {
   if (typeof input === 'string') return input.trim();
@@ -13,6 +14,22 @@ function buildQuestionList(subject, statement) {
     `${subject || 'Bu fikir'} icin tersini gosteren veri var mi?`,
     `${statement || 'Bu iddia'} hangi gozlem veya deney ile curutulebilir?`,
   ];
+}
+
+function enrichEvidence(kernel, items, defaultType = 'chat_memory') {
+  const rankingOn = kernel && typeof kernel.hasCapability === 'function' && kernel.hasCapability('evidenceRanking');
+  return items.map(item => {
+    const evidenceType = item.evidenceType || defaultType;
+    const baseConfidence = typeof item.baseConfidence === 'number' ? item.baseConfidence : 0.6;
+    const enriched = {
+      ...item,
+      evidenceType,
+    };
+    if (rankingOn) {
+      enriched.adjustedConfidence = adjustedConfidence(baseConfidence, evidenceType);
+    }
+    return enriched;
+  });
 }
 
 function createDevilAdvocatePlugin() {
@@ -49,7 +66,10 @@ function createDevilAdvocatePlugin() {
           relation: edge.relation,
           to: edge.to,
           source: edge.source || 'graph',
+          evidenceType: edge.evidenceType || 'chat_memory',
+          baseConfidence: edge.confidence ?? edge.weight ?? 0.6,
         }));
+        const evidence = enrichEvidence(kernel, supporting, 'chat_memory');
         const argument = supporting
           .map(edge => `${subject} icin zaten "${edge.relation} -> ${edge.to}" kaydi var; yeni iddia bunun etkisini kanitlamiyor.`)
           .join(' ');
@@ -62,7 +82,7 @@ function createDevilAdvocatePlugin() {
             fallbackUsed: false,
             subject,
             counterArgument: argument,
-            evidence: supporting,
+            evidence,
           },
         };
       }
@@ -73,6 +93,13 @@ function createDevilAdvocatePlugin() {
           'Kisa, net ve elestirel cevap ver. Bilinmeyenleri varsayim gibi etiketle.'
         );
         if (response && response.ok && response.data && response.data.text) {
+          const evidence = enrichEvidence(kernel, [{
+            relation: 'llm_counterargument',
+            to: subject,
+            source: 'llm',
+            evidenceType: 'blog',
+            baseConfidence: 0.5,
+          }], 'blog');
           return {
             ok: true,
             plugin: 'devil-advocate',
@@ -83,7 +110,7 @@ function createDevilAdvocatePlugin() {
               fallbackLabel: 'llm-assisted',
               subject,
               counterArgument: response.data.text.trim(),
-              evidence: [],
+              evidence,
             },
           };
         }

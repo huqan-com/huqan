@@ -275,8 +275,14 @@ describe('Plugin - Yonetici', () => {
     assert.ok(Array.isArray(result.data.claims));
     assert.ok(Array.isArray(result.data.assumptions));
     assert.ok(Array.isArray(result.data.risks));
+    assert.ok(Array.isArray(result.data.missingEvidence));
     assert.ok(Array.isArray(result.data.evidenceGaps));
     assert.ok(Array.isArray(result.data.strengths));
+    assert.ok(result.data.claims.every(item => typeof item.source === 'string'));
+    assert.ok(result.data.assumptions.every(item => typeof item.source === 'string'));
+    assert.ok(result.data.risks.every(item => typeof item.source === 'string'));
+    assert.ok(result.data.missingEvidence.every(item => typeof item.source === 'string'));
+    assert.ok(result.data.strengths.every(item => typeof item.source === 'string'));
   });
 
   it('devil-advocate: uses graph-backed output when subject has graph evidence', async () => {
@@ -326,5 +332,21 @@ describe('Plugin - Yonetici', () => {
     assert.strictEqual(result.data.mode, 'questions');
     assert.ok(Array.isArray(result.data.questions));
     assert.ok(result.data.questions.length >= 3);
+  });
+
+  it('devil-advocate: adds adjustedConfidence when evidenceRanking is enabled', async () => {
+    const k = new Kernel({
+      noLoad: true,
+      loadPlugins: false,
+      capabilities: { evidenceRanking: true },
+    });
+    k.learn('axiom dogrulama yapar');
+    const plugin = createDevilAdvocatePlugin();
+    k.usePlugin(plugin);
+    const result = await k.plugins.runCapability('devilAdvocate', { text: 'axiom hizli buyur' });
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.data.mode, 'graph-backed');
+    assert.ok(result.data.evidence.length >= 1);
+    assert.ok(result.data.evidence.every(item => typeof item.adjustedConfidence === 'number'));
   });
 });
