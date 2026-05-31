@@ -65,6 +65,82 @@ function createAgent(opts = {}) {
   return agent;
 }
 
+function registerDiscoveryTools(agent) {
+  agent.registerTool({
+    name: 'discoveryEngine',
+    description: 'discover hypotheses',
+    inputSchema: { type: 'object' },
+    run(context, input) {
+      return {
+        ok: true,
+        data: {
+          hypothesis: `discovery:${input.goal}`,
+          nextAction: 'experimentPlanner',
+          source: 'discoveryEngine',
+        },
+        evidence: [{ type: 'graph', value: 'discovery-evidence' }],
+        confidence: 0.62,
+      };
+    },
+  });
+
+  agent.registerTool({
+    name: 'experimentPlanner',
+    description: 'plan experiments',
+    inputSchema: { type: 'object' },
+    run(context, input) {
+      return {
+        ok: true,
+        data: {
+          plan: [{ step: 'collect evidence', tool: 'resultAnalyzer' }],
+          nextAction: 'resultAnalyzer',
+          source: 'experimentPlanner',
+        },
+        evidence: [{ type: 'graph', value: 'experiment-plan' }],
+        confidence: 0.69,
+      };
+    },
+  });
+
+  agent.registerTool({
+    name: 'resultAnalyzer',
+    description: 'analyze results',
+    inputSchema: { type: 'object' },
+    run(context, input) {
+      return {
+        ok: true,
+        data: {
+          analysis: `analyzed:${input.goal}`,
+          nextAction: 'replicationChecker',
+          source: 'resultAnalyzer',
+        },
+        evidence: [{ type: 'graph', value: 'analysis-evidence' }],
+        confidence: 0.78,
+      };
+    },
+  });
+
+  agent.registerTool({
+    name: 'replicationChecker',
+    description: 'check replication',
+    inputSchema: { type: 'object' },
+    run(context, input) {
+      return {
+        ok: true,
+        data: {
+          finalAnswer: `replication:${input.goal}`,
+          status: 'verified',
+          source: 'replicationChecker',
+        },
+        evidence: [{ type: 'graph', value: 'replication-evidence' }],
+        confidence: 0.91,
+      };
+    },
+  });
+
+  return agent;
+}
+
 describe('workflow-agent', () => {
   it('registerTool() stores metadata and listTools() returns registered tools', () => {
     const registry = new ToolRegistry();
@@ -252,5 +328,30 @@ describe('workflow-agent', () => {
     assert.strictEqual(result.steps.length, 3);
     assert.strictEqual(result.steps.every(step => Array.isArray(step.trace) && step.trace.length === 1), true);
     assert.ok(result.trace.filter(item => item.phase === 'run').length >= result.steps.length);
+  });
+
+  it('plans and runs discovery goals with the discovery tool sequence', () => {
+    const agent = registerDiscoveryTools(createAgent());
+    const plan = agent.plan('discover a useful hypothesis and experiment plan');
+    const result = agent.run('discover a useful hypothesis and experiment plan');
+
+    assert.strictEqual(plan.objective, 'discover');
+    assert.deepStrictEqual(plan.steps.map(step => step.tool), [
+      'discoveryengine',
+      'experimentplanner',
+      'resultanalyzer',
+      'replicationchecker',
+    ]);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.status, 'completed');
+    assert.deepStrictEqual(result.steps.map(step => step.tool), [
+      'discoveryengine',
+      'experimentplanner',
+      'resultanalyzer',
+      'replicationchecker',
+    ]);
+    assert.ok(result.report.includes('Objective: discover'));
+    assert.ok(result.finalAnswer.includes('replication:'));
+    assert.strictEqual(result.nextAction.action, 'none');
   });
 });

@@ -9,10 +9,10 @@ AXIOM is a local-first symbolic reasoning core. It learns facts, verifies claims
 
 - Core contract is stable: `ok`, `type`, `data`, `evidence`, `error`, `meta`
 - Company Brain is shipped and exposed through ingest/query surfaces
-- Workflow Agent OS is in progress and available as an opt-in runtime
+- Workflow Agent OS is shipped and available as an opt-in runtime
 - `AXIOM_AGENT_RUNTIME=workflow` enables the workflow agent stack
 - `AXIOM_AGENT_VERSION=v3` keeps the checkpoint/resume agent available
-- Discovery engine skeleton is in progress through workflow tools
+- Discovery engine skeleton is shipped through workflow tools
 
 ## What AXIOM Does
 
@@ -143,7 +143,7 @@ Behavior:
 
 ## Workflow Agent OS
 
-The v0.5 line adds an opt-in workflow stack:
+The v0.5 line ships an opt-in workflow stack:
 
 - `workflow-agent.js` for deterministic plan/run execution
 - `workflow-tools.js` for kernel/plugin adapters

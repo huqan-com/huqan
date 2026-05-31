@@ -119,6 +119,7 @@ function objectiveForGoal(goal) {
   if (/(learn|ingest|teach|kaydet|ogren|ogret)/.test(text)) return 'learn';
   if (/(compare|karsilastir|kiyas|vs|fark)/.test(text)) return 'compare';
   if (/(why|neden|niye|cau|reason|explain)/.test(text)) return 'reason';
+  if (/(discover|discovery|hypothesis|experiment|replicat|replication|analy[sz]e|result|evidence|bilim|deney|hipotez|kesif)/.test(text)) return 'discover';
   if (/(verify|dogrula|check|kontrol|test|true|false|mi|\?)/.test(text)) return 'verify';
   if (/(plan|workflow|task|goal|agent|adim)/.test(text)) return 'plan';
   return 'inspect';
@@ -132,6 +133,8 @@ function preferredSequence(objective) {
       return ['ask', 'compare', 'verify'];
     case 'reason':
       return ['ask', 'reason', 'verify'];
+    case 'discover':
+      return ['discoveryengine', 'experimentplanner', 'resultanalyzer', 'replicationchecker'];
     case 'verify':
       return ['ask', 'verify', 'reason'];
     case 'plan':
@@ -185,6 +188,11 @@ function scoreTool(tool, goalText, objective, sequenceIndex) {
     reasons.push('learning-signal');
   }
 
+  if (objective === 'discover' && /(discover|discovery|hypothesis|experiment|replicat|replication|analy[sz]e|result|evidence|bilim|deney|hipotez|kesif)/.test(goal)) {
+    score += 30;
+    reasons.push('discovery-signal');
+  }
+
   for (const token of goalTokens) {
     if (token && name.includes(token)) {
       score += 6;
@@ -216,13 +224,52 @@ function scoreTool(tool, goalText, objective, sequenceIndex) {
 }
 
 function buildStepInput(goal, objective, toolName, index, total) {
-  return {
+  const tool = normalizeName(toolName);
+  const base = {
     goal,
     objective,
     tool: toolName,
     stepIndex: index,
     totalSteps: total,
     request: goal,
+  };
+
+  if (tool === 'discoveryengine') {
+    return {
+      ...base,
+      text: goal,
+      hypothesis: goal,
+    };
+  }
+
+  if (tool === 'experimentplanner') {
+    return {
+      ...base,
+      text: goal,
+      hypothesis: goal,
+    };
+  }
+
+  if (tool === 'resultanalyzer') {
+    return {
+      ...base,
+      text: goal,
+      result: goal,
+      observation: goal,
+    };
+  }
+
+  if (tool === 'replicationchecker') {
+    return {
+      ...base,
+      text: goal,
+      observations: [goal],
+      runs: [{ id: `run-${index + 1}`, text: goal }],
+    };
+  }
+
+  return {
+    ...base,
   };
 }
 
