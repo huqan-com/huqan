@@ -1,9 +1,14 @@
 const Agent = require('./agent');
 const AgentV3 = require('./agent.v3');
 const AxiomStorage = require('./storage');
+const { createWorkflowRuntime } = require('./workflow-runtime');
 
 function resolveAgentVersion(opts = {}) {
   return String(opts.version || process.env.AXIOM_AGENT_VERSION || 'v2').toLowerCase();
+}
+
+function resolveAgentRuntime(opts = {}) {
+  return String(opts.runtime || process.env.AXIOM_AGENT_RUNTIME || 'classic').toLowerCase();
 }
 
 /**
@@ -13,6 +18,15 @@ function resolveAgentVersion(opts = {}) {
  * @returns {Agent|AgentV3}
  */
 function createAgent(opts = {}) {
+  const runtime = resolveAgentRuntime(opts);
+  if (runtime === 'workflow') {
+    return createWorkflowRuntime(opts.kernel, {
+      ...opts,
+      runtime: 'workflow',
+      kind: 'workflow',
+    });
+  }
+
   const version = resolveAgentVersion(opts);
   const storage = opts.storage || (() => {
     try {
@@ -34,6 +48,7 @@ function createAgent(opts = {}) {
 module.exports = {
   createAgent,
   resolveAgentVersion,
+  resolveAgentRuntime,
   Agent,
   AgentV3,
 };

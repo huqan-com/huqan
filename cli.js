@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 const Kernel = require('./kernel');
@@ -64,6 +64,17 @@ function normalizeCommandText(input) {
     .replace(/[ö]/g, 'o')
     .replace(/[ş]/g, 's')
     .replace(/[ü]/g, 'u');
+}
+
+function isWorkflowRuntime(agent) {
+  return Boolean(agent && (agent.kind === 'workflow' || agent.runtime === 'workflow'));
+}
+
+function unwrapAgentPayload(result) {
+  if (result && typeof result === 'object' && Object.prototype.hasOwnProperty.call(result, 'data')) {
+    return result.data;
+  }
+  return result;
 }
 
 class CLI {
@@ -265,13 +276,15 @@ class CLI {
       }
       case 'plan': {
         const result = this.agent.plan(args);
-        const plan = result.data;
+        const plan = unwrapAgentPayload(result);
         const steps = (plan.steps || []).map((step, index) => `  ${index + 1}. ${step.action} -> ${step.tool} | ${step.rationale}`).join('\n');
         const nextAction = plan.nextAction ? `${plan.nextAction.action} -> ${plan.nextAction.tool}` : 'yok';
         const recommendations = Array.isArray(plan.recommendations?.items) ? plan.recommendations.items : [];
+        const runtimeLine = isWorkflowRuntime(this.agent) ? 'Runtime: workflow' : 'Runtime: legacy';
         return [
           `Ajan planı: ${plan.objective} (${plan.status})`,
           `Hedef: ${plan.goal}`,
+          runtimeLine,
           `Seçilen araçlar: ${(plan.selectedTools || []).join(', ') || 'yok'}`,
           `Sonraki adım: ${nextAction}`,
           `Öneriler: ${recommendations.length > 0 ? recommendations.join(' | ') : 'yok'}`,
@@ -281,7 +294,7 @@ class CLI {
       }
       case 'ajan': {
         const result = this.agent.run(args);
-        const data = result.data;
+        const data = unwrapAgentPayload(result);
         const agentStatus = typeof this.agent.getStatus === 'function' ? this.agent.getStatus() : null;
         const lastPlan = agentStatus?.lastPlan || null;
         const lastRun = agentStatus?.lastRun || null;
@@ -291,10 +304,12 @@ class CLI {
         }).join('\n');
         const nextAction = data.nextAction ? `${data.nextAction.action} -> ${data.nextAction.tool}` : 'yok';
         const recommendations = Array.isArray(data.recommendations?.items) ? data.recommendations.items : [];
+        const runtimeLine = isWorkflowRuntime(this.agent) ? 'Runtime: workflow' : 'Runtime: legacy';
         return [
           `Ajan durumu: ${data.status}`,
           `Hedef: ${data.goal}`,
           `Amaç: ${data.objective}`,
+          runtimeLine,
           data.checkpointId ? `Checkpoint: ${data.checkpointId}${data.resumed ? ' (resume)' : ''}` : 'Checkpoint: yok',
           typeof data.budgetRemaining === 'number' ? `Kalan bütçe: ${data.budgetRemaining}` : 'Kalan bütçe: bilinmiyor',
           lastPlan ? `Son plan: ${lastPlan.goal} (${lastPlan.steps} adım)` : 'Son plan: yok',
@@ -424,6 +439,7 @@ class CLI {
         const gaps = this.kernel.detectGaps();
         const contradictions = this.kernel.detectContradictions();
         let out = `Durum: ${nodes} düğüm, ${edges} kenar, entropi: ${entropy.toFixed(3)}`;
+        if (isWorkflowRuntime(this.agent)) out += `\n  Agent runtime: workflow`;
         if (gaps.length > 0) out += `\n  ${gaps.length} baglantisiz dugum: ${gaps.slice(0, 10).join(', ')}${gaps.length > 10 ? '...' : ''}`;
         for (const item of contradictions.slice(0, 5)) {
           out += `\n  Celiski [${item.type}]: ${item.node} -> ${item.targets.join(', ')}`;

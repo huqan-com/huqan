@@ -7,6 +7,7 @@ const CLI = require('./cli');
 const Kernel = require('./kernel');
 const KernelV2 = require('./kernel.v2');
 const Dream = require('./dream');
+const { createAgent } = require('./agentRuntime');
 
 function freshCLI(kernelOpts = {}) {
   const cli = new CLI();
@@ -288,5 +289,19 @@ describe('CLI - Komut Çalıştırma', () => {
     assert.ok(result.includes('Kalan bütçe'));
     assert.ok(result.includes('Son plan'));
     assert.ok(result.includes('Son çalışma'));
+  });
+
+  it('execute: workflow runtime opt-in keeps CLI format and uses workflow tools', () => {
+    const cli = freshCLI();
+    cli.agent = createAgent({ kernel: cli.kernel, runtime: 'workflow' });
+    cli.kernel.learn('kedi hayvandir');
+
+    const plan = cli.execute('plan', 'kedi hayvandir mi');
+    const run = cli.execute('ajan', 'kedi hayvandir mi');
+
+    assert.ok(plan.includes('Runtime: workflow'));
+    assert.ok(plan.includes('verifyclaim') || plan.includes('getgraphstats'));
+    assert.ok(run.includes('Runtime: workflow'));
+    assert.ok(run.includes('Sonuç'));
   });
 });

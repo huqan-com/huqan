@@ -206,6 +206,7 @@ function getV2StatusData() {
   });
   const activeKernel = process.env.AXIOM_KERNEL_VERSION === 'v2' ? 'v2' : 'v1';
   const agentRuntime = String(process.env.AXIOM_AGENT_VERSION || 'v2').toLowerCase();
+  const agentRuntimeMode = String(process.env.AXIOM_AGENT_RUNTIME || '').toLowerCase() || agentRuntime;
   const checkpointBackend = agentRuntime === 'v3' ? 'sqlite' : 'json';
   const phases = [
     {
@@ -368,6 +369,7 @@ function getV2StatusData() {
     currentFocus: 'v3.0 Agent Workflow',
     nextAction: 'Use the planner to run goal-driven multi-step tasks, persist the goal history, and report each tool decision clearly.',
     agentRuntime,
+    agentRuntimeMode,
     checkpointBackend,
     agentV3Status: agentRuntime === 'v3' ? getAgentV3Status() : null,
     agentCheckpointPath: agentRuntime === 'v3' ? persistence.dbPath : 'agent.memory.json',

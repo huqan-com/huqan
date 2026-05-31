@@ -70,6 +70,8 @@ function createWorkflowRuntime(kernel, opts = {}) {
   }
 
   return {
+    kind: 'workflow',
+    runtime: 'workflow',
     kernel,
     registry,
     agent,
@@ -104,6 +106,34 @@ function createWorkflowRuntime(kernel, opts = {}) {
           source: 'workflow-runtime',
         });
       }
+    },
+    inspectToolPolicy(tool, input, context = {}) {
+      if (kernel && typeof kernel.inspectToolPolicy === 'function') {
+        return kernel.inspectToolPolicy(tool, input, context);
+      }
+      return {
+        ok: false,
+        type: 'policy',
+        data: {
+          tool,
+          action: 'review',
+          blocked: false,
+          requiresApproval: false,
+          labels: ['workflow-runtime'],
+          reasons: ['Workflow runtime does not expose policy inspection.'],
+        },
+        evidence: [],
+        error: null,
+        meta: {
+          runtime: 'workflow',
+        },
+      };
+    },
+    countPendingToolApprovals() {
+      return 0;
+    },
+    listPendingToolApprovals() {
+      return [];
     },
     getStatus() {
       const agentStatus = typeof agent.lastRun === 'object' && agent.lastRun
