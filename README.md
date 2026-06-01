@@ -1,46 +1,146 @@
 # AXIOM
 
-[![Tests](https://img.shields.io/badge/Tests-passing-green)]()
+[![Tests](https://img.shields.io/badge/Tests-392%2F392-green)]()
 [![Node](https://img.shields.io/badge/node-%3E%3D18-blue)]()
+[![Release](https://img.shields.io/badge/release-v0.7.0-blue)]()
 
-AXIOM is a local-first symbolic reasoning core. It learns facts, verifies claims, detects contradictions, ranks evidence, and exposes the same engine through CLI, REST, MCP, workflow-agent runtime, and SDK wrapper layers.
+AXIOM is a local-first reasoning layer for memory, models, tools, agents, and decisions.
 
-## Current Status
+It does not try to be another chatbot. AXIOM judges claims against graph memory, separates known facts from unknowns, blocks unsupported learning, explains contradictions, and simulates what may break when a decision changes.
 
-- Core contract is stable: `ok`, `type`, `data`, `evidence`, `error`, `meta`
-- Company Brain is shipped and exposed through ingest/query surfaces
-- Workflow Agent OS is shipped and available as an opt-in runtime
-- `AXIOM_AGENT_RUNTIME=workflow` enables the workflow agent stack
-- `AXIOM_AGENT_VERSION=v3` keeps the checkpoint/resume agent available
-- Discovery engine skeleton is shipped through workflow tools
-- Product UI, Shield, ingest routing, demo smoke, and SDK wrappers are shipped in the v0.6 line
-- Causal reasoning, traversal, simulator, and finalizer are shipped in the v0.7 line
-- v0.7.0 is the aligned release line for the causal reasoning surface
+## The Core Idea
 
-## What AXIOM Does
+LLMs answer. AXIOM judges.
 
-- learns local facts into a graph
-- verifies statements with evidence
-- finds contradictions and manipulation risk
-- tracks persistence in SQLite / JSON
-- runs plugin capabilities through a strict contract
-- exposes an Agent OS workflow path for tool orchestration
+Most AI systems optimize for fluent responses. AXIOM optimizes for inspectable reasoning:
 
-## Runtime Modes
+- What does the system actually know?
+- Which answer is backed by memory?
+- Which answer is only LLM-assisted?
+- Which claim contradicts the graph?
+- Which evidence supports the conclusion?
+- What happens if this decision changes?
+- What should be asked next?
 
-### Default runtime
+The rule that shapes the project:
 
-AXIOM uses the classic agent path by default.
+> Unsupported knowledge must not become trusted memory.
+
+## What AXIOM Is
+
+AXIOM is a small symbolic reasoning engine with product surfaces around it:
+
+- graph memory for local facts and relations
+- verification for graph-backed claims
+- contradiction detection
+- deterministic final summaries
+- AXIOM Shield for LLM output control
+- Company Brain for project and decision memory
+- Workflow Agent OS for tool orchestration
+- causal reasoning for decision simulation
+- SDK wrappers for external AI systems
+
+The engine is local-first and dependency-light. It can run without external LLMs, GPUs, or cloud services.
+
+## Why It Matters
+
+Modern AI stacks often have the same failure mode:
+
+```text
+LLM output sounds plausible
+-> system stores it as memory
+-> future answers trust polluted memory
+-> product behavior drifts
+```
+
+AXIOM attacks that failure mode directly.
+
+It classifies output before trust:
+
+- `graph-backed` means the graph supports it
+- `llm-assisted` means the model helped but graph support is partial
+- `unsupported` means the graph does not know
+- `contradicted` means the graph disagrees
+
+That makes AXIOM useful as a judgment layer around LLM apps, internal tools, agent systems, and founder decision workflows.
+
+## What It Can Do Today
+
+### Graph Memory
+
+AXIOM learns local facts into a graph and can answer from that graph.
+
+Example:
+
+```text
+ogret: kedi hayvandir
+sor: kedi nedir
+```
+
+The point is not just storage. The point is that answers can be checked against structured memory.
+
+### Verification
+
+AXIOM can verify claims and return evidence.
+
+It distinguishes:
+
+- known
+- unknown
+- contradicted
+- weakly supported
+
+This is the base layer under Shield, finalizer, and causal reasoning.
+
+### AXIOM Shield
+
+Shield wraps LLM-assisted answers with a trust policy.
+
+Safety rules:
+
+- `autoLearn` defaults to `false`
+- unsupported output is not learned
+- contradicted output is not learned
+- LLM-assisted output must be explicitly accepted
+
+This is the project's safety foundation:
+
+```text
+Do not trust the model.
+Pass it through AXIOM.
+```
+
+### Finalizer
+
+The finalizer turns tool results into a judgment report.
+
+It produces:
+
+- known facts
+- unknowns
+- evidence
+- conclusion
+- next questions
+- causal risk and recommendation
+
+This is what turns raw tool execution into an answer a human can inspect.
+
+### Company Brain
+
+Company Brain lets AXIOM ingest and query project context:
+
+- GitHub repository content
+- markdown folders
+- manual notes
+- decision logs
+
+It is the company-memory layer, not a separate product bolted on later.
 
 ### Workflow Agent OS
 
-Set this environment variable to use the workflow runtime:
+The workflow runtime gives AXIOM deterministic tool orchestration.
 
-```bash
-set AXIOM_AGENT_RUNTIME=workflow
-```
-
-The workflow runtime exposes these tools:
+It exposes tools such as:
 
 - `verifyClaim`
 - `findContradictions`
@@ -51,16 +151,110 @@ The workflow runtime exposes these tools:
 - `experimentPlanner`
 - `resultAnalyzer`
 - `replicationChecker`
-- `runCapability`
-- `getGraphStats`
 
-### v3 agent
+This makes AXIOM usable as an agent runtime without making the LLM the source of truth.
 
-Set this environment variable to use the checkpoint/resume agent:
+### Causal Reasoning
+
+v0.7 adds causal simulation.
+
+Supported causal relations:
+
+- `CAUSES`
+- `PREVENTS`
+- `ENABLES`
+- `DEPENDS_ON`
+- `LEADS_TO`
+
+This lets AXIOM answer:
+
+```text
+What breaks if you do this?
+```
+
+Reference demo:
 
 ```bash
-set AXIOM_AGENT_VERSION=v3
+node demo-causal-autolearn.js
 ```
+
+Demo question:
+
+```text
+What breaks if autoLearn defaults to true?
+```
+
+Expected judgment:
+
+```text
+Risk level: critical
+Recommendation: Change is not recommended.
+LLM: not used
+Output: deterministic
+```
+
+Causal chain:
+
+```text
+autoLearn true
+-> unsupported LLM output can enter graph
+-> graph trust degradation
+-> Shield claim weakens
+-> AXIOM reliability promise is damaged
+```
+
+### SDK Wrappers
+
+AXIOM exposes dependency-free wrappers for external AI systems:
+
+- `createAxiomClient`
+- `toLangChainTool`
+- `toVercelAiMiddleware`
+
+This is the integration surface for builders who want AXIOM as a verification and reasoning layer around their own AI stack.
+
+## Product Evolution
+
+AXIOM has grown in layers:
+
+```text
+v0.3 - Personal Thought Judge
+v0.4 - Company Brain
+v0.5 - Agent OS + Discovery Engine
+v0.6 - Productization & Shield
+v0.7 - Causal Reasoning Layer
+```
+
+The throughline is consistent:
+
+```text
+memory -> verification -> agent tools -> shield -> causal judgment
+```
+
+## Who It Is For
+
+AXIOM is currently best suited for:
+
+- solo founders
+- technical founders
+- AI product builders
+- small-team CTOs
+- open-source maintainers
+- developers building LLM agents or tool systems
+
+The current wedge is builder decision simulation. The longer-term direction is company-wide agent governance.
+
+## What It Is Not
+
+AXIOM v0.7 is not:
+
+- a full world model
+- a probabilistic oracle
+- an autonomous research scientist
+- an enterprise governance suite
+- a replacement for human judgment
+
+It is a deterministic reasoning layer that makes claims, memory, and decisions easier to inspect.
 
 ## Quick Start
 
@@ -76,10 +270,22 @@ CLI:
 npm start
 ```
 
+Causal demo:
+
+```bash
+node demo-causal-autolearn.js
+```
+
 MCP server:
 
 ```bash
 npm run mcp
+```
+
+Product UI:
+
+```text
+http://localhost:3000
 ```
 
 ## CLI Commands
@@ -115,6 +321,10 @@ Verification:
 - `POST /v2/verify`
 - Legacy: `GET/POST /dogrula`
 
+LLM Shield:
+
+- `POST /llm-sor`
+
 Ingest:
 
 - `POST /api/ingest`
@@ -126,106 +336,25 @@ System:
 - `GET /v2-status`
 - `GET /graph-data`
 
-## Company Brain
+## Runtime Modes
 
-Company Brain is shipped as the v0.4 line and is still the main ingest/query layer for company context.
+Default runtime:
 
-Implemented files:
+```text
+classic agent path
+```
 
-- `adapters/github-adapter.js`
-- `adapters/markdown-adapter.js`
-- `plugins/repo-memory.js`
-- `plugins/company-brain.js`
+Workflow Agent OS:
 
-Behavior:
+```bash
+set AXIOM_AGENT_RUNTIME=workflow
+```
 
-- GitHub ingest uses native `fetch`, not Octokit
-- markdown ingest is recursive
-- manual ingest and decision log flows are supported
-- ingest status tracks `repo / markdown / manual` distribution plus errors
+Checkpoint/resume v3 agent:
 
-## Workflow Agent OS
-
-The v0.5 line ships an opt-in workflow stack:
-
-- `workflow-agent.js` for deterministic plan/run execution
-- `workflow-tools.js` for kernel/plugin adapters
-- `workflow-runtime.js` for wiring the agent and tools together
-- `repoMemory` and `companyBrain` are tools, not phases
-- `discoveryEngine`, `experimentPlanner`, `resultAnalyzer`, and `replicationChecker` are the discovery skeleton tools
-
-### SDK Wrappers
-
-AXIOM exposes dependency-free wrappers for external AI systems:
-
-- `lib/sdk.js` for `createAxiomClient`, `toLangChainTool`, and `toVercelAiMiddleware`
-- `docs/sdk-v0.6.md` for the wrapper contract and out-of-scope notes
-
-Supported SDK commands:
-
-- `verify`
-- `reason`
-- `mri` / `ideaMRI`
-- `devil` / `devilAdvocate`
-- `contradictions` / `contradictionAlert`
-- `shield`
-
-### Demo Smoke
-
-The v0.6 release smoke flow is documented in:
-
-- `docs/demo-v0.6.md`
-
-It covers:
-
-- `GET /health`
-- `GET /v2-status`
-- `GET /graph-data`
-- `POST /llm-sor`
-- `POST /api/ingest`
-- the product UI tabs and graph metadata
-
-Use it when you want AXIOM to coordinate tools through a single runtime instead of invoking capabilities directly.
-
-### v0.7 Release
-
-The current release line is `v0.7.0`.
-
-Release artifacts:
-
-- `docs/v0.7-release-notes.md`
-- `docs/demo-causal-v0.7.md`
-- `docs/ADR-001-causal-engine.md`
-
-### v0.7 Causal Branch
-
-The causal reasoning line is isolated on `v0.7-causal-wip` and is not merged into `main` yet.
-
-It adds:
-
-- causal relations: `CAUSES`, `PREVENTS`, `ENABLES`, `DEPENDS_ON`, `LEADS_TO`
-- deterministic causal traversal
-- what-if simulation
-- causal finalizer summaries
-- the `autoLearn default true` demo scenario
-
-Current scope:
-
-- founder and builder decision simulation
-- deterministic, symbolic, explainable output
-
-Out of scope for the branch:
-
-- full world model
-- probabilistic prediction
-- UI integration
-- enterprise governance
-- multi-user permissions and audit layers
-
-Release candidate artifacts will be documented in:
-
-- `docs/v0.7-release-notes.md`
-- `docs/demo-causal-v0.7.md`
+```bash
+set AXIOM_AGENT_VERSION=v3
+```
 
 ## Persistence
 
@@ -233,12 +362,17 @@ Release candidate artifacts will be documented in:
 - `memory.json` - JSON fallback
 - `memory.embeddings.json` - embedding store
 
-## Security Notes
+## Docs
 
-- API key guard for write-heavy endpoints
-- CORS restrictions for safe local origins
-- request size limits and rate limiting
-- Shield labels are explicit: `graph-backed`, `llm-assisted`, `unsupported`, `contradicted`
+- `docs/product-positioning.md` - product audience, promise, and boundaries
+- `docs/architecture.md` - core modules and source-of-truth map
+- `docs/release-map.md` - release history and next direction
+- `docs/v0.7-release-notes.md` - v0.7 release notes
+- `docs/demo-causal-v0.7.md` - causal demo guide
+- `docs/ADR-001-causal-engine.md` - causal engine decision record
+- `docs/demo-v0.6.md` - v0.6 product smoke flow
+- `docs/finalizer-spec.md` - deterministic finalizer contract
+- `docs/sdk-v0.6.md` - SDK wrapper contract
 
 ## Repository Layout
 
@@ -246,6 +380,8 @@ Release candidate artifacts will be documented in:
 kernel.js
 kernel.v2.js
 graph.js
+causalSimulator.js
+finalizer.js
 plugin.js
 agent.js
 agent.v3.js
@@ -255,11 +391,32 @@ workflow-runtime.js
 server.js
 cli.js
 mcpServer.js
+lib/
 adapters/
 plugins/
 benchmarks/
 specs/
 docs/
+```
+
+## Verification
+
+Current release:
+
+```text
+v0.7.0
+```
+
+Expected test status:
+
+```text
+npm test -> 392/392 passing
+```
+
+Expected status endpoint:
+
+```text
+GET /v2-status -> version=0.7.0, testStatus=392/392
 ```
 
 ## License
