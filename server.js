@@ -4,6 +4,7 @@ const path = require('path');
 const { globSync, readFileSync } = require('fs');
 const { execSync } = require('child_process');
 const CLI = require('./cli');
+const { evaluateLlmSor } = require('./lib/shield');
 const pkg = require('./package.json');
 const { inspectPersistence, resolvePersistencePaths } = require('./persistencePaths');
 const {
@@ -509,7 +510,7 @@ const server = http.createServer(async (req, res) => {
     const data = await parseJsonRequest(req, res, { maxBytes: DEFAULT_MAX_JSON_BODY });
     if (!data) return;
     const question = sanitizeInput(data.question || data.q || '');
-    const autoLearn = data.autoLearn !== false; // varsayÄ±lan: true
+    const autoLearn = data.autoLearn === true;
     if (!question) {
       res.writeHead(400, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ error: 'question gerekli' }));
@@ -539,12 +540,15 @@ const server = http.createServer(async (req, res) => {
     // LLM yanıtını doğrula
     const llmCheck = legacyVerify(cli.kernel.verify(llmText.slice(0, 300)));
 
-    // Otomatik öğren
-    let learnResult = null;
-    if (autoLearn && llmCheck.status !== 'celiski') {
-      learnResult = cli.kernel.learnFromLLM(llmText, { skipConflicts: true, maxSentences: 15 });
-      if (learnResult.learned > 0) cli.kernel.graph.save();
-    }
+    const shield = evaluateLlmSor({
+      kernel: cli.kernel,
+      question,
+      llmText,
+      axiomCheck,
+      llmCheck,
+      autoLearn,
+      maxSentences: 15,
+    });
 
     res.writeHead(200, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
     res.end(JSON.stringify({
@@ -553,8 +557,10 @@ const server = http.createServer(async (req, res) => {
       llmAnswer: llmText,
       model: llmRes.data.model,
       axiomCheck,
-      llmCheck,
-      learnResult,
+      llmCheck: shield.llmCheck,
+      label: shield.label,
+      shield: shield.shield,
+      learnResult: shield.learnResult,
     }));
     return;
   }

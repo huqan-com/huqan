@@ -336,6 +336,9 @@ describe('Server - API', () => {
       const j = await r.json();
       assert.ok('ok' in j);
       assert.strictEqual(j.llmAnswer, 'kedi bir memelidir');
+      assert.strictEqual(j.shield.autoLearn, false);
+      assert.strictEqual(j.learnResult, null);
+      assert.strictEqual(typeof j.label, 'string');
     } finally {
       LLMAdapter.prototype.ask = originalAsk;
     }
