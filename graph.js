@@ -708,4 +708,7 @@ class Graph {
   }
 }
 
-module.exports = { Graph, CAUSAL_RELATIONS, STANDARD_RELATIONS };
+module.exports = Graph;
+module.exports.Graph = Graph;
+module.exports.CAUSAL_RELATIONS = CAUSAL_RELATIONS;
+module.exports.STANDARD_RELATIONS = STANDARD_RELATIONS;
