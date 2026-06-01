@@ -227,8 +227,97 @@ function buildFinalSummary(run = {}) {
   };
 }
 
+// ─── Causal finalizer for v0.7 ───────────────────────────────────────────────
+
+function normalizeCausalOutcome(outcome) {
+  if (!outcome || typeof outcome !== 'object') return null;
+  return {
+    chain: Array.isArray(outcome.chain) ? outcome.chain.map(e => ({
+      from: e.from || '',
+      to: e.to || '',
+      relation: e.relation || '',
+      strength: typeof e.strength === 'number' ? e.strength : 0.5,
+      confidence: typeof e.confidence === 'number' ? e.confidence : 0.5,
+    })) : [],
+    impact: typeof outcome.impact === 'number' ? outcome.impact : 0.5,
+    confidence: typeof outcome.confidence === 'number' ? outcome.confidence : 0.5,
+    description: normalizeText(outcome.description || ''),
+  };
+}
+
+function normalizeCausalRisk(risk) {
+  if (!risk || typeof risk !== 'object') return null;
+  return {
+    chain: Array.isArray(risk.chain) ? risk.chain : [],
+    severity: risk.severity === 'critical' ? 'critical' : (risk.severity === 'high' ? 'high' : 'medium'),
+    description: normalizeText(risk.description || ''),
+  };
+}
+
+function buildCausalSummary(simulationResult = {}) {
+  if (!simulationResult.ok) {
+    return {
+      ok: false,
+      error: simulationResult.error || 'Simulation failed',
+      outcomes: [],
+      risks: [],
+      summary: '',
+    };
+  }
+
+  const outcomes = Array.isArray(simulationResult.outcomes)
+    ? simulationResult.outcomes.map(normalizeCausalOutcome).filter(Boolean)
+    : [];
+
+  const risks = Array.isArray(simulationResult.risks)
+    ? simulationResult.risks.map(normalizeCausalRisk).filter(Boolean)
+    : [];
+
+  const confidence = typeof simulationResult.confidence === 'number' ? simulationResult.confidence : 0;
+  const causalChains = typeof simulationResult.causalChains === 'number' ? simulationResult.causalChains : 0;
+
+  const summary = simulationResult.summary || 
+    `Simulation found ${outcomes.length} outcome(s) with ${risks.length} risk(s). Confidence: ${(confidence * 100).toFixed(1)}%`;
+
+  return {
+    ok: true,
+    action: normalizeText(simulationResult.action || ''),
+    nodeId: simulationResult.nodeId || '',
+    changeType: simulationResult.changeType || 'unknown',
+    outcomes,
+    risks,
+    confidence,
+    causalChains,
+    summary,
+    recommendation: deriveCausalRecommendation(risks, confidence),
+  };
+}
+
+function deriveCausalRecommendation(risks, confidence) {
+  if (risks.length === 0) {
+    if (confidence > 0.7) {
+      return 'Değişiklik güvenli görünüyor, yüksek confidence ile ilerlenebilir.';
+    }
+    return 'Risk yok ancak confidence düşük, daha fazla kanıt gerekli.';
+  }
+
+  const criticalRisks = risks.filter(r => r.severity === 'critical');
+  if (criticalRisks.length > 0) {
+    return `KRİTİK: ${criticalRisks.length} kritik risk tespit edildi. Değişiklik önerilmiyor.`;
+  }
+
+  const highRisks = risks.filter(r => r.severity === 'high');
+  if (highRisks.length > 0) {
+    return `YÜKSEK RİSK: ${highRisks.length} yüksek risk tespit edildi. Dikkatli ilerleyin veya alternatif değerlendirin.`;
+  }
+
+  return `${risks.length} risk tespit edildi. Riskleri değerlendirip ilerleyin.`;
+}
+
 module.exports = {
   buildFinalSummary,
+  buildCausalSummary,
+  deriveCausalRecommendation,
   cleanFactText,
   deriveMode,
   extractText,

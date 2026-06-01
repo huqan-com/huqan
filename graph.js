@@ -5,6 +5,22 @@ const path = require('path');
 let Database;
 try { Database = require('better-sqlite3'); } catch (_) { Database = null; }
 
+// Causal relation types for v0.7
+const CAUSAL_RELATIONS = Object.freeze([
+  'CAUSES',      // Neden olur
+  'PREVENTS',    // Engelleyen
+  'ENABLES',     // Mümkün kılan
+  'DEPENDS_ON',  // Bağımlı olduğu
+  'LEADS_TO',    // Sonuçlanan
+]);
+
+const STANDARD_RELATIONS = Object.freeze([
+  'is_a',
+  'has_property',
+  'related_to',
+  ...CAUSAL_RELATIONS,
+]);
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -102,6 +118,7 @@ class Graph {
     if (!edgeColumns.includes('source_type')) this._db.exec("ALTER TABLE edges ADD COLUMN source_type TEXT NOT NULL DEFAULT ''");
     if (!edgeColumns.includes('updated_at')) this._db.exec("ALTER TABLE edges ADD COLUMN updated_at TEXT NOT NULL DEFAULT ''");
     if (!edgeColumns.includes('created_at')) this._db.exec("ALTER TABLE edges ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
+    if (!edgeColumns.includes('strength')) this._db.exec('ALTER TABLE edges ADD COLUMN strength REAL NOT NULL DEFAULT 0.5');
 
     // Prepared statements
     this._stmts = {
@@ -119,8 +136,8 @@ class Graph {
       deleteEdgesOf: this._db.prepare('DELETE FROM edges WHERE from_id = ? OR to_id = ?'),
       touchNode: this._db.prepare('UPDATE nodes SET last_accessed = ? WHERE id = ?'),
       upsertEdge: this._db.prepare(`
-        INSERT INTO edges (from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, evidence_type, confidence_history, company_mode, source_type, updated_at, created_at, created)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO edges (from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, evidence_type, confidence_history, company_mode, source_type, updated_at, created_at, created, strength)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(from_id, to_id, relation) DO UPDATE SET
           weight = excluded.weight,
           confidence = excluded.confidence,
@@ -132,7 +149,8 @@ class Graph {
           confidence_history = excluded.confidence_history,
           company_mode = excluded.company_mode,
           source_type = excluded.source_type,
-          updated_at = excluded.updated_at
+          updated_at = excluded.updated_at,
+          strength = excluded.strength
       `),
       getEdge: this._db.prepare('SELECT * FROM edges WHERE from_id = ? AND to_id = ? AND relation = ?'),
       getEdges: this._db.prepare('SELECT * FROM edges WHERE from_id = ?'),
@@ -230,6 +248,19 @@ class Graph {
 
   addEdge(fromId, toId, relation, opts = {}) {
     if (!this._nodes[fromId] || !this._nodes[toId]) return null;
+    
+    // Causal relation validation for v0.7
+    const isCausal = CAUSAL_RELATIONS.includes(relation);
+    if (isCausal) {
+      // Causal relations require strength field
+      if (opts.strength === undefined) {
+        throw new Error(`Causal relation '${relation}' requires strength field (0-1)`);
+      }
+      if (typeof opts.strength !== 'number' || opts.strength < 0 || opts.strength > 1) {
+        throw new Error(`Causal relation '${relation}' requires strength between 0 and 1`);
+      }
+    }
+    
     const existing = this.getEdge(fromId, toId, relation);
     const isoNow = nowIso();
     const requestedCreatedAt = typeof opts.createdAt === 'string' && opts.createdAt ? opts.createdAt : '';
@@ -247,6 +278,7 @@ class Graph {
       if (requestedCreatedAt && !existing.created_at) existing.created_at = requestedCreatedAt;
       existing.evidence = [...new Set([...(existing.evidence || []), ...nextEvidence])];
       existing.updated_at = isoNow;
+      if (isCausal && opts.strength !== undefined) existing.strength = opts.strength;
       if (!Array.isArray(existing.confidence_history)) existing.confidence_history = [];
       if (existing.confidence !== oldConfidence) {
         existing.confidence_history.push({ value: oldConfidence, updated_at: isoNow });
@@ -289,6 +321,9 @@ class Graph {
       created_at: requestedCreatedAt || isoNow,
       created: Date.now(),
     };
+    if (isCausal) {
+      edge.strength = opts.strength ?? 0.5;
+    }
     this._edges.push(edge);
     this._indexEdge(edge);
     if (this._db && this._stmts) {
@@ -308,7 +343,8 @@ class Graph {
         edge.source_type || '',
         edge.updated_at || isoNow,
         edge.created_at || isoNow,
-        edge.created
+        edge.created,
+        edge.strength ?? 0.5
       );
     }
     return edge;
@@ -626,6 +662,42 @@ class Graph {
     for (const e of this._edges) this._indexEdge(e);
   }
 
+  // ─── Causal relation helpers for v0.7 ───────────────────────────────────────
+
+  isCausalRelation(relation) {
+    return CAUSAL_RELATIONS.includes(relation);
+  }
+
+  getCausalRelations() {
+    return [...CAUSAL_RELATIONS];
+  }
+
+  getCausalEdges(fromId) {
+    const edges = this.getEdges(fromId);
+    return edges.filter(e => this.isCausalRelation(e.relation));
+  }
+
+  getCausalChain(fromId, maxDepth = 10) {
+    const chain = [];
+    const visited = new Set();
+    const queue = [{ node: fromId, depth: 0, path: [] }];
+
+    while (queue.length > 0) {
+      const { node, depth, path } = queue.shift();
+      if (depth >= maxDepth || visited.has(node)) continue;
+      visited.add(node);
+
+      const causalEdges = this.getCausalEdges(node);
+      for (const edge of causalEdges) {
+        const newPath = [...path, { from: edge.from, to: edge.to, relation: edge.relation, strength: edge.strength, confidence: edge.confidence }];
+        chain.push(newPath);
+        queue.push({ node: edge.to, depth: depth + 1, path: newPath });
+      }
+    }
+
+    return chain;
+  }
+
   // ─── Temizlik ─────────────────────────────────────────────────────────────
 
   close() {
@@ -636,4 +708,4 @@ class Graph {
   }
 }
 
-module.exports = Graph;
+module.exports = { Graph, CAUSAL_RELATIONS, STANDARD_RELATIONS };
