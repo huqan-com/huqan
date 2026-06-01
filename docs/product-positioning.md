@@ -71,12 +71,22 @@ Avoid overstating:
 
 ## Near-term Direction
 
-v0.8 should strengthen trust and provenance:
+v0.8 shifts AXIOM from causal reasoning to accountable reasoning:
 
-- source binding
-- audit log
-- workspace boundaries
-- permission-aware graph operations
-- connector contracts
+- Trust Kernel
+- AXIOM Trust Protocol (`ATP`) and AXIOM Verify Protocol (`AVP`)
+- source binding and provenance-aware claims
+- audit trail and conflict routing
+- lightweight workspace scoping
 
-Enterprise positioning should stay as future direction until governance, permissions, audit, and connector hardening are implemented.
+Use this product language:
+
+- `Every serious answer should come with a receipt.`
+- `A claim should not be a loose sentence. It should have a passport.`
+
+Keep the direction disciplined:
+
+- do not call ATP `v1`
+- do not present v0.8 as a full world model
+- do not market v0.8 as a full enterprise governance suite
+- keep runtime claims behind actual implementation, not docs-only intent

@@ -41,6 +41,26 @@ Responsibilities:
 - plugin/capability access
 - graph-backed reasoning surface
 
+### Trust Kernel (v0.8 direction)
+
+Primary docs:
+
+- `docs/ADR-002-trust-kernel-and-atp.md`
+- `specs/axiom-trust-protocol/0.1/README.md`
+
+Responsibilities:
+
+- provenance and source binding
+- trust policy evaluation
+- append-only audit routing
+- workspace-aware claim handling
+- ATP and AVP contract surface
+
+Current note:
+
+- PR-0 is docs-only
+- runtime is intentionally unchanged in this step
+
 ### Shield
 
 Primary file:
@@ -176,3 +196,9 @@ Expected status endpoint:
 version=0.7.0
 testStatus=392/392
 ```
+
+## v0.8 Direction Note
+
+Trust Kernel plus ATP/AVP is the documented source-of-truth direction for v0.8.
+
+That direction is intentionally documented before runtime work so protocol design is not mixed with incomplete storage or kernel behavior in the same step.
