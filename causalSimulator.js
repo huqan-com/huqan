@@ -42,7 +42,10 @@ class CausalSimulator {
     }
 
     // Get causal chains from this node
-    const causalChains = this.graph.getCausalChain(nodeId, maxDepth);
+    const causalTraversal = this.graph.getCausalChain(nodeId, maxDepth);
+    const causalChains = Array.isArray(causalTraversal)
+      ? causalTraversal
+      : (causalTraversal && Array.isArray(causalTraversal.chain) ? causalTraversal.chain : []);
     
     // Analyze outcomes and risks
     const outcomes = [];
@@ -94,6 +97,7 @@ class CausalSimulator {
       risks,
       confidence: avgConfidence,
       causalChains: causalChains.length,
+      traversal: causalTraversal,
       summary: this._generateSummary(outcomes, risks, avgConfidence)
     };
   }

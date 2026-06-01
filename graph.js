@@ -21,8 +21,82 @@ const STANDARD_RELATIONS = Object.freeze([
   ...CAUSAL_RELATIONS,
 ]);
 
+const CAUSAL_RELATION_PRIORITY = Object.freeze({
+  CAUSES: 0,
+  ENABLES: 1,
+  LEADS_TO: 2,
+  DEPENDS_ON: 3,
+  PREVENTS: 4,
+});
+
 function nowIso() {
   return new Date().toISOString();
+}
+
+function edgeSortKey(edge) {
+  return [
+    edge.from || '',
+    edge.to || '',
+    edge.relation || '',
+    edge.source_ref || '',
+    edge.session_id || '',
+    edge.created_at || '',
+    String(edge.created || ''),
+  ].join('|');
+}
+
+function compareCausalEdges(a, b) {
+  const relationPriorityDiff =
+    (CAUSAL_RELATION_PRIORITY[a.relation] ?? 99) -
+    (CAUSAL_RELATION_PRIORITY[b.relation] ?? 99);
+  if (relationPriorityDiff !== 0) return relationPriorityDiff;
+
+  const strengthDiff = (b.strength ?? 0.5) - (a.strength ?? 0.5);
+  if (strengthDiff !== 0) return strengthDiff;
+
+  const confidenceDiff = (b.confidence ?? 0.5) - (a.confidence ?? 0.5);
+  if (confidenceDiff !== 0) return confidenceDiff;
+
+  const createdAtDiff = String(a.created_at || '').localeCompare(String(b.created_at || ''));
+  if (createdAtDiff !== 0) return createdAtDiff;
+
+  return edgeSortKey(a).localeCompare(edgeSortKey(b));
+}
+
+function normalizeCausalStep(edge) {
+  const step = {
+    from: edge.from,
+    to: edge.to,
+    relation: edge.relation,
+    strength: edge.strength ?? 0.5,
+    confidence: edge.confidence ?? edge.weight ?? 0.5,
+    source: edge.source || 'manual',
+    source_ref: edge.source_ref || '',
+    session_id: edge.session_id || '',
+    evidence: Array.isArray(edge.evidence) ? edge.evidence : [],
+    evidence_type: edge.evidence_type || '',
+    created_at: edge.created_at || '',
+    updated_at: edge.updated_at || '',
+  };
+
+  if (typeof edge.created === 'number') {
+    step.created = edge.created;
+  }
+
+  return step;
+}
+
+function attachTraversalMeta(chain, meta) {
+  Object.defineProperties(chain, {
+    start: { value: meta.start, enumerable: true },
+    chain: { value: chain, enumerable: true },
+    visited: { value: meta.visited, enumerable: true },
+    loops: { value: meta.loops, enumerable: true },
+    stoppedReason: { value: meta.stoppedReason, enumerable: true },
+    maxDepth: { value: meta.maxDepth, enumerable: true },
+    confidence: { value: meta.confidence, enumerable: true },
+  });
+  return chain;
 }
 
 function normalizeLoadedEdge(edge) {
@@ -687,28 +761,84 @@ class Graph {
 
   getCausalEdges(fromId) {
     const edges = this.getEdges(fromId);
-    return edges.filter(e => this.isCausalRelation(e.relation));
+    return edges
+      .filter(e => this.isCausalRelation(e.relation))
+      .slice()
+      .sort(compareCausalEdges);
   }
 
-  getCausalChain(fromId, maxDepth = 10) {
+  getCausalChain(fromId, maxDepthOrOpts = 10) {
+    const opts = typeof maxDepthOrOpts === 'object' && maxDepthOrOpts !== null
+      ? maxDepthOrOpts
+      : { maxDepth: maxDepthOrOpts };
+    const maxDepth = Number.isFinite(opts.maxDepth) ? Math.max(0, opts.maxDepth) : 10;
+
     const chain = [];
-    const visited = new Set();
-    const queue = [{ node: fromId, depth: 0, path: [] }];
+    const visited = [];
+    const visitedSet = new Set();
+    const loops = [];
+    const queue = [{ node: fromId, depth: 0, path: [], pathNodes: [fromId] }];
+    let stoppedReason = this._nodes[fromId] ? 'exhausted' : 'missing-start-node';
+    let confidenceTotal = 0;
+    let confidenceCount = 0;
+    let depthStopped = false;
+
+    if (!this._nodes[fromId]) {
+      return attachTraversalMeta(chain, {
+        start: fromId,
+        visited,
+        loops,
+        stoppedReason,
+        maxDepth,
+        confidence: 0,
+      });
+    }
 
     while (queue.length > 0) {
-      const { node, depth, path } = queue.shift();
-      if (depth >= maxDepth || visited.has(node)) continue;
-      visited.add(node);
+      const { node, depth, path, pathNodes } = queue.shift();
+      if (depth >= maxDepth) {
+        depthStopped = true;
+        continue;
+      }
+      if (!visitedSet.has(node)) {
+        visitedSet.add(node);
+        visited.push(node);
+      }
 
       const causalEdges = this.getCausalEdges(node);
       for (const edge of causalEdges) {
-        const newPath = [...path, { from: edge.from, to: edge.to, relation: edge.relation, strength: edge.strength, confidence: edge.confidence }];
+        const step = normalizeCausalStep(edge);
+        const newPath = [...path, step];
         chain.push(newPath);
-        queue.push({ node: edge.to, depth: depth + 1, path: newPath });
+        confidenceTotal += step.confidence ?? 0;
+        confidenceCount += 1;
+
+        if (pathNodes.includes(edge.to)) {
+          loops.push([...pathNodes, edge.to]);
+          continue;
+        }
+
+        queue.push({
+          node: edge.to,
+          depth: depth + 1,
+          path: newPath,
+          pathNodes: [...pathNodes, edge.to],
+        });
       }
     }
 
-    return chain;
+    if (depthStopped) {
+      stoppedReason = 'maxDepth';
+    }
+
+    return attachTraversalMeta(chain, {
+      start: fromId,
+      visited,
+      loops,
+      stoppedReason,
+      maxDepth,
+      confidence: confidenceCount > 0 ? confidenceTotal / confidenceCount : 0,
+    });
   }
 
   // ─── Temizlik ─────────────────────────────────────────────────────────────

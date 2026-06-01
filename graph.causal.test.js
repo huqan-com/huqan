@@ -122,7 +122,14 @@ describe('Causal Relations - v0.7', () => {
     graph.addEdge('A', 'B', 'CAUSES', { strength: 0.8, confidence: 0.75 });
     graph.addEdge('B', 'C', 'CAUSES', { strength: 0.7, confidence: 0.65 });
 
-    const chain = graph.getCausalChain('A');
+    const traversal = graph.getCausalChain('A');
+    const chain = traversal.chain;
+    assert.strictEqual(traversal.start, 'A');
+    assert.strictEqual(traversal.stoppedReason, 'exhausted');
+    assert.strictEqual(traversal.maxDepth, 10);
+    assert.strictEqual(Array.isArray(traversal.visited), true);
+    assert.strictEqual(Array.isArray(traversal.loops), true);
+    assert.ok(traversal.confidence > 0);
     assert.strictEqual(chain.length, 2);
     
     // İlk zincir: A -> B
@@ -140,6 +147,24 @@ describe('Causal Relations - v0.7', () => {
     assert.strictEqual(chain[1][1].to, 'C');
   });
 
+  it('getCausalChain deterministic edge order uygular', () => {
+    const graph = new Graph({ noLoad: true });
+    graph.addNode('A', 'A');
+    graph.addNode('B', 'B');
+    graph.addNode('C', 'C');
+    graph.addNode('D', 'D');
+
+    graph.addEdge('A', 'C', 'PREVENTS', { strength: 0.9, confidence: 0.95, createdAt: '2026-01-01T00:00:03.000Z' });
+    graph.addEdge('A', 'B', 'CAUSES', { strength: 0.6, confidence: 0.8, createdAt: '2026-01-01T00:00:02.000Z' });
+    graph.addEdge('A', 'D', 'CAUSES', { strength: 0.6, confidence: 0.9, createdAt: '2026-01-01T00:00:01.000Z' });
+
+    const traversal = graph.getCausalChain('A');
+    assert.strictEqual(traversal.chain.length >= 3, true);
+    assert.strictEqual(traversal.chain[0][0].to, 'D');
+    assert.strictEqual(traversal.chain[1][0].to, 'B');
+    assert.strictEqual(traversal.chain[2][0].to, 'C');
+  });
+
   it('getCausalChain maxDepth ile sınırlanır', () => {
     const graph = new Graph({ noLoad: true });
     graph.addNode('A', 'A');
@@ -151,13 +176,16 @@ describe('Causal Relations - v0.7', () => {
     graph.addEdge('B', 'C', 'CAUSES', { strength: 0.7 });
     graph.addEdge('C', 'D', 'CAUSES', { strength: 0.6 });
 
-    const chain = graph.getCausalChain('A', 2);
+    const traversal = graph.getCausalChain('A', 2);
+    const chain = traversal.chain;
     // Max depth 2 olduğu için A->B->C kadar gider, D'ye ulaşamaz
     assert.ok(chain.length > 0);
     // En uzun zincir 2 adımdan uzun olmamalı
     for (const path of chain) {
       assert.ok(path.length <= 2);
     }
+    assert.strictEqual(traversal.maxDepth, 2);
+    assert.strictEqual(traversal.stoppedReason, 'maxDepth');
   });
 
   it('getCausalChain causal loop tespiti yapar', () => {
@@ -170,10 +198,24 @@ describe('Causal Relations - v0.7', () => {
     graph.addEdge('B', 'C', 'CAUSES', { strength: 0.7 });
     graph.addEdge('C', 'A', 'CAUSES', { strength: 0.6 }); // Loop
 
-    const chain = graph.getCausalChain('A');
+    const traversal = graph.getCausalChain('A');
+    const chain = traversal.chain;
     // Loop tespiti için visited set kullanılır, sonsuz döngü olmamalı
     assert.ok(chain.length > 0);
     assert.ok(chain.length < 10); // Sonsuz döngü değil
+    assert.ok(traversal.loops.length > 0);
+    assert.strictEqual(traversal.stoppedReason, 'exhausted');
+  });
+
+  it('getCausalChain missing start node için güvenli sonuç döner', () => {
+    const graph = new Graph({ noLoad: true });
+    const traversal = graph.getCausalChain('missing-node');
+    assert.ok(Array.isArray(traversal.chain));
+    assert.strictEqual(traversal.chain.length, 0);
+    assert.deepStrictEqual(traversal.visited, []);
+    assert.deepStrictEqual(traversal.loops, []);
+    assert.strictEqual(traversal.stoppedReason, 'missing-start-node');
+    assert.strictEqual(traversal.confidence, 0);
   });
 
   it('legacy JSON load keeps non-causal edges intact and defaults causal strength', () => {
