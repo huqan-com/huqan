@@ -332,6 +332,38 @@ function normalizeCausalChain(chain) {
   }).filter(Boolean);
 }
 
+function normalizeCausalTraversal(traversal, fallback = {}) {
+  const rawChain = Array.isArray(traversal)
+    ? traversal
+    : (Array.isArray(traversal?.chain) ? traversal.chain : []);
+  const chain = rawChain.map(normalizeCausalChain).filter(path => Array.isArray(path) && path.length > 0);
+  const visited = Array.isArray(traversal?.visited)
+    ? dedupeStable(traversal.visited.map(item => normalizeText(item)).filter(Boolean))
+    : [];
+  const loops = Array.isArray(traversal?.loops)
+    ? traversal.loops
+        .map(loop => Array.isArray(loop) ? loop.map(item => normalizeText(item)).filter(Boolean) : [])
+        .filter(loop => loop.length > 0)
+    : [];
+  const stoppedReason = normalizeText(traversal?.stoppedReason || fallback.stoppedReason || (chain.length > 0 ? 'exhausted' : 'insufficient-data'));
+  const maxDepthValue = Number.isFinite(traversal?.maxDepth)
+    ? traversal.maxDepth
+    : (Number.isFinite(fallback.maxDepth) ? fallback.maxDepth : 0);
+  const confidenceValue = Number.isFinite(traversal?.confidence)
+    ? traversal.confidence
+    : (Number.isFinite(fallback.confidence) ? fallback.confidence : 0);
+
+  return {
+    chain,
+    start: normalizeText(traversal?.start || fallback.start || fallback.nodeId || ''),
+    visited,
+    loops,
+    stoppedReason,
+    maxDepth: maxDepthValue,
+    confidence: confidenceValue,
+  };
+}
+
 function deriveCausalRiskLevel(risks, confidence = 0, causalChains = 0, evidence = []) {
   if (!Array.isArray(risks) || risks.length === 0) {
     if (causalChains === 0 || !Array.isArray(evidence) || evidence.length === 0) {
@@ -452,7 +484,22 @@ function buildCausalSummary(simulationResult = {}) {
   const recommendation = normalizeText(
     simulationResult.recommendation || deriveCausalRecommendation(risks, confidence)
   );
+  const input = simulationResult.input && typeof simulationResult.input === 'object'
+    ? cloneValue(simulationResult.input)
+    : {
+        action: normalizeText(simulationResult.action || ''),
+        nodeId: simulationResult.nodeId || '',
+        changeType: simulationResult.changeType || 'unknown',
+        newState: typeof simulationResult.newState === 'undefined' ? null : cloneValue(simulationResult.newState),
+      };
   const riskLevel = deriveCausalRiskLevel(risks, confidence, causalChains, evidence);
+  const traversal = normalizeCausalTraversal(simulationResult.traversal, {
+    start: simulationResult.nodeId || '',
+    nodeId: simulationResult.nodeId || '',
+    maxDepth: input.maxDepth,
+    confidence,
+    stoppedReason: simulationResult.traversal?.stoppedReason || (causalChains > 0 ? 'exhausted' : 'insufficient-data'),
+  });
   const conclusion = deriveCausalConclusion({
     riskLevel,
     recommendation,
@@ -463,14 +510,6 @@ function buildCausalSummary(simulationResult = {}) {
     unknowns,
     riskLevel,
   });
-  const input = simulationResult.input && typeof simulationResult.input === 'object'
-    ? cloneValue(simulationResult.input)
-    : {
-        action: normalizeText(simulationResult.action || ''),
-        nodeId: simulationResult.nodeId || '',
-        changeType: simulationResult.changeType || 'unknown',
-        newState: typeof simulationResult.newState === 'undefined' ? null : cloneValue(simulationResult.newState),
-      };
 
   return {
     ok: true,
@@ -491,9 +530,8 @@ function buildCausalSummary(simulationResult = {}) {
     recommendation,
     nextQuestions,
     summary,
-    traversal: simulationResult.traversal && typeof simulationResult.traversal === 'object'
-      ? cloneValue(simulationResult.traversal)
-      : undefined,
+    sourceMode: normalizeText(simulationResult.mode || 'causal') || 'causal',
+    traversal,
   };
 }
 

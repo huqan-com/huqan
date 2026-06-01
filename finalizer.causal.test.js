@@ -170,7 +170,7 @@ describe('Causal Finalizer - v0.7', () => {
   it('buildCausalSummary causal mode için deterministic yargı özeti üretir', () => {
     const simulation = {
       ok: true,
-      mode: 'causal',
+      mode: 'causal-backed',
       action: 'autoLearn default true yap',
       nodeId: 'autoLearn_default_true',
       changeType: 'modify',
@@ -199,7 +199,7 @@ describe('Causal Finalizer - v0.7', () => {
           severity: 'critical',
           impact: 0.9,
           confidence: 0.85,
-          description: 'CAUSES: autoLearn_default_true → unsupported_llm_output',
+          description: 'CAUSES: autoLearn_default_true -> unsupported_llm_output',
         },
       ],
       confidence: 0.85,
@@ -219,7 +219,17 @@ describe('Causal Finalizer - v0.7', () => {
       evidence: ['shield-policy'],
       unknowns: ['Unsupported output details are missing'],
       recommendation: 'Change is not recommended.',
-      traversal: { loops: [], stoppedReason: 'exhausted', maxDepth: 10, confidence: 0.85 },
+      traversal: {
+        chain: [[
+          { from: 'autoLearn_default_true', to: 'unsupported_llm_output', relation: 'CAUSES', strength: 0.9, confidence: 0.85 },
+        ]],
+        start: 'autoLearn_default_true',
+        visited: ['autoLearn_default_true', 'unsupported_llm_output'],
+        loops: [],
+        stoppedReason: 'exhausted',
+        maxDepth: 10,
+        confidence: 0.85,
+      },
       summary: 'Simulation found 1 outcome(s) with 1 risk(s). Confidence: 85.0%',
     };
 
@@ -227,15 +237,24 @@ describe('Causal Finalizer - v0.7', () => {
 
     assert.strictEqual(result.ok, true);
     assert.strictEqual(result.mode, 'causal');
+    assert.strictEqual(result.sourceMode, 'causal-backed');
     assert.strictEqual(result.riskLevel, 'critical');
     assert.ok(result.conclusion.includes('Değişiklik önerilmiyor'));
     assert.ok(result.conclusion.includes('Confidence'));
     assert.ok(result.recommendation.includes('Change is not recommended'));
     assert.strictEqual(result.affectedNodes.length, 1);
     assert.strictEqual(result.evidence.length, 1);
+    assert.ok(result.traversal);
+    assert.strictEqual(result.traversal.start, 'autoLearn_default_true');
+    assert.deepStrictEqual(result.traversal.visited, ['autoLearn_default_true', 'unsupported_llm_output']);
+    assert.deepStrictEqual(result.traversal.loops, []);
+    assert.strictEqual(result.traversal.stoppedReason, 'exhausted');
+    assert.strictEqual(result.traversal.maxDepth, 10);
+    assert.strictEqual(result.traversal.confidence, 0.85);
+    assert.ok(Array.isArray(result.traversal.chain));
+    assert.strictEqual(result.traversal.chain.length, 1);
     assert.strictEqual(result.nextQuestions.length >= 2, true);
-        assert.ok(result.nextQuestions.some(q => q.toLowerCase().includes('onay')));
-        assert.ok(result.nextQuestions.some(q => q.toLowerCase().includes('onay')));
+    assert.ok(result.nextQuestions.some(q => q.toLowerCase().includes('onay')));
     assert.strictEqual(result.unknowns.length, 1);
   });
 
