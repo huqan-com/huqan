@@ -14,6 +14,7 @@ AXIOM is a local-first symbolic reasoning core. It learns facts, verifies claims
 - `AXIOM_AGENT_VERSION=v3` keeps the checkpoint/resume agent available
 - Discovery engine skeleton is shipped through workflow tools
 - Product UI, Shield, ingest routing, demo smoke, and SDK wrappers are shipped in the v0.6 line
+- v0.6.0 is the aligned release line for the productization and shield surface
 
 ## What AXIOM Does
 
@@ -184,6 +185,16 @@ It covers:
 - the product UI tabs and graph metadata
 
 Use it when you want AXIOM to coordinate tools through a single runtime instead of invoking capabilities directly.
+
+### v0.6 Release
+
+The current release line is `v0.6.0`.
+
+Release artifacts:
+
+- `docs/v0.6-release-notes.md`
+- `docs/demo-v0.6.md`
+- `docs/sdk-v0.6.md`
 
 ## Persistence
 

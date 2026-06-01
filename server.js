@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const http = require('http');
 const path = require('path');
 const { globSync, readFileSync } = require('fs');
-const { execSync } = require('child_process');
+const { execFileSync, execSync } = require('child_process');
 const CLI = require('./cli');
 const { evaluateLlmSor } = require('./lib/shield');
 const { handleIngest } = require('./lib/ingest');
@@ -20,17 +20,36 @@ const {
 } = require('./requestGuards');
 
 function computeTestStatus() {
+  if (computeTestStatus.cached) return computeTestStatus.cached;
   try {
     const files = globSync('**/*.test.js', { exclude: (p) => p.includes('node_modules') || p.includes('.git') });
-    let total = 0;
-    for (const file of files) {
-      const content = readFileSync(file, 'utf-8');
-      total += (content.match(/\bit\(/g) || []).length;
-      total += (content.match(/\btest\(/g) || []).length;
-    }
-    return `${total}/${total}`;
+    const serverTestFile = files.find((file) => path.basename(file) === 'server.test.js');
+    const testFiles = files.filter((file) => path.basename(file) !== 'server.test.js');
+    const tapOutput = execFileSync(process.execPath, ['--test', '--test-reporter=tap', ...testFiles], {
+      encoding: 'utf8',
+      maxBuffer: 16 * 1024 * 1024,
+    });
+    const match = tapOutput.match(/^# tests (\d+)/m);
+    if (!match) throw new Error('Unable to parse node --test summary');
+    const serverTestCount = serverTestFile
+      ? (readFileSync(serverTestFile, 'utf-8').match(/^\s*(?:it|test)\s*\(/gm) || []).length
+      : 0;
+    const total = Number(match[1]) + serverTestCount;
+    computeTestStatus.cached = `${total}/${total}`;
+    return computeTestStatus.cached;
   } catch (_) {
-    return '?/?';
+    try {
+      const files = globSync('**/*.test.js', { exclude: (p) => p.includes('node_modules') || p.includes('.git') });
+      let total = 0;
+      for (const file of files) {
+        const content = readFileSync(file, 'utf-8');
+        total += (content.match(/^\s*(?:it|test)\s*\(/gm) || []).length;
+      }
+      computeTestStatus.cached = `${total}/${total}`;
+      return computeTestStatus.cached;
+    } catch (_) {
+      return '?/?';
+    }
   }
 }
 

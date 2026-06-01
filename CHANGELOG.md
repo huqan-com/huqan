@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.6.0
+
+Released 2026-06-01.
+
+### Added
+- Productization & Shield release promoted from `v0.6.0-rc.1`.
+- Finalized v0.6 UI polish, Shield layer, ingest separation, demo smoke, and SDK wrappers.
+- Release metadata aligned across package version, README, and release notes.
+
+### Tests
+- 348/348 passing.
+
 ## v0.5.0-agent-os-discovery
 
 Released 2026-06-01.
