@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { buildAuditEvent, getAuditEvents: filterAuditEvents, normalizeAuditEvent } = require('./lib/audit-log');
+const { normalizeCandidateClaim } = require('./lib/conflict-detector');
 
 // SQLite opsiyonel — yoksa JSON fallback
 let Database;
@@ -150,6 +151,7 @@ class Graph {
     this._pruneThreshold = opts.pruneThreshold || 0.01;
     this._nodes = {};
     this._edges = [];
+    this._candidateClaims = [];
     this._auditEvents = [];
     this._outIndex = new Map();
     this._inIndex = new Map();
@@ -226,6 +228,22 @@ class Graph {
         trust_policy_version TEXT,
         details TEXT NOT NULL DEFAULT '{}'
       );
+      CREATE TABLE IF NOT EXISTS candidate_claims (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        candidate_id TEXT NOT NULL,
+        workspace_id TEXT NOT NULL DEFAULT 'default',
+        claim TEXT NOT NULL DEFAULT '',
+        proposed_edge TEXT NOT NULL DEFAULT 'null',
+        provenance TEXT NOT NULL DEFAULT 'null',
+        conflict TEXT NOT NULL DEFAULT 'null',
+        recommendation TEXT NOT NULL DEFAULT 'accept',
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TEXT NOT NULL DEFAULT '',
+        reviewed_at TEXT NOT NULL DEFAULT '',
+        reviewed_by TEXT NOT NULL DEFAULT '',
+        warnings TEXT NOT NULL DEFAULT '[]',
+        UNIQUE(workspace_id, candidate_id)
+      );
       CREATE TRIGGER IF NOT EXISTS audit_log_no_update
       BEFORE UPDATE ON audit_log
       BEGIN
@@ -240,6 +258,7 @@ class Graph {
 
     const edgeColumns = this._db.prepare('PRAGMA table_info(edges)').all().map(c => c.name);
     const nodeColumns = this._db.prepare('PRAGMA table_info(nodes)').all().map(c => c.name);
+    const candidateColumns = this._db.prepare('PRAGMA table_info(candidate_claims)').all().map(c => c.name);
     if (!nodeColumns.includes('workspace_id')) this._db.exec("ALTER TABLE nodes ADD COLUMN workspace_id TEXT NOT NULL DEFAULT 'default'");
     if (!nodeColumns.includes('created_at')) this._db.exec("ALTER TABLE nodes ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
     if (!nodeColumns.includes('last_seen')) this._db.exec("ALTER TABLE nodes ADD COLUMN last_seen TEXT NOT NULL DEFAULT ''");
@@ -258,6 +277,18 @@ class Graph {
     if (!edgeColumns.includes('created_at')) this._db.exec("ALTER TABLE edges ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
     if (!edgeColumns.includes('strength')) this._db.exec('ALTER TABLE edges ADD COLUMN strength REAL NOT NULL DEFAULT 0.5');
     if (!edgeColumns.includes('provenance')) this._db.exec("ALTER TABLE edges ADD COLUMN provenance TEXT NOT NULL DEFAULT 'null'");
+    if (!candidateColumns.includes('candidate_id')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN candidate_id TEXT NOT NULL DEFAULT ''");
+    if (!candidateColumns.includes('workspace_id')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN workspace_id TEXT NOT NULL DEFAULT 'default'");
+    if (!candidateColumns.includes('claim')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN claim TEXT NOT NULL DEFAULT ''");
+    if (!candidateColumns.includes('proposed_edge')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN proposed_edge TEXT NOT NULL DEFAULT 'null'");
+    if (!candidateColumns.includes('provenance')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN provenance TEXT NOT NULL DEFAULT 'null'");
+    if (!candidateColumns.includes('conflict')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN conflict TEXT NOT NULL DEFAULT 'null'");
+    if (!candidateColumns.includes('recommendation')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN recommendation TEXT NOT NULL DEFAULT 'accept'");
+    if (!candidateColumns.includes('status')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'");
+    if (!candidateColumns.includes('created_at')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
+    if (!candidateColumns.includes('reviewed_at')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN reviewed_at TEXT NOT NULL DEFAULT ''");
+    if (!candidateColumns.includes('reviewed_by')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN reviewed_by TEXT NOT NULL DEFAULT ''");
+    if (!candidateColumns.includes('warnings')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN warnings TEXT NOT NULL DEFAULT '[]'");
 
     this._db.exec(`
       CREATE INDEX IF NOT EXISTS idx_nodes_workspace_label ON nodes(workspace_id, label);
@@ -267,6 +298,8 @@ class Graph {
       CREATE INDEX IF NOT EXISTS idx_edges_workspace_from_to_relation ON edges(workspace_id, from_id, to_id, relation);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_edges_workspace_unique ON edges(workspace_id, from_id, to_id, relation);
       CREATE INDEX IF NOT EXISTS idx_audit_workspace_timestamp ON audit_log(workspace_id, timestamp);
+      CREATE INDEX IF NOT EXISTS idx_candidates_workspace_status ON candidate_claims(workspace_id, status, recommendation);
+      CREATE INDEX IF NOT EXISTS idx_candidates_workspace_created ON candidate_claims(workspace_id, created_at);
     `);
 
     // Prepared statements
@@ -308,6 +341,25 @@ class Graph {
       getEdge: this._db.prepare('SELECT * FROM edges WHERE from_id = ? AND to_id = ? AND relation = ? AND workspace_id = ?'),
       getEdges: this._db.prepare('SELECT * FROM edges WHERE from_id = ? AND workspace_id = ?'),
       getInEdges: this._db.prepare('SELECT * FROM edges WHERE to_id = ? AND workspace_id = ?'),
+      getCandidateClaim: this._db.prepare('SELECT * FROM candidate_claims WHERE candidate_id = ? AND workspace_id = ?'),
+      allCandidateClaims: this._db.prepare('SELECT * FROM candidate_claims ORDER BY created_at ASC, candidate_id ASC'),
+      upsertCandidateClaim: this._db.prepare(`
+        INSERT INTO candidate_claims (
+          candidate_id, workspace_id, claim, proposed_edge, provenance, conflict,
+          recommendation, status, created_at, reviewed_at, reviewed_by, warnings
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(workspace_id, candidate_id) DO UPDATE SET
+          claim = excluded.claim,
+          proposed_edge = excluded.proposed_edge,
+          provenance = excluded.provenance,
+          conflict = excluded.conflict,
+          recommendation = excluded.recommendation,
+          status = excluded.status,
+          created_at = excluded.created_at,
+          reviewed_at = excluded.reviewed_at,
+          reviewed_by = excluded.reviewed_by,
+          warnings = excluded.warnings
+      `),
       pruneEdges: this._db.prepare('DELETE FROM edges WHERE weight < ?'),
       countNodes: this._db.prepare('SELECT COUNT(*) as c FROM nodes'),
       countEdges: this._db.prepare('SELECT COUNT(*) as c FROM edges'),
@@ -423,6 +475,68 @@ class Graph {
 
   getAuditEvents(filters = {}) {
     return filterAuditEvents(this._auditEvents, filters);
+  }
+
+  addCandidateClaim(candidate, opts = {}) {
+    const normalized = normalizeCandidateClaim({
+      ...candidate,
+      workspaceId: opts.workspaceId || candidate?.workspaceId || candidate?.provenance?.workspaceId || candidate?.proposedEdge?.workspaceId,
+    });
+    const workspaceId = normalizeWorkspaceId(normalized.workspaceId);
+    const index = this._candidateClaims.findIndex(item =>
+      item.candidateId === normalized.candidateId &&
+      normalizeWorkspaceId(item.workspaceId) === workspaceId
+    );
+
+    if (index >= 0) {
+      this._candidateClaims[index] = {
+        ...this._candidateClaims[index],
+        ...normalized,
+        workspaceId,
+        candidateId: normalized.candidateId,
+      };
+    } else {
+      this._candidateClaims.push({
+        ...normalized,
+        workspaceId,
+        candidateId: normalized.candidateId,
+      });
+    }
+
+    if (this._db && this._stmts) {
+      this._stmts.upsertCandidateClaim.run(
+        normalized.candidateId,
+        workspaceId,
+        normalized.claim || '',
+        JSON.stringify(normalized.proposedEdge ?? null),
+        JSON.stringify(normalized.provenance ?? null),
+        JSON.stringify(normalized.conflict ?? null),
+        normalized.recommendation || 'accept',
+        normalized.status || 'pending',
+        normalized.createdAt || nowIso(),
+        normalized.reviewedAt || '',
+        normalized.reviewedBy || '',
+        JSON.stringify(normalized.warnings || []),
+      );
+    }
+
+    return this.getCandidateClaims({ workspaceId }).find(item => item.candidateId === normalized.candidateId) || normalized;
+  }
+
+  getCandidateClaims(filters = {}) {
+    const normalizedFilters = {
+      workspaceId: filters.workspaceId || 'default',
+      ...filters,
+    };
+    return this._candidateClaims.filter((candidate) => {
+      if (normalizedFilters.workspaceId && normalizeWorkspaceId(candidate.workspaceId) !== normalizeWorkspaceId(normalizedFilters.workspaceId)) return false;
+      if (normalizedFilters.status && candidate.status !== normalizedFilters.status) return false;
+      if (normalizedFilters.recommendation && candidate.recommendation !== normalizedFilters.recommendation) return false;
+      if (normalizedFilters.candidateId && candidate.candidateId !== normalizedFilters.candidateId) return false;
+      if (normalizedFilters.reviewedBy && candidate.reviewedBy !== normalizedFilters.reviewedBy) return false;
+      if (normalizedFilters.provenanceId && candidate.provenance?.provenanceId !== normalizedFilters.provenanceId) return false;
+      return true;
+    });
   }
 
   removeNode(id, workspaceId = 'default') {
@@ -663,6 +777,7 @@ class Graph {
     return {
       nodes: this.nodeCount(),
       edges: this.edgeCount(),
+      candidateClaims: this._candidateClaims.length,
       decayLambda: this._decayLambda,
       backend: this._db ? 'sqlite' : 'json',
     };
@@ -718,9 +833,9 @@ class Graph {
             JSON.stringify(node.provenance ?? null)
           );
         }
-        for (const edge of this._edges) {
-          this._db.prepare(`
-            INSERT INTO edges (workspace_id, from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, evidence_type, confidence_history, company_mode, source_type, updated_at, created_at, provenance, created)
+      for (const edge of this._edges) {
+        this._db.prepare(`
+          INSERT INTO edges (workspace_id, from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, evidence_type, confidence_history, company_mode, source_type, updated_at, created_at, provenance, created)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(workspace_id, from_id, to_id, relation) DO UPDATE SET
               workspace_id = excluded.workspace_id,
@@ -757,6 +872,22 @@ class Graph {
             edge.created
           );
         }
+        for (const candidate of this._candidateClaims) {
+          this._stmts.upsertCandidateClaim.run(
+            candidate.candidateId,
+            normalizeWorkspaceId(candidate.workspaceId),
+            candidate.claim || '',
+            JSON.stringify(candidate.proposedEdge ?? null),
+            JSON.stringify(candidate.provenance ?? null),
+            JSON.stringify(candidate.conflict ?? null),
+            candidate.recommendation || 'accept',
+            candidate.status || 'pending',
+            candidate.createdAt || nowIso(),
+            candidate.reviewedAt || '',
+            candidate.reviewedBy || '',
+            JSON.stringify(candidate.warnings || []),
+          );
+        }
         for (const event of this._auditEvents) {
           this._stmts.insertAuditEvent.run(
             event.auditId,
@@ -777,7 +908,12 @@ class Graph {
     }
 
     // JSON de yaz (Rust katmanı ve fallback için)
-    const data = { nodes: this._nodes, edges: this._edges, auditEvents: this._auditEvents };
+    const data = {
+      nodes: this._nodes,
+      edges: this._edges,
+      candidateClaims: this._candidateClaims,
+      auditEvents: this._auditEvents,
+    };
     fs.writeFileSync(this.memoryPath, JSON.stringify(data));
 
     // Embedding'leri geri koy
@@ -792,6 +928,7 @@ class Graph {
   load() {
     this._nodes = {};
     this._edges = [];
+    this._candidateClaims = [];
     this._auditEvents = [];
     this._outIndex.clear();
     this._inIndex.clear();
@@ -801,9 +938,10 @@ class Graph {
       try {
         const nodes = this._stmts.allNodes.all();
         const edges = this._stmts.allEdges.all();
+        const candidateRows = this._stmts.allCandidateClaims.all();
         const auditRows = this._stmts.allAuditEvents.all();
 
-        if (nodes.length > 0 || edges.length > 0 || auditRows.length > 0) {
+        if (nodes.length > 0 || edges.length > 0 || auditRows.length > 0 || candidateRows.length > 0) {
           this._nodes = {};
           for (const row of nodes) {
             this._nodes[row.id] = {
@@ -842,6 +980,20 @@ class Graph {
             created: row.created,
             strength: row.strength,
           }));
+          this._candidateClaims = candidateRows.map(row => normalizeCandidateClaim({
+            candidateId: row.candidate_id,
+            workspaceId: row.workspace_id || 'default',
+            claim: row.claim || '',
+            proposedEdge: JSON.parse(row.proposed_edge || 'null'),
+            provenance: JSON.parse(row.provenance || 'null'),
+            conflict: JSON.parse(row.conflict || 'null'),
+            recommendation: row.recommendation || 'accept',
+            status: row.status || 'pending',
+            createdAt: row.created_at || '',
+            reviewedAt: row.reviewed_at || '',
+            reviewedBy: row.reviewed_by || '',
+            warnings: JSON.parse(row.warnings || '[]'),
+          }));
           this._auditEvents = auditRows.map(row => normalizeAuditEvent({
             auditId: row.audit_id,
             eventType: row.event_type,
@@ -877,6 +1029,7 @@ class Graph {
       const data = JSON.parse(fs.readFileSync(this.memoryPath, 'utf-8'));
       this._nodes = data.nodes || {};
       this._edges = (data.edges || []).map(edge => normalizeLoadedEdge(edge));
+      this._candidateClaims = (data.candidateClaims || data.candidate_claims || []).map(candidate => normalizeCandidateClaim(candidate));
       this._auditEvents = (data.auditEvents || data.audit_log || []).map(event => normalizeAuditEvent(event));
       for (const node of Object.values(this._nodes)) {
         if (!node.created_at && typeof node.created === 'number') {

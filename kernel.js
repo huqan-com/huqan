@@ -6,6 +6,7 @@ const PluginManager = require('./plugin');
 const createNlp = require('./nlp');
 const VerifyService = require('./lib/verify');
 const { buildProvenance } = require('./lib/provenance-ingest');
+const { detectClaimConflict, routeCandidateClaim } = require('./lib/conflict-detector');
 
 let RustGraph;
 try { RustGraph = require('./rustGraph'); } catch {}
@@ -572,6 +573,28 @@ class Kernel {
       provenanceWarnings,
       trustPolicyVersion: provenance ? provenance.trustPolicyVersion : undefined,
     });
+  }
+
+  addCandidateClaim(candidate, opts = {}) {
+    if (!this.graph || typeof this.graph.addCandidateClaim !== 'function') {
+      throw new Error('Graph candidate claim storage is unavailable.');
+    }
+    return this.graph.addCandidateClaim(candidate, opts);
+  }
+
+  getCandidateClaims(filters = {}) {
+    if (!this.graph || typeof this.graph.getCandidateClaims !== 'function') {
+      return [];
+    }
+    return this.graph.getCandidateClaims(filters);
+  }
+
+  detectClaimConflict(claim, opts = {}) {
+    return detectClaimConflict(this, claim, opts);
+  }
+
+  ingestCandidateClaim(input = {}, opts = {}) {
+    return routeCandidateClaim(this, input, opts);
   }
 
   _parsePredicate(predicate) {
