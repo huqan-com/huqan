@@ -133,6 +133,22 @@ function normalizeLoadedEdge(edge) {
   return normalized;
 }
 
+function cloneAuditEvent(event) {
+  return normalizeAuditEvent({
+    auditId: event.auditId,
+    eventType: event.eventType,
+    targetType: event.targetType,
+    targetId: event.targetId,
+    workspaceId: event.workspaceId,
+    actor: event.actor,
+    timestamp: event.timestamp,
+    sourceRef: event.sourceRef,
+    provenanceId: event.provenanceId,
+    trustPolicyVersion: event.trustPolicyVersion,
+    details: event.details,
+  });
+}
+
 class Graph {
   /**
    * @param {object|string} [opts]
@@ -393,16 +409,15 @@ class Graph {
   addNode(id, label, provenance = null, opts = {}) {
     const now = Date.now();
     const isoNow = nowIso();
-    const hasExplicitProvenance = arguments.length >= 3;
+    const hasExplicitProvenance = provenance && typeof provenance === 'object';
     const workspaceId = normalizeWorkspaceId(opts.workspaceId || provenance?.workspaceId);
     if (this._db && this._stmts) {
       // SQLite path
       const existing = this._stmts.getNode.get(id, workspaceId);
       const vector = existing ? existing.vector : '{}';
       const createdAt = existing && existing.created_at ? existing.created_at : isoNow;
-      const nextProvenance = hasExplicitProvenance
-        ? provenance
-        : JSON.parse((existing && existing.provenance) || 'null');
+      const existingProvenance = JSON.parse((existing && existing.provenance) || 'null');
+      const nextProvenance = hasExplicitProvenance ? provenance : existingProvenance;
       this._stmts.upsertNode.run(id, workspaceId, label, 0.5, now, createdAt, now, isoNow, vector, JSON.stringify(nextProvenance ?? null));
       // In-memory sync
       if (this._nodes[id] && normalizeWorkspaceId(this._nodes[id].workspaceId) === workspaceId) {
@@ -418,7 +433,7 @@ class Graph {
           id, label, tags: [], vector: {}, weight: 0.5, workspaceId,
           created: now, created_at: createdAt, lastAccessed: now,
           lastSeen: isoNow, last_seen: isoNow,
-          provenance: hasExplicitProvenance ? provenance : null,
+          provenance: nextProvenance ?? null,
         };
       }
     } else {
@@ -474,7 +489,32 @@ class Graph {
   }
 
   getAuditEvents(filters = {}) {
-    return filterAuditEvents(this._auditEvents, filters);
+    let events = this._auditEvents;
+    if (this._db && this._stmts) {
+      const dbEvents = this._stmts.allAuditEvents.all().map((row) => normalizeAuditEvent({
+        auditId: row.audit_id,
+        eventType: row.event_type,
+        targetType: row.target_type || '',
+        targetId: row.target_id || '',
+        workspaceId: row.workspace_id || 'default',
+        actor: row.actor || 'system',
+        timestamp: row.timestamp,
+        sourceRef: row.source_ref || '',
+        provenanceId: row.provenance_id || '',
+        trustPolicyVersion: row.trust_policy_version || '',
+        details: JSON.parse(row.details || '{}'),
+      }));
+      const merged = new Map();
+      for (const event of [...dbEvents, ...this._auditEvents]) {
+        merged.set(event.auditId, cloneAuditEvent(event));
+      }
+      events = Array.from(merged.values()).sort((a, b) => {
+        const timestampDiff = String(a.timestamp || '').localeCompare(String(b.timestamp || ''));
+        if (timestampDiff !== 0) return timestampDiff;
+        return String(a.auditId || '').localeCompare(String(b.auditId || ''));
+      });
+    }
+    return filterAuditEvents(events, filters);
   }
 
   addCandidateClaim(candidate, opts = {}) {
@@ -574,7 +614,7 @@ class Graph {
   addEdge(fromId, toId, relation, opts = {}) {
     const workspaceId = normalizeWorkspaceId(opts.workspaceId || opts.provenance?.workspaceId);
     if (!this.getNode(fromId, workspaceId) || !this.getNode(toId, workspaceId)) return null;
-    const hasExplicitProvenance = Object.prototype.hasOwnProperty.call(opts, 'provenance');
+    const hasExplicitProvenance = opts.provenance && typeof opts.provenance === 'object';
     
     // Causal relation validation for v0.7
     const isCausal = CAUSAL_RELATIONS.includes(relation);

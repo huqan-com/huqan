@@ -61,6 +61,58 @@ describe('Provenance System', () => {
     assert.strictEqual(learnEvents[0].workspaceId, 'default');
   });
 
+  it('preserves existing provenance when node or edge update passes null', () => {
+    const kernel = new Kernel({ noLoad: true, useSQLite: false, ...makePaths('preserve-null') });
+    const provenance = makeProvenance({ provenanceId: 'prov-preserve-null' });
+
+    kernel.learn('kedi hayvandir', { provenance });
+
+    kernel.graph.addNode('kedi', 'kedi', null, { workspaceId: 'default' });
+    kernel.graph.addEdge('kedi', 'hayvan', 'tür', { provenance: null, workspaceId: 'default' });
+
+    const node = kernel.graph.getNode('kedi');
+    const edge = kernel.graph.getEdge('kedi', 'hayvan', 'tür');
+
+    assert.strictEqual(node.provenance.provenanceId, provenance.provenanceId);
+    assert.strictEqual(edge.provenance.provenanceId, provenance.provenanceId);
+    assert.strictEqual(node.provenance.confidence, 0.91);
+    assert.strictEqual(edge.provenance.confidence, 0.91);
+  });
+
+  it('preserves existing provenance when node or edge update passes null in SQLite mode', (t) => {
+    const paths = makePaths('preserve-null-sqlite');
+    const provenance = makeProvenance({ provenanceId: 'prov-preserve-null-sqlite' });
+    const kernel = new Kernel({ noLoad: true, useSQLite: true, ...paths });
+
+    if (kernel.graph.getStats().backend !== 'sqlite') {
+      kernel.graph.close();
+      return t.skip('better-sqlite3 is unavailable');
+    }
+
+    t.after(() => kernel.graph.close());
+
+    kernel.learn('kedi hayvandir', { provenance });
+    kernel.graph.addNode('kedi', 'kedi', null, { workspaceId: 'default' });
+    kernel.graph.addEdge('kedi', 'hayvan', 'tür', { provenance: null, workspaceId: 'default' });
+    kernel.graph.save();
+
+    const reader = new Kernel({ useSQLite: true, ...paths });
+    if (reader.graph.getStats().backend !== 'sqlite') {
+      reader.graph.close();
+      return t.skip('better-sqlite3 is unavailable');
+    }
+    t.after(() => reader.graph.close());
+    reader.graph.load();
+
+    const node = reader.graph.getNode('kedi');
+    const edge = reader.graph.getEdge('kedi', 'hayvan', 'tür');
+
+    assert.strictEqual(node.provenance.provenanceId, provenance.provenanceId);
+    assert.strictEqual(edge.provenance.provenanceId, provenance.provenanceId);
+    assert.strictEqual(node.provenance.confidence, 0.91);
+    assert.strictEqual(edge.provenance.confidence, 0.91);
+  });
+
   it('keeps workspace scoped provenance isolated', () => {
     const kernel = new Kernel({ noLoad: true, useSQLite: false, ...makePaths('workspace-scope') });
     const provenance = makeProvenance({ provenanceId: 'prov-workspace', workspaceId: 'workspace-a' });
@@ -92,7 +144,8 @@ describe('Provenance System', () => {
     writer.learn('kedi hayvandir', { provenance });
     writer.graph.save();
 
-    const reader = new Kernel({ useSQLite: false, ...paths });
+    const reader = new Kernel({ noLoad: true, useSQLite: false, ...paths });
+    reader.graph.load();
     const node = reader.graph.getNode('kedi');
     const edge = reader.graph.getEdge('kedi', 'hayvan', 'tür');
     const learnEvents = reader.graph.getAuditEvents({ eventType: 'LEARN' });
