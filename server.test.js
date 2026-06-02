@@ -368,6 +368,25 @@ describe('Server - API', () => {
     assert.strictEqual(trustJson.error.code, 'INVALID_QUERY');
   });
 
+  it('GET trust query endpoints require API key when configured', async () => {
+    const previousApiKey = process.env.AXIOM_API_KEY;
+    process.env.AXIOM_API_KEY = 'trust-secret';
+    try {
+      const unauthorized = await request(`${BASE}/api/provenance?targetId=kedi&workspaceId=default`);
+      assert.strictEqual(unauthorized.status, 401);
+
+      const authorized = await request(`${BASE}/api/provenance?targetId=kedi&workspaceId=default`, {
+        headers: { 'X-API-Key': 'trust-secret' },
+      });
+      assert.strictEqual(authorized.status, 200);
+      const payload = await authorized.json();
+      assert.strictEqual(payload.ok, true);
+    } finally {
+      if (previousApiKey === undefined) delete process.env.AXIOM_API_KEY;
+      else process.env.AXIOM_API_KEY = previousApiKey;
+    }
+  });
+
   it('POST /llm-sor soru gönderir', async () => {
     const LLMAdapter = require('./llmAdapter');
     const originalAsk = LLMAdapter.prototype.ask;

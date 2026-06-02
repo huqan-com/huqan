@@ -308,6 +308,7 @@ class Kernel {
     const ev = this.plugins.emit('beforeLearn', { text, opts: { ...opts } });
     text = ev.text;
     opts = ev.opts || opts;
+    const fallbackWorkspaceId = normalizeWorkspaceId(opts.workspaceId || opts.provenance?.workspaceId);
     const hasProvenanceInput =
       Object.prototype.hasOwnProperty.call(opts, 'provenance') ||
       opts.sourceType ||
@@ -332,13 +333,13 @@ class Kernel {
             message: error.message,
             text,
           },
-        }, opts.provenance && typeof opts.provenance === 'object' ? opts.provenance : null);
+        }, opts.provenance && typeof opts.provenance === 'object' ? opts.provenance : null, fallbackWorkspaceId);
       }
       throw error;
     }
     const provenance = provenanceBundle.provenance;
     const provenanceWarnings = provenanceBundle.warnings;
-    const workspaceId = normalizeWorkspaceId(provenance?.workspaceId || opts.workspaceId);
+    const workspaceId = normalizeWorkspaceId(provenance?.workspaceId || opts.workspaceId || fallbackWorkspaceId);
 
     if (this.strictProvenance && !hasProvenanceInput) {
       this._appendAuditEvent({

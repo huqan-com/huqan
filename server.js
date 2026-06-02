@@ -736,6 +736,7 @@ const server = http.createServer(async (req, res) => {
       writeApiError(req, res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
       return;
     }
+    if (!denyIfUnauthorized(req, res)) return;
     const filters = readTrustFilters(reqUrl);
     const workspaceId = filters.workspaceId || 'default';
     const graph = cli.kernel.graph;
