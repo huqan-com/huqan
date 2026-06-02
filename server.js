@@ -6,6 +6,12 @@ const { execFileSync, execSync } = require('child_process');
 const CLI = require('./cli');
 const { evaluateLlmSor } = require('./lib/shield');
 const { handleIngest } = require('./lib/ingest');
+const {
+  buildTrustReceipt,
+  queryAuditTrail,
+  queryCandidateClaims,
+  queryProvenance,
+} = require('./lib/provenance-query');
 const pkg = require('./package.json');
 const { inspectPersistence, resolvePersistencePaths } = require('./persistencePaths');
 const {
@@ -112,6 +118,41 @@ function writeJson(req, res, statusCode, payload, headers = {}) {
     ...headers,
   });
   res.end(JSON.stringify(payload));
+}
+
+function writeApiError(req, res, statusCode, code, message, details = {}) {
+  writeJson(req, res, statusCode, {
+    ok: false,
+    error: {
+      code,
+      message,
+      details,
+    },
+  }, { 'Cache-Control': 'no-cache' });
+}
+
+function readTrustFilters(reqUrl) {
+  const params = reqUrl.searchParams;
+  const read = (name) => sanitizeInput(params.get(name) || '');
+  return {
+    workspaceId: read('workspaceId'),
+    targetId: read('targetId'),
+    provenanceId: read('provenanceId'),
+    sourceRef: read('sourceRef'),
+    sourceType: read('sourceType'),
+    sourceSubType: read('sourceSubType'),
+    actor: read('actor'),
+    eventType: read('eventType'),
+    candidateId: read('candidateId'),
+    status: read('status'),
+    recommendation: read('recommendation'),
+    order: read('order'),
+    targetType: read('targetType'),
+  };
+}
+
+function hasTrustQuery(filters, keys) {
+  return keys.some((key) => Boolean(filters[key]));
 }
 
 function getRateLimitKey(req) {
@@ -686,6 +727,81 @@ const server = http.createServer(async (req, res) => {
       writeJson(req, res, 200, status, { 'Cache-Control': 'no-cache' });
     } catch (err) {
       writeJson(req, res, 500, { error: err.message || 'ingest status failed' });
+    }
+    return;
+  }
+
+  if (reqUrl.pathname === '/api/provenance' || reqUrl.pathname === '/api/audit' || reqUrl.pathname === '/api/candidate-claims' || reqUrl.pathname === '/api/trust-receipt') {
+    if (req.method !== 'GET') {
+      writeApiError(req, res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
+      return;
+    }
+    const filters = readTrustFilters(reqUrl);
+    const workspaceId = filters.workspaceId || 'default';
+    const graph = cli.kernel.graph;
+    try {
+      if (reqUrl.pathname === '/api/provenance') {
+        if (!hasTrustQuery(filters, ['targetId', 'provenanceId', 'sourceRef', 'sourceType', 'actor'])) {
+          writeApiError(req, res, 400, 'INVALID_QUERY', 'targetId, provenanceId, sourceRef, sourceType, or actor is required.');
+          return;
+        }
+        const items = queryProvenance(graph, { ...filters, workspaceId });
+        writeJson(req, res, 200, {
+          ok: true,
+          data: {
+            items,
+            total: items.length,
+            workspaceId,
+          },
+        }, { 'Cache-Control': 'no-cache' });
+        return;
+      }
+
+      if (reqUrl.pathname === '/api/audit') {
+        if (!hasTrustQuery(filters, ['targetId', 'provenanceId', 'sourceRef', 'eventType', 'actor'])) {
+          writeApiError(req, res, 400, 'INVALID_QUERY', 'targetId, provenanceId, sourceRef, eventType, or actor is required.');
+          return;
+        }
+        const items = queryAuditTrail(graph, { ...filters, workspaceId });
+        writeJson(req, res, 200, {
+          ok: true,
+          data: {
+            items,
+            total: items.length,
+            workspaceId,
+          },
+        }, { 'Cache-Control': 'no-cache' });
+        return;
+      }
+
+      if (reqUrl.pathname === '/api/candidate-claims') {
+        if (!hasTrustQuery(filters, ['candidateId', 'status', 'recommendation', 'sourceRef', 'targetId'])) {
+          writeApiError(req, res, 400, 'INVALID_QUERY', 'candidateId, status, recommendation, sourceRef, or targetId is required.');
+          return;
+        }
+        const items = queryCandidateClaims(graph, { ...filters, workspaceId });
+        writeJson(req, res, 200, {
+          ok: true,
+          data: {
+            items,
+            total: items.length,
+            workspaceId,
+          },
+        }, { 'Cache-Control': 'no-cache' });
+        return;
+      }
+
+      if (!hasTrustQuery(filters, ['targetId', 'provenanceId', 'sourceRef', 'candidateId', 'eventType'])) {
+        writeApiError(req, res, 400, 'INVALID_QUERY', 'targetId, provenanceId, sourceRef, candidateId, or eventType is required.');
+        return;
+      }
+      const receipt = buildTrustReceipt({ ...filters, workspaceId }, { target: graph });
+      writeJson(req, res, 200, {
+        ok: true,
+        data: receipt,
+      }, { 'Cache-Control': 'no-cache' });
+    } catch (err) {
+      writeApiError(req, res, 500, 'TRUST_QUERY_FAILED', err.message || 'trust query failed');
     }
     return;
   }

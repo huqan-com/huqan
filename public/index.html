@@ -85,6 +85,19 @@ body{display:flex;flex-direction:column}
 .conflict-card h3{margin:0;font-size:14px}
 .conflict-card p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}
 .conflict-tags{display:flex;flex-wrap:wrap;gap:6px}
+.trust-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.trust-toolbar input,.trust-toolbar select{background:rgba(9,12,20,.92);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;outline:none}
+.trust-toolbar input:focus,.trust-toolbar select:focus{border-color:rgba(105,215,255,.55);box-shadow:0 0 0 3px rgba(105,215,255,.08)}
+.trust-toolbar input{min-width:220px;flex:1}
+.trust-toolbar select{min-width:150px}
+.trust-toolbar button{border:none;border-radius:12px;padding:0 18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;font-weight:700;cursor:pointer}
+.trust-json{margin:0;white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.6;color:#d9e1ff;background:rgba(9,12,20,.9);border:1px solid var(--line);border-radius:14px;padding:14px;max-height:340px;overflow:auto}
+.trust-empty{font-size:12px;color:var(--muted);line-height:1.6}
+.trust-list{display:grid;gap:10px}
+.trust-item{padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(9,12,20,.92)}
+.trust-item strong{display:block;font-size:13px;margin-bottom:4px}
+.trust-item span{font-size:12px;color:var(--muted);line-height:1.5}
+.trust-label{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:#151c2b;color:#cfd5f7;font-size:11px;margin-right:6px;margin-top:4px}
 .tag{font-size:11px;padding:4px 8px;border-radius:999px;background:#151c2b;border:1px solid var(--line);color:#cfd5f7}
 .tag.bad{background:rgba(255,107,134,.08);border-color:rgba(255,107,134,.35);color:#ffd2db}
 .tag.warn{background:rgba(255,191,105,.08);border-color:rgba(255,191,105,.35);color:#ffe4b3}
@@ -137,6 +150,7 @@ body{display:flex;flex-direction:column}
   <button class="tab" data-tab="advocate">Şeytan'ın Avukatı</button>
   <button class="tab" data-tab="conflicts">Geçmiş Çelişkiler</button>
   <button class="tab" data-tab="graph">Hafıza / Graph</button>
+  <button class="tab" data-tab="trust">Trust Dashboard</button>
 </nav>
 
 <section class="panel active" id="judge-panel">
@@ -247,6 +261,50 @@ body{display:flex;flex-direction:column}
   </div>
 </section>
 
+<section class="panel scrollable" id="trust-panel">
+  <div class="shell" style="grid-template-columns:minmax(0,1.2fr) minmax(300px,.88fr)">
+    <div class="stack">
+      <div class="card hero">
+        <h2>Trust Dashboard</h2>
+        <p>Every serious answer should come with a receipt. Kaynağı, audit izini, candidate durumunu ve graph kabul durumunu burada oku; değiştirme.</p>
+        <div class="trust-toolbar">
+          <select id="trust-mode">
+            <option value="targetId">targetId</option>
+            <option value="sourceRef">sourceRef</option>
+            <option value="provenanceId">provenanceId</option>
+          </select>
+          <input id="trust-input" placeholder="sourceRef ya da targetId" maxlength="300" />
+          <input id="trust-workspace" placeholder="workspaceId (default)" maxlength="80" value="default" style="flex:0 0 180px;min-width:180px" />
+          <button id="trust-search">Ara</button>
+        </div>
+      </div>
+      <div class="dashboard" id="trust-dashboard"></div>
+      <div class="card">
+        <strong style="display:block;font-size:14px;margin-bottom:10px">Trust Receipt</strong>
+        <pre class="trust-json" id="trust-receipt">Bir sorgu gir, Trust Receipt burada görünsün.</pre>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <strong style="display:block;font-size:14px;margin-bottom:10px">Provenance Summary</strong>
+        <div class="trust-list" id="trust-provenance"></div>
+      </div>
+      <div class="card">
+        <strong style="display:block;font-size:14px;margin-bottom:10px">Audit Trail</strong>
+        <div class="trust-list" id="trust-audit"></div>
+      </div>
+      <div class="card">
+        <strong style="display:block;font-size:14px;margin-bottom:10px">Candidate Claim</strong>
+        <div class="trust-list" id="trust-candidate"></div>
+      </div>
+      <div class="card">
+        <strong style="display:block;font-size:14px;margin-bottom:10px">Conflict</strong>
+        <div class="trust-list" id="trust-conflict"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <script>
 const tabs = Array.from(document.querySelectorAll('.tab'));
 const panels = {
@@ -254,6 +312,7 @@ const panels = {
   advocate: document.getElementById('advocate-panel'),
   conflicts: document.getElementById('conflicts-panel'),
   graph: document.getElementById('graph-panel'),
+  trust: document.getElementById('trust-panel'),
 };
 
 let graphData = { nodes: [], links: [] };
@@ -262,6 +321,7 @@ let svg = null;
 let g = null;
 let showLabels = true;
 let currentTransform = d3.zoomIdentity;
+let trustReceiptState = null;
 
 function normalizeText(value) {
   return String(value || '')
@@ -292,6 +352,7 @@ function switchTab(name) {
   if (name === 'graph') loadGraph();
   if (name === 'conflicts') loadConflicts();
   if (name === 'judge') loadStatus();
+  if (name === 'trust') loadTrustReceipt();
 }
 
 tabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
@@ -352,6 +413,16 @@ document.querySelectorAll('[data-preset]').forEach(btn => {
 document.getElementById('graph-refresh').addEventListener('click', loadGraph);
 document.getElementById('graph-reset').addEventListener('click', resetZoom);
 document.getElementById('graph-labels').addEventListener('click', toggleLabels);
+document.getElementById('trust-search').addEventListener('click', loadTrustReceipt);
+document.getElementById('trust-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') loadTrustReceipt();
+});
+document.getElementById('trust-mode').addEventListener('change', () => {
+  if (trustReceiptState) loadTrustReceipt();
+});
+document.getElementById('trust-workspace').addEventListener('keydown', e => {
+  if (e.key === 'Enter') loadTrustReceipt();
+});
 
 addMessage('Hoş geldin. Fikrini yaz veya bir hazır sorgu seç.', 'system');
 
@@ -403,6 +474,156 @@ async function loadStatus() {
     const data = await res.json();
     renderJudgeDashboard(data);
   } catch (_) {}
+}
+
+function trustEmptyMessage(message) {
+  return `<div class="trust-empty">${escapeHtml(message)}</div>`;
+}
+
+function renderTrustList(targetId, items, emptyMessage) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  if (!items || items.length === 0) {
+    target.innerHTML = trustEmptyMessage(emptyMessage);
+    return;
+  }
+  target.innerHTML = items.map((item) => {
+    const title = item.title || item.kind || item.eventType || item.targetType || 'item';
+    const body = item.body || item.text || item.reason || item.claim || '';
+    const tags = Array.isArray(item.tags) ? item.tags : [];
+    return `
+      <div class="trust-item">
+        <strong>${escapeHtml(title)}</strong>
+        <span>${escapeHtml(body)}</span>
+        ${tags.length ? `<div style="margin-top:6px">${tags.map(tag => `<span class="trust-label">${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTrustSummary(receipt) {
+  const target = document.getElementById('trust-dashboard');
+  if (!target) return;
+  if (!receipt) {
+    target.innerHTML = [
+      card('Durum', 'unknown', 'Bir sorgu çalıştırılmadı'),
+      card('Workspace', 'default', 'Sorgu bekleniyor'),
+      card('Kanıt', '0', 'Audit yok'),
+      card('Kaynak', '—', 'sourceRef / targetId gir'),
+    ].join('');
+    return;
+  }
+  target.innerHTML = [
+    card('Durum', receipt.status || 'unknown', `canonical: ${receipt.canonical ? 'yes' : 'no'}`),
+    card('Workspace', receipt.workspaceId || 'default', `policy: ${receipt.trustPolicyVersion || '—'}`),
+    card('Güven', Number(receipt.confidence ?? 0.5).toFixed(2), `audit: ${Array.isArray(receipt.auditTrail) ? receipt.auditTrail.length : 0}`),
+    card('Kaynak', receipt.provenance?.sourceType || '—', receipt.provenance?.sourceRef || receipt.targetId || '—'),
+  ].join('');
+}
+
+function renderTrustReceipt(receipt) {
+  trustReceiptState = receipt || null;
+  renderTrustSummary(receipt);
+  const pre = document.getElementById('trust-receipt');
+  if (pre) {
+    pre.textContent = receipt ? JSON.stringify(receipt, null, 2) : 'Bir sorgu gir, Trust Receipt burada görünsün.';
+  }
+  renderTrustList('trust-provenance', receipt?.provenance ? [{
+    title: `${receipt.provenance.sourceType || 'source'} provenance`,
+    body: `${receipt.provenance.sourceRef || '—'} · actor: ${receipt.provenance.actor || 'system'} · confidence: ${Number(receipt.provenance.confidence ?? 0.5).toFixed(2)}`,
+    tags: [
+      receipt.provenance.sourceSubType || null,
+      receipt.provenance.workspaceId || null,
+      receipt.provenance.trustPolicyVersion || null,
+    ].filter(Boolean),
+  }] : [], 'Provenance bulunamadı.');
+  renderTrustList('trust-audit', Array.isArray(receipt?.auditTrail) ? receipt.auditTrail.slice(0, 8).map((event) => ({
+    title: `${event.eventType || 'AUDIT'} · ${event.targetType || 'target'}`,
+    body: `${event.targetId || '—'} · ${event.sourceRef || '—'} · ${event.timestamp || '—'}`,
+    tags: [event.workspaceId || 'default', event.actor || 'system'].filter(Boolean),
+  })) : [], 'Audit izi bulunamadı.');
+  renderTrustList('trust-candidate', receipt?.candidateClaim ? [{
+    title: `${receipt.candidateClaim.status || 'unknown'} · ${receipt.candidateClaim.recommendation || 'accept'}`,
+    body: receipt.candidateClaim.claim || receipt.candidateClaim.candidateId || '—',
+    tags: [
+      receipt.candidateClaim.candidateId || null,
+      receipt.candidateClaim.workspaceId || null,
+      receipt.candidateClaim.provenance?.sourceRef || null,
+    ].filter(Boolean),
+  }] : [], 'Candidate claim bulunamadı.');
+  renderTrustList('trust-conflict', receipt?.conflict ? [{
+    title: 'Conflict',
+    body: typeof receipt.conflict === 'string' ? receipt.conflict : (receipt.conflict.reason || JSON.stringify(receipt.conflict)),
+    tags: [
+      receipt.status || 'unknown',
+      receipt.canonical ? 'canonical' : 'non-canonical',
+    ],
+  }] : [], 'Conflict yok.');
+}
+
+function buildTrustQuery() {
+  const mode = document.getElementById('trust-mode')?.value || 'targetId';
+  const raw = document.getElementById('trust-input')?.value.trim() || '';
+  const workspaceId = document.getElementById('trust-workspace')?.value.trim() || 'default';
+  const params = new URLSearchParams();
+  params.set(mode, raw);
+  params.set('workspaceId', workspaceId || 'default');
+  return { mode, raw, workspaceId, params };
+}
+
+async function loadTrustReceipt() {
+  const input = document.getElementById('trust-input');
+  const raw = input ? input.value.trim() : '';
+  if (!raw) {
+    renderTrustReceipt(null);
+    return;
+  }
+  const { params, mode, workspaceId } = buildTrustQuery();
+  try {
+    const res = await fetch('/api/trust-receipt?' + params.toString());
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      const errorText = data?.error?.message || 'Trust sorgusu başarısız.';
+      renderTrustReceipt({
+        receiptId: 'error',
+        targetType: 'error',
+        targetId: raw,
+        claim: errorText,
+        status: 'unknown',
+        workspaceId,
+        provenance: null,
+        trustPolicyVersion: '',
+        confidence: 0,
+        auditTrail: [],
+        conflict: data?.error || null,
+        candidateClaim: null,
+        canonical: false,
+        generatedAt: new Date().toISOString(),
+      });
+      return;
+    }
+    renderTrustReceipt(data.data);
+    if (mode === 'sourceRef') {
+      document.getElementById('trust-input').title = 'sourceRef sorgusu işlendi';
+    }
+  } catch (err) {
+    renderTrustReceipt({
+      receiptId: 'error',
+      targetType: 'error',
+      targetId: raw,
+      claim: err.message || 'Trust sorgusu başarısız.',
+      status: 'unknown',
+      workspaceId,
+      provenance: null,
+      trustPolicyVersion: '',
+      confidence: 0,
+      auditTrail: [],
+      conflict: null,
+      candidateClaim: null,
+      canonical: false,
+      generatedAt: new Date().toISOString(),
+    });
+  }
 }
 
 function analyzeGraph(data) {
