@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProvenanceRecord",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "provenanceId",
+    "sourceRef",
+    "sourceTitle",
+    "sourceType",
+    "actor",
+    "timestamp",
+    "confidence",
+    "workspaceId",
+    "trustPolicyVersion"
+  ],
+  "properties": {
+    "provenanceId": { "type": "string" },
+    "sourceRef": { "type": "string" },
+    "sourceTitle": { "type": "string" },
+    "sourceType": { "type": "string", "enum": ["document", "api", "user", "agent", "system", "github", "import", "llm"] },
+    "sourceSubType": { "type": "string" },
+    "actor": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "workspaceId": { "type": "string" },
+    "trustPolicyVersion": { "type": "string" },
+    "metadata": { "type": ["object", "array", "string", "number", "boolean", "null"] }
+  }
+}

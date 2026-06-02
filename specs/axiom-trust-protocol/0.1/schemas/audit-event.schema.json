@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AuditEvent",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "auditId",
+    "eventType",
+    "targetType",
+    "targetId",
+    "workspaceId",
+    "actor",
+    "timestamp",
+    "sourceRef",
+    "provenanceId",
+    "trustPolicyVersion",
+    "details"
+  ],
+  "properties": {
+    "auditId": { "type": "string" },
+    "eventType": {
+      "type": "string",
+      "enum": ["LEARN", "REJECT", "UPDATE", "DELETE", "QUERY", "CONFLICT_DETECTED", "CLAIM_FLAGGED", "CLAIM_ACCEPTED", "CLAIM_REJECTED", "REAFFIRMED", "IMPORTED", "EXPORTED"]
+    },
+    "targetType": { "type": "string" },
+    "targetId": { "type": "string" },
+    "workspaceId": { "type": "string" },
+    "actor": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "sourceRef": { "type": "string" },
+    "provenanceId": { "type": "string" },
+    "trustPolicyVersion": { "type": "string" },
+    "details": { "type": ["object", "array", "string", "number", "boolean", "null"] }
+  },
+  "description": "Append-only audit events are immutable by system law."
+}

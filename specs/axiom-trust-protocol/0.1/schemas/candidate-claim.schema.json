@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CandidateClaim",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "candidateId",
+    "claim",
+    "proposedEdge",
+    "provenance",
+    "conflict",
+    "recommendation",
+    "status",
+    "workspaceId",
+    "createdAt"
+  ],
+  "properties": {
+    "candidateId": { "type": "string" },
+    "claim": { "type": "string" },
+    "proposedEdge": { "type": ["object", "null"] },
+    "provenance": { "type": ["object", "null"] },
+    "conflict": { "type": ["object", "null"] },
+    "recommendation": { "type": "string", "enum": ["accept", "flag", "reject"] },
+    "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+    "workspaceId": { "type": "string" },
+    "createdAt": { "type": "string" },
+    "reviewedAt": { "type": "string" },
+    "reviewedBy": { "type": "string" }
+  },
+  "description": "Candidate claims are portable review objects, not canonical truth. Pending claims must not be treated as canonical graph entries."
+}

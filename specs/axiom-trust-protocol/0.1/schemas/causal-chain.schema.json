@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CausalChain",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "start",
+    "chain",
+    "visited",
+    "loops",
+    "stoppedReason",
+    "maxDepth",
+    "confidence",
+    "evidence"
+  ],
+  "properties": {
+    "start": { "type": "string" },
+    "chain": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "relation", "to"],
+        "properties": {
+          "from": { "type": "string" },
+          "relation": { "type": "string", "enum": ["CAUSES", "PREVENTS", "ENABLES", "DEPENDS_ON", "LEADS_TO"] },
+          "to": { "type": "string" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "evidence": { "type": ["array", "object", "string", "number", "boolean", "null"] }
+        }
+      }
+    },
+    "visited": { "type": "array" },
+    "loops": { "type": "array" },
+    "stoppedReason": { "type": "string" },
+    "maxDepth": { "type": "integer", "minimum": 0 },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "evidence": { "type": "array" }
+  }
+}

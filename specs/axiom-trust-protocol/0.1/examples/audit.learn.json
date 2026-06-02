@@ -1,0 +1,17 @@
+{
+  "auditId": "audit_learn_001",
+  "eventType": "LEARN",
+  "targetType": "edge",
+  "targetId": "autoLearn|CAUSES|unsupported output can enter graph",
+  "workspaceId": "default",
+  "actor": "axiom-bot",
+  "timestamp": "2026-06-02T08:11:00Z",
+  "sourceRef": "github://agiulucom42-del/axiom/pull/4821",
+  "provenanceId": "prov_github_pr_4821",
+  "trustPolicyVersion": "0.8.0",
+  "details": {
+    "nodesAdded": 2,
+    "edgesAdded": 1,
+    "source": "github"
+  }
+}

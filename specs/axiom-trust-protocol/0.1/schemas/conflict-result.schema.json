@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ConflictResult",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "conflict",
+    "type",
+    "recommendation",
+    "reason",
+    "confidenceDelta",
+    "existingEvidence",
+    "proposedEvidence",
+    "workspaceId"
+  ],
+  "properties": {
+    "conflict": { "type": "boolean" },
+    "type": { "type": ["string", "null"], "enum": ["agent-vs-agent", "agent-vs-graph", "agent-vs-causal", "provenance-mismatch", "workspace-scope-mismatch", null] },
+    "recommendation": { "type": "string", "enum": ["accept", "flag", "reject"] },
+    "reason": { "type": "string" },
+    "confidenceDelta": { "type": "number" },
+    "existingEvidence": { "type": "array" },
+    "proposedEvidence": { "type": "array" },
+    "workspaceId": { "type": "string" },
+    "provenanceId": { "type": "string" },
+    "sourceRef": { "type": "string" }
+  }
+}

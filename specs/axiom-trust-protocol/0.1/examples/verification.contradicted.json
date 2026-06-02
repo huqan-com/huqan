@@ -1,0 +1,94 @@
+{
+  "ok": true,
+  "claim": "autoLearn default true should be allowed",
+  "status": "contradicted",
+  "mode": "contradicted",
+  "confidence": 0.08,
+  "evidence": [
+    {
+      "kind": "canonical_conflict",
+      "text": "canonical graph and trust policy disagree"
+    }
+  ],
+  "provenance": {
+    "provenanceId": "prov_github_pr_4821",
+    "sourceRef": "github://agiulucom42-del/axiom/pull/4821",
+    "sourceTitle": "AXIOM PR #4821",
+    "sourceType": "github",
+    "sourceSubType": "merged_pr",
+    "actor": "axiom-bot",
+    "timestamp": "2026-06-02T08:10:00Z",
+    "confidence": 0.94,
+    "workspaceId": "default",
+    "trustPolicyVersion": "0.8.0"
+  },
+  "conflict": {
+    "conflict": true,
+    "type": "agent-vs-graph",
+    "recommendation": "reject",
+    "reason": "contradicts canonical trust policy",
+    "confidenceDelta": -0.61,
+    "existingEvidence": [
+      {
+        "kind": "direct_edge",
+        "text": "autoLearn default true is not recommended",
+        "confidence": 0.94
+      }
+    ],
+    "proposedEvidence": [
+      {
+        "kind": "llm_output",
+        "text": "autoLearn default true should be allowed",
+        "confidence": 0.08
+      }
+    ],
+    "workspaceId": "default"
+  },
+  "receipt": {
+    "receiptId": "receipt_contradicted_001",
+    "targetType": "claim",
+    "targetId": "autoLearn default true should be allowed",
+    "claim": "autoLearn default true should be allowed",
+    "status": "rejected",
+    "workspaceId": "default",
+    "provenance": {
+      "provenanceId": "prov_github_pr_4821",
+      "sourceRef": "github://agiulucom42-del/axiom/pull/4821",
+      "sourceTitle": "AXIOM PR #4821",
+      "sourceType": "github",
+      "actor": "axiom-bot",
+      "timestamp": "2026-06-02T08:10:00Z",
+      "confidence": 0.94,
+      "workspaceId": "default",
+      "trustPolicyVersion": "0.8.0"
+    },
+    "trustPolicyVersion": "0.8.0",
+    "confidence": 0.08,
+    "auditTrail": [],
+    "conflict": {
+      "conflict": true,
+      "type": "agent-vs-graph",
+      "recommendation": "reject",
+      "reason": "contradicts canonical trust policy",
+      "confidenceDelta": -0.61,
+      "existingEvidence": [
+        {
+          "kind": "direct_edge",
+          "text": "autoLearn default true is not recommended",
+          "confidence": 0.94
+        }
+      ],
+      "proposedEvidence": [
+        {
+          "kind": "llm_output",
+          "text": "autoLearn default true should be allowed",
+          "confidence": 0.08
+        }
+      ],
+      "workspaceId": "default"
+    },
+    "candidateClaim": null,
+    "canonical": false,
+    "generatedAt": "2026-06-02T08:17:00Z"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "start": "autoLearn true",
+  "chain": [
+    {
+      "from": "autoLearn true",
+      "relation": "CAUSES",
+      "to": "unsupported output can enter graph",
+      "confidence": 0.95,
+      "evidence": ["policy review"]
+    },
+    {
+      "from": "unsupported output can enter graph",
+      "relation": "CAUSES",
+      "to": "graph trust degrades",
+      "confidence": 0.91,
+      "evidence": ["graph safety review"]
+    },
+    {
+      "from": "graph trust degrades",
+      "relation": "LEADS_TO",
+      "to": "Shield claim weakens",
+      "confidence": 0.89,
+      "evidence": ["trust review"]
+    }
+  ],
+  "visited": [
+    "autoLearn true",
+    "unsupported output can enter graph",
+    "graph trust degrades",
+    "Shield claim weakens"
+  ],
+  "loops": [],
+  "stoppedReason": "maxDepth",
+  "maxDepth": 3,
+  "confidence": 0.92,
+  "evidence": [
+    {
+      "kind": "policy_text",
+      "text": "autoLearn default true can pollute the graph",
+      "confidence": 0.95
+    }
+  ]
+}

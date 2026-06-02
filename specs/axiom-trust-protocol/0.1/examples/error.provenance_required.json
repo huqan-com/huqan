@@ -1,0 +1,11 @@
+{
+  "ok": false,
+  "error": {
+    "code": "PROVENANCE_REQUIRED",
+    "message": "Missing provenance for canonical write",
+    "details": {
+      "field": "provenance",
+      "strictProvenance": true
+    }
+  }
+}

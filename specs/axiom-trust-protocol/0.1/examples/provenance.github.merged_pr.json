@@ -1,0 +1,17 @@
+{
+  "provenanceId": "prov_github_pr_4821",
+  "sourceRef": "github://agiulucom42-del/axiom/pull/4821",
+  "sourceTitle": "AXIOM PR #4821",
+  "sourceType": "github",
+  "sourceSubType": "merged_pr",
+  "actor": "axiom-bot",
+  "timestamp": "2026-06-02T08:10:00Z",
+  "confidence": 0.94,
+  "workspaceId": "default",
+  "trustPolicyVersion": "0.8.0",
+  "metadata": {
+    "repository": "agiulucom42-del/axiom",
+    "number": 4821,
+    "state": "merged"
+  }
+}

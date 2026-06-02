@@ -1,0 +1,52 @@
+{
+  "ok": true,
+  "claim": "unsupported output can enter graph",
+  "status": "unsupported",
+  "mode": "unsupported",
+  "confidence": 0.12,
+  "evidence": [
+    {
+      "kind": "absent_graph_support",
+      "text": "No canonical graph evidence was found"
+    }
+  ],
+  "provenance": {
+    "provenanceId": "prov_github_pr_4821",
+    "sourceRef": "github://agiulucom42-del/axiom/pull/4821",
+    "sourceTitle": "AXIOM PR #4821",
+    "sourceType": "github",
+    "sourceSubType": "merged_pr",
+    "actor": "axiom-bot",
+    "timestamp": "2026-06-02T08:10:00Z",
+    "confidence": 0.94,
+    "workspaceId": "default",
+    "trustPolicyVersion": "0.8.0"
+  },
+  "conflict": null,
+  "receipt": {
+    "receiptId": "receipt_unsupported_001",
+    "targetType": "claim",
+    "targetId": "unsupported output can enter graph",
+    "claim": "unsupported output can enter graph",
+    "status": "unknown",
+    "workspaceId": "default",
+    "provenance": {
+      "provenanceId": "prov_github_pr_4821",
+      "sourceRef": "github://agiulucom42-del/axiom/pull/4821",
+      "sourceTitle": "AXIOM PR #4821",
+      "sourceType": "github",
+      "actor": "axiom-bot",
+      "timestamp": "2026-06-02T08:10:00Z",
+      "confidence": 0.94,
+      "workspaceId": "default",
+      "trustPolicyVersion": "0.8.0"
+    },
+    "trustPolicyVersion": "0.8.0",
+    "confidence": 0.12,
+    "auditTrail": [],
+    "conflict": null,
+    "candidateClaim": null,
+    "canonical": false,
+    "generatedAt": "2026-06-02T08:16:00Z"
+  }
+}

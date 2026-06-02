@@ -1,0 +1,24 @@
+{
+  "conflict": true,
+  "type": "agent-vs-graph",
+  "recommendation": "flag",
+  "reason": "new claim conflicts with canonical graph-backed evidence",
+  "confidenceDelta": -0.42,
+  "existingEvidence": [
+    {
+      "kind": "direct_edge",
+      "text": "supported graph edge",
+      "confidence": 0.91
+    }
+  ],
+  "proposedEvidence": [
+    {
+      "kind": "candidate_edge",
+      "text": "proposed conflicting claim",
+      "confidence": 0.62
+    }
+  ],
+  "workspaceId": "default",
+  "provenanceId": "prov_github_pr_4821",
+  "sourceRef": "github://agiulucom42-del/axiom/pull/4821"
+}

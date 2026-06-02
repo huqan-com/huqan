@@ -1,0 +1,60 @@
+{
+  "mode": "causal",
+  "input": {
+    "claim": "What breaks if autoLearn defaults to true?"
+  },
+  "affectedNodes": [
+    "autoLearn true",
+    "unsupported output can enter graph",
+    "graph trust degrades",
+    "Shield claim weakens"
+  ],
+  "causalChains": [
+    {
+      "start": "autoLearn true",
+      "chain": [
+        {
+          "from": "autoLearn true",
+          "relation": "CAUSES",
+          "to": "unsupported output can enter graph",
+          "confidence": 0.95
+        },
+        {
+          "from": "unsupported output can enter graph",
+          "relation": "CAUSES",
+          "to": "graph trust degrades",
+          "confidence": 0.91
+        }
+      ],
+      "visited": [
+        "autoLearn true",
+        "unsupported output can enter graph",
+        "graph trust degrades"
+      ],
+      "loops": [],
+      "stoppedReason": "maxDepth",
+      "maxDepth": 3,
+      "confidence": 0.92,
+      "evidence": []
+    }
+  ],
+  "risks": [
+    {
+      "level": "critical",
+      "reason": "unsupported output can be admitted into the canonical graph"
+    }
+  ],
+  "confidence": 0.93,
+  "recommendation": "Change is not recommended.",
+  "evidence": [
+    {
+      "kind": "policy_text",
+      "text": "autoLearn default true is unsafe",
+      "confidence": 0.95
+    }
+  ],
+  "unknowns": [
+    "Which sources would be automatically admitted?",
+    "Would the trust policy override legacy ingest paths?"
+  ]
+}

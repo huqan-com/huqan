@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TrustReceipt",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "receiptId",
+    "targetType",
+    "targetId",
+    "claim",
+    "status",
+    "workspaceId",
+    "provenance",
+    "trustPolicyVersion",
+    "confidence",
+    "auditTrail",
+    "conflict",
+    "candidateClaim",
+    "canonical",
+    "generatedAt"
+  ],
+  "properties": {
+    "receiptId": { "type": "string" },
+    "targetType": { "type": "string" },
+    "targetId": { "type": "string" },
+    "claim": { "type": "string" },
+    "status": { "type": "string", "enum": ["canonical", "pending", "flagged", "rejected", "unknown"] },
+    "workspaceId": { "type": "string" },
+    "provenance": { "type": ["object", "null"] },
+    "trustPolicyVersion": { "type": "string" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "auditTrail": { "type": "array" },
+    "conflict": { "type": ["object", "null"] },
+    "candidateClaim": { "type": ["object", "null"] },
+    "canonical": { "type": "boolean" },
+    "generatedAt": { "type": "string" }
+  },
+  "description": "Trust Receipts are read-only evidence packages and must not mutate graph state."
+}

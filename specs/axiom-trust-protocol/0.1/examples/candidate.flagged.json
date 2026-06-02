@@ -1,0 +1,44 @@
+{
+  "candidateId": "cand_flagged_001",
+  "claim": "autoLearn true can introduce unsupported output into the graph",
+  "proposedEdge": {
+    "from": "autoLearn true",
+    "relation": "CAUSES",
+    "to": "unsupported output can enter graph",
+    "confidence": 0.62,
+    "workspaceId": "default"
+  },
+  "provenance": {
+    "provenanceId": "prov_github_pr_4821",
+    "sourceRef": "github://agiulucom42-del/axiom/pull/4821",
+    "sourceTitle": "AXIOM PR #4821",
+    "sourceType": "github",
+    "sourceSubType": "merged_pr",
+    "actor": "axiom-bot",
+    "timestamp": "2026-06-02T08:10:00Z",
+    "confidence": 0.94,
+    "workspaceId": "default",
+    "trustPolicyVersion": "0.8.0"
+  },
+  "conflict": {
+    "conflict": true,
+    "type": "agent-vs-graph",
+    "recommendation": "flag",
+    "reason": "candidate is too weak to be admitted canonically yet",
+    "confidenceDelta": -0.28,
+    "existingEvidence": [],
+    "proposedEvidence": [
+      {
+        "kind": "source",
+        "text": "autoLearn safety review"
+      }
+    ],
+    "workspaceId": "default"
+  },
+  "recommendation": "flag",
+  "status": "pending",
+  "workspaceId": "default",
+  "createdAt": "2026-06-02T08:12:00Z",
+  "reviewedAt": "2026-06-02T08:14:00Z",
+  "reviewedBy": "axiom-reviewer"
+}

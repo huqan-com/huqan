@@ -2,24 +2,39 @@
 
 ATP is the portable trust layer for AXIOM.
 
-It defines how claims, provenance, verification results, conflict routing, and exportable trust state should be represented without tying the model to one storage engine.
+It defines how claims, provenance, audit history, conflicts, verification results, and exportable trust state should be represented without tying the protocol to one storage engine or one UI.
+
+AVP, the AXIOM Verify Protocol, is the verification-focused subset of ATP.
 
 ## What ATP Is
 
-ATP is a protocol for:
+ATP is the public data contract for trusted claims and trust-adjacent evidence.
+It covers:
 
 - provenance-bound claims
 - deterministic trust outcomes
 - conflict routing
 - append-only audit surfaces
 - portable exchange between AXIOM-compatible tools
+- trust receipts as the visible user-facing trust object
 
-## ATP vs. AVP
+## What ATP Is Not
 
-- **ATP** is the broader trust protocol.
-- **AVP** is the verification subset of ATP.
+ATP is not:
 
-AVP covers verify-facing request/response semantics. ATP covers provenance, routing, audit, and exchange beyond verification.
+- a full world model
+- a probabilistic prediction engine
+- a guarantee that every source is true
+- a claim that AXIOM eliminates all hallucinations
+- a storage backend
+- a stable v1.0 standard in this release
+
+## ATP vs AVP
+
+- `ATP` is the upper protocol.
+- `AVP` is the verify-focused subset of ATP.
+
+ATP covers provenance, conflict routing, audit, exchange, causal summary payloads, and simulation outputs. AVP covers verify-facing request/response semantics.
 
 ## Design Principles
 
@@ -28,6 +43,42 @@ AVP covers verify-facing request/response semantics. ATP covers provenance, rout
 3. Append-only auditability.
 4. Portable exchange over backend coupling.
 5. Public evolution starting at `0.1`.
+
+## Core Objects
+
+ATP v0.1 documents these object families:
+
+- provenance records
+- audit events
+- candidate claims
+- conflict results
+- verification results
+- trust receipts
+- causal chains
+- simulation results
+- error envelopes
+
+## Schemas
+
+Machine-readable schema documents live under:
+
+- `schemas/provenance-record.schema.json`
+- `schemas/audit-event.schema.json`
+- `schemas/candidate-claim.schema.json`
+- `schemas/conflict-result.schema.json`
+- `schemas/verification-result.schema.json`
+- `schemas/trust-receipt.schema.json`
+- `schemas/causal-chain.schema.json`
+- `schemas/simulation-result.schema.json`
+- `schemas/error.schema.json`
+
+## Examples
+
+Example payloads live under `examples/` and are intended to match the v0.8 runtime shapes where possible.
+
+## Conformance
+
+A lightweight conformance helper lives in `lib/atp-conformance.js` and the test suite exercises the public contract through `lib/atp-conformance.test.js`.
 
 ## Minimal Claim
 
@@ -44,14 +95,14 @@ AVP covers verify-facing request/response semantics. ATP covers provenance, rout
 ```json
 {
   "provenanceId": "prov_001",
-  "sourceRef": "docs/shield-policy.md#autolearn",
-  "sourceTitle": "Shield Policy",
-  "sourceType": "document",
-  "actor": "system",
+  "sourceRef": "github://agiulucom42-del/axiom/pull/4821",
+  "sourceTitle": "AXIOM PR #4821",
+  "sourceType": "github",
+  "actor": "axiom-bot",
   "timestamp": "2026-06-02T00:00:00Z",
-  "confidence": 0.92,
+  "confidence": 0.94,
   "workspaceId": "default",
-  "trustPolicyVersion": "trust-policy-v0"
+  "trustPolicyVersion": "0.8.0"
 }
 ```
 
@@ -64,13 +115,13 @@ AVP covers verify-facing request/response semantics. ATP covers provenance, rout
   "relation": "CAUSES",
   "object": "unsupported output can enter graph",
   "polarity": true,
-  "confidence": 0.92,
+  "confidence": 0.94,
   "provenanceId": "prov_001",
   "workspaceId": "default",
   "createdAt": "2026-06-02T00:00:00Z",
   "updatedAt": "2026-06-02T00:00:00Z",
   "status": "canonical",
-  "trustPolicyVersion": "trust-policy-v0"
+  "trustPolicyVersion": "0.8.0"
 }
 ```
 
@@ -78,62 +129,63 @@ AVP covers verify-facing request/response semantics. ATP covers provenance, rout
 
 ```json
 {
-  "label": "graph-backed",
-  "status": "dogrulandi",
-  "confidence": 0.92,
+  "ok": true,
+  "claim": "autoLearn true causes unsupported output to enter graph",
+  "status": "verified",
+  "mode": "graph-backed",
+  "confidence": 0.94,
   "evidence": [
     {
       "kind": "direct_edge",
       "text": "autoLearn true --[CAUSES]--> unsupported output can enter graph",
-      "confidence": 0.92
+      "confidence": 0.94
     }
   ],
-  "workspaceId": "default",
-  "trustPolicyVersion": "trust-policy-v0"
+  "provenance": {
+    "provenanceId": "prov_001"
+  },
+  "conflict": null,
+  "receipt": {
+    "receiptId": "receipt_001"
+  }
 }
 ```
-
-## Conflict Result
-
-```json
-{
-  "routing": "flag",
-  "conflictType": "contradiction",
-  "existingClaimId": "claim_001",
-  "reason": "new claim conflicts with canonical graph",
-  "workspaceId": "default"
-}
-```
-
-## Verification Labels
-
-AVP-compatible verification labels remain:
-
-- `graph-backed`
-- `llm-assisted`
-- `unsupported`
-- `contradicted`
 
 ## Trust Receipt
 
-A Trust Receipt is a compact proof that a claim was verified under a specific trust policy and workspace context.
+A Trust Receipt is the core UX object.
 
-```json
-{
-  "receiptId": "receipt_001",
-  "claimId": "claim_001",
-  "label": "graph-backed",
-  "verifiedAt": "2026-06-02T00:00:00Z",
-  "workspaceId": "default",
-  "trustPolicyVersion": "trust-policy-v0"
-}
-```
+It is the visible, read-only evidence package for a claim. It packages provenance, audit trail, conflict status, candidate status, canonical admission status, and trust policy context.
+
+Every serious answer should come with a receipt.
 
 ## Claim Passport
 
-A Claim Passport is the identity and trust envelope for a claim. In `0.1` it is documented as a portable record shape, not a required runtime class.
+A Claim Passport is the identity and trust envelope for a claim.
+In `0.1` it is documented as a portable record shape, not a required runtime class.
+
+## ATP Compatibility
+
+ATP-compatible systems should be able to:
+
+- emit valid ATP objects
+- validate ATP objects
+- preserve `provenanceId`
+- preserve `workspaceId`
+- preserve `trustPolicyVersion`
+- distinguish canonical from pending or rejected claims
+- produce or consume Trust Receipts
+
+Badge language for future implementations:
+
+```text
+ATP v0.1 Compatible
+```
 
 ## `.axiom` Package Format
+
+`.axiom` is the exchange format for portable ATP records.
+It is not the live runtime storage engine.
 
 ```json
 {
@@ -157,8 +209,28 @@ A Claim Passport is the identity and trust envelope for a claim. In `0.1` it is 
 ATP is storage-agnostic.
 
 - SQLite is the intended first canonical runtime store for v0.8.
-- An adapter layer should isolate trust semantics from backend specifics.
-- `.axiom` is an exchange package, not a live runtime mutation engine.
+- An adapter layer should isolate trust semantics from physical storage.
+- `.axiom` is for exchange and portability, not live mutation.
+
+## Strategic Standardization Note
+
+AXIOM should not position ATP as a closed product format.
+
+The goal is to become the default trust layer for AI systems by making ATP portable, testable, and implementation-independent.
+
+ATP must eventually support:
+
+- reference implementation through AXIOM
+- conformance suite
+- external implementations
+- Trust Receipt UX
+- ATP-compatible badge
+- future SDKs and wrappers
+
+Important language:
+
+- AXIOM does not force adoption.
+- AXIOM becomes the trust layer serious AI systems prefer.
 
 ## Future Conformance Badge
 
@@ -170,13 +242,3 @@ The future **ATP Compatibility Badge** should indicate that a tool:
 - passes an ATP conformance suite
 
 No badge process is defined in `0.1`.
-
-## What ATP Is Not
-
-ATP is not:
-
-- a full world model
-- a full enterprise governance suite
-- a probabilistic prediction engine
-- a guarantee that every source is true
-- a claim that `0.1` is final

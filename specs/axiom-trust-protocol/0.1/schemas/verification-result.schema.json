@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VerificationResult",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "ok",
+    "claim",
+    "status",
+    "mode",
+    "confidence",
+    "evidence",
+    "provenance",
+    "conflict",
+    "receipt"
+  ],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "claim": { "type": "string" },
+    "status": { "type": "string", "enum": ["verified", "unsupported", "contradicted", "pending", "unknown"] },
+    "mode": { "type": "string", "enum": ["graph-backed", "llm-assisted", "unsupported", "contradicted", "causal", "insufficient-data"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "evidence": { "type": "array" },
+    "provenance": { "type": ["object", "null"] },
+    "conflict": { "type": ["object", "null"] },
+    "receipt": { "type": ["object", "null"] }
+  }
+}

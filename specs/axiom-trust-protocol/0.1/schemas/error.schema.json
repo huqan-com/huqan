@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ATPError",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["ok", "error"],
+  "properties": {
+    "ok": { "const": false },
+    "error": {
+      "type": "object",
+      "required": ["code", "message", "details"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": ["PROVENANCE_REQUIRED", "WORKSPACE_SCOPE_MISMATCH", "INVALID_ATP_OBJECT", "CONFLICT_DETECTED", "NOT_FOUND", "VALIDATION_ERROR"]
+        },
+        "message": { "type": "string" },
+        "details": { "type": ["object", "array", "string", "number", "boolean", "null"] }
+      }
+    }
+  }
+}
