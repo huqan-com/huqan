@@ -33,6 +33,14 @@ const DEFAULT_CAPABILITIES = Object.freeze({
   discoveryLoop: false,
 });
 
+class ProvenanceError extends Error {
+  constructor(message = 'provenance is required when strictProvenance is true') {
+    super(message);
+    this.name = 'ProvenanceError';
+    this.code = 'PROVENANCE_REQUIRED';
+  }
+}
+
 class Kernel {
   /**
    * @param {object} [opts]
@@ -61,6 +69,7 @@ class Kernel {
       if (fs.existsSync(pDir)) this.plugins.load(pDir);
     }
     this._verifyService = new VerifyService(this);
+    this.strictProvenance = opts.strictProvenance === true;
   }
 
   hasCapability(name) {
@@ -263,6 +272,12 @@ class Kernel {
     const ev = this.plugins.emit('beforeLearn', { text, opts: { ...opts } });
     text = ev.text;
     opts = ev.opts || opts;
+    const hasProvenance = Object.prototype.hasOwnProperty.call(opts, 'provenance') && opts.provenance != null;
+    const provenance = hasProvenance ? opts.provenance : null;
+
+    if (this.strictProvenance && !hasProvenance) {
+      throw new ProvenanceError();
+    }
 
     const parsed = this.extractFacts(text, this.graph._nodes);
     if (!parsed) return this._ok('learn', { learned: 0, skipped: 1, conflicts: [] }, []);
@@ -362,37 +377,48 @@ class Kernel {
         }
 
         // Ã–ÄRENME: d?k g?venli alternatifleri de ekle (çelişkiyi ?nlemek i?in farkl? ili?kiyle)
-        this.graph.addNode(subject, subject);
-        this.graph.addNode(object, object);
+        if (hasProvenance) {
+          this.graph.addNode(subject, subject, provenance);
+          this.graph.addNode(object, object, provenance);
+        } else {
+          this.graph.addNode(subject, subject);
+          this.graph.addNode(object, object);
+        }
 
         if (celiskiBulundu && (relation === 'tür')) {
           // tür çelişkisi ? benzer olarak kaydet
+          const edgeOptions = this._learnEdgeOptions({ source: 'alt', weight: 0.15, evidence: [text] }, metadata, text);
+          if (hasProvenance) edgeOptions.provenance = provenance;
           const edge = this.graph.addEdge(
             subject,
             object,
             'benzer',
-            this._learnEdgeOptions({ source: 'alt', weight: 0.15, evidence: [text] }, metadata, text)
+            edgeOptions
           );
           if (edge) { learned++; evidence.push(this._edgeEvidence(edge)); }
         } else if (celiskiBulundu && relation === 'değil') {
           // değil çelişkisi: tür edge weight zaten d?r?ld?, yeni edge ekleme
         } else if (celiskiBulundu) {
           // kistlama ? d?k weight ile kaydet
+          const edgeOptions = this._learnEdgeOptions({ source: 'learn', weight: 0.2, evidence: [text] }, metadata, text);
+          if (hasProvenance) edgeOptions.provenance = provenance;
           const edge = this.graph.addEdge(
             subject,
             object,
             relation,
-            this._learnEdgeOptions({ source: 'learn', weight: 0.2, evidence: [text] }, metadata, text)
+            edgeOptions
           );
           if (rel.kistlama && edge) edge.kistlama = true;
           if (edge) { learned++; evidence.push(this._edgeEvidence(edge)); }
         } else {
           // Normal ?ÄŸrenme
+          const edgeOptions = this._learnEdgeOptions({ source: 'learn', evidence: [text] }, metadata, text);
+          if (hasProvenance) edgeOptions.provenance = provenance;
           const edge = this.graph.addEdge(
             subject,
             object,
             relation,
-            this._learnEdgeOptions({ source: 'learn', evidence: [text] }, metadata, text)
+            edgeOptions
           );
           this.graph.addTag(subject, object, 0.3);
           this._crossLink(subject, object, relation);
@@ -1461,4 +1487,5 @@ if (verbSuffix.test(predicate)) {
 module.exports = Kernel;
 module.exports.AXIOM_ERROR = AXIOM_ERROR;
 module.exports.CONTRACT_VERSION = CONTRACT_VERSION;
+module.exports.ProvenanceError = ProvenanceError;
 

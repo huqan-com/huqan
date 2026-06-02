@@ -113,6 +113,7 @@ function normalizeLoadedEdge(edge) {
     source_type: edge.source_type || '',
     updated_at: edge.updated_at || '',
     created_at: edge.created_at || '',
+    provenance: edge.provenance ?? null,
   };
 
   if (CAUSAL_RELATIONS.includes(normalized.relation)) {
@@ -176,7 +177,8 @@ class Graph {
         created_at TEXT NOT NULL DEFAULT '',
         last_accessed INTEGER NOT NULL,
         last_seen TEXT NOT NULL DEFAULT '',
-        vector TEXT NOT NULL DEFAULT '{}'
+        vector TEXT NOT NULL DEFAULT '{}',
+        provenance TEXT NOT NULL DEFAULT 'null'
       );
       CREATE TABLE IF NOT EXISTS edges (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -195,6 +197,7 @@ class Graph {
         source_type TEXT NOT NULL DEFAULT '',
         updated_at TEXT NOT NULL DEFAULT '',
         created_at TEXT NOT NULL DEFAULT '',
+        provenance TEXT NOT NULL DEFAULT 'null',
         created INTEGER NOT NULL,
         UNIQUE(from_id, to_id, relation)
       );
@@ -206,6 +209,7 @@ class Graph {
     const nodeColumns = this._db.prepare('PRAGMA table_info(nodes)').all().map(c => c.name);
     if (!nodeColumns.includes('created_at')) this._db.exec("ALTER TABLE nodes ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
     if (!nodeColumns.includes('last_seen')) this._db.exec("ALTER TABLE nodes ADD COLUMN last_seen TEXT NOT NULL DEFAULT ''");
+    if (!nodeColumns.includes('provenance')) this._db.exec("ALTER TABLE nodes ADD COLUMN provenance TEXT NOT NULL DEFAULT 'null'");
     if (!edgeColumns.includes('confidence')) this._db.exec('ALTER TABLE edges ADD COLUMN confidence REAL NOT NULL DEFAULT 0.5');
     if (!edgeColumns.includes('source')) this._db.exec("ALTER TABLE edges ADD COLUMN source TEXT NOT NULL DEFAULT 'manual'");
     if (!edgeColumns.includes('source_ref')) this._db.exec("ALTER TABLE edges ADD COLUMN source_ref TEXT NOT NULL DEFAULT ''");
@@ -218,25 +222,27 @@ class Graph {
     if (!edgeColumns.includes('updated_at')) this._db.exec("ALTER TABLE edges ADD COLUMN updated_at TEXT NOT NULL DEFAULT ''");
     if (!edgeColumns.includes('created_at')) this._db.exec("ALTER TABLE edges ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
     if (!edgeColumns.includes('strength')) this._db.exec('ALTER TABLE edges ADD COLUMN strength REAL NOT NULL DEFAULT 0.5');
+    if (!edgeColumns.includes('provenance')) this._db.exec("ALTER TABLE edges ADD COLUMN provenance TEXT NOT NULL DEFAULT 'null'");
 
     // Prepared statements
     this._stmts = {
       upsertNode: this._db.prepare(`
-        INSERT INTO nodes (id, label, weight, created, created_at, last_accessed, last_seen, vector)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO nodes (id, label, weight, created, created_at, last_accessed, last_seen, vector, provenance)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           label = excluded.label,
           weight = MIN(1.0, weight + 0.1),
           last_accessed = excluded.last_accessed,
-          last_seen = excluded.last_seen
+          last_seen = excluded.last_seen,
+          provenance = excluded.provenance
       `),
       getNode: this._db.prepare('SELECT * FROM nodes WHERE id = ?'),
       deleteNode: this._db.prepare('DELETE FROM nodes WHERE id = ?'),
       deleteEdgesOf: this._db.prepare('DELETE FROM edges WHERE from_id = ? OR to_id = ?'),
       touchNode: this._db.prepare('UPDATE nodes SET last_accessed = ? WHERE id = ?'),
       upsertEdge: this._db.prepare(`
-        INSERT INTO edges (from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, evidence_type, confidence_history, company_mode, source_type, updated_at, created_at, created, strength)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO edges (from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, evidence_type, confidence_history, company_mode, source_type, updated_at, created_at, provenance, created, strength)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(from_id, to_id, relation) DO UPDATE SET
           weight = excluded.weight,
           confidence = excluded.confidence,
@@ -249,6 +255,7 @@ class Graph {
           company_mode = excluded.company_mode,
           source_type = excluded.source_type,
           updated_at = excluded.updated_at,
+          provenance = excluded.provenance,
           strength = excluded.strength
       `),
       getEdge: this._db.prepare('SELECT * FROM edges WHERE from_id = ? AND to_id = ? AND relation = ?'),
@@ -259,22 +266,26 @@ class Graph {
       countEdges: this._db.prepare('SELECT COUNT(*) as c FROM edges'),
       allNodes: this._db.prepare('SELECT * FROM nodes'),
       allEdges: this._db.prepare('SELECT * FROM edges'),
-      updateEdgeWeight: this._db.prepare('UPDATE edges SET weight = ?, confidence = ?, source = ?, source_ref = ?, session_id = ?, evidence = ?, evidence_type = ?, confidence_history = ?, company_mode = ?, source_type = ?, updated_at = ? WHERE from_id = ? AND to_id = ? AND relation = ?'),
+      updateEdgeWeight: this._db.prepare('UPDATE edges SET weight = ?, confidence = ?, source = ?, source_ref = ?, session_id = ?, evidence = ?, evidence_type = ?, confidence_history = ?, company_mode = ?, source_type = ?, updated_at = ?, provenance = ? WHERE from_id = ? AND to_id = ? AND relation = ?'),
       updateNodeVector: this._db.prepare('UPDATE nodes SET vector = ? WHERE id = ?'),
     };
   }
 
   // ─── Node işlemleri ───────────────────────────────────────────────────────
 
-  addNode(id, label) {
+  addNode(id, label, provenance = null) {
     const now = Date.now();
     const isoNow = nowIso();
+    const hasExplicitProvenance = arguments.length >= 3;
     if (this._db && this._stmts) {
       // SQLite path
       const existing = this._stmts.getNode.get(id);
       const vector = existing ? existing.vector : '{}';
       const createdAt = existing && existing.created_at ? existing.created_at : isoNow;
-      this._stmts.upsertNode.run(id, label, 0.5, now, createdAt, now, isoNow, vector);
+      const nextProvenance = hasExplicitProvenance
+        ? provenance
+        : JSON.parse((existing && existing.provenance) || 'null');
+      this._stmts.upsertNode.run(id, label, 0.5, now, createdAt, now, isoNow, vector, JSON.stringify(nextProvenance ?? null));
       // In-memory sync
       if (this._nodes[id]) {
         this._nodes[id].label = label;
@@ -282,11 +293,13 @@ class Graph {
         this._nodes[id].lastAccessed = now;
         this._nodes[id].lastSeen = isoNow;
         this._nodes[id].last_seen = isoNow;
+        if (hasExplicitProvenance) this._nodes[id].provenance = provenance;
       } else {
         this._nodes[id] = {
           id, label, tags: [], vector: {}, weight: 0.5,
           created: now, created_at: createdAt, lastAccessed: now,
           lastSeen: isoNow, last_seen: isoNow,
+          provenance: hasExplicitProvenance ? provenance : null,
         };
       }
     } else {
@@ -296,11 +309,13 @@ class Graph {
         this._nodes[id].lastAccessed = now;
         this._nodes[id].lastSeen = isoNow;
         this._nodes[id].last_seen = isoNow;
+        if (hasExplicitProvenance) this._nodes[id].provenance = provenance;
       } else {
         this._nodes[id] = {
           id, label, tags: [], vector: {}, weight: 0.5,
           created: now, created_at: isoNow, lastAccessed: now,
           lastSeen: isoNow, last_seen: isoNow,
+          provenance: hasExplicitProvenance ? provenance : null,
         };
       }
     }
@@ -347,6 +362,7 @@ class Graph {
 
   addEdge(fromId, toId, relation, opts = {}) {
     if (!this._nodes[fromId] || !this._nodes[toId]) return null;
+    const hasExplicitProvenance = Object.prototype.hasOwnProperty.call(opts, 'provenance');
     
     // Causal relation validation for v0.7
     const isCausal = CAUSAL_RELATIONS.includes(relation);
@@ -374,6 +390,7 @@ class Graph {
       if (typeof opts.evidenceType === 'string') existing.evidence_type = opts.evidenceType;
       if (typeof opts.sourceType === 'string') existing.source_type = opts.sourceType;
       if (typeof opts.companyMode === 'boolean') existing.company_mode = opts.companyMode ? 1 : 0;
+      if (hasExplicitProvenance) existing.provenance = opts.provenance;
       if (requestedCreatedAt && !existing.created_at) existing.created_at = requestedCreatedAt;
       existing.evidence = [...new Set([...(existing.evidence || []), ...nextEvidence])];
       existing.updated_at = isoNow;
@@ -395,6 +412,7 @@ class Graph {
           existing.company_mode ? 1 : 0,
           existing.source_type || '',
           existing.updated_at || isoNow,
+          JSON.stringify(existing.provenance ?? null),
           fromId,
           toId,
           relation
@@ -418,6 +436,7 @@ class Graph {
       source_type: opts.sourceType || '',
       updated_at: isoNow,
       created_at: requestedCreatedAt || isoNow,
+      provenance: hasExplicitProvenance ? opts.provenance : null,
       created: Date.now(),
     };
     if (isCausal) {
@@ -442,6 +461,7 @@ class Graph {
         edge.source_type || '',
         edge.updated_at || isoNow,
         edge.created_at || isoNow,
+        JSON.stringify(edge.provenance ?? null),
         edge.created,
         edge.strength ?? 0.5
       );
@@ -568,27 +588,29 @@ class Graph {
       const saveAll = this._db.transaction(() => {
         for (const node of Object.values(this._nodes)) {
           this._db.prepare(`
-            INSERT INTO nodes (id, label, weight, created, created_at, last_accessed, last_seen, vector)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO nodes (id, label, weight, created, created_at, last_accessed, last_seen, vector, provenance)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
               label = excluded.label,
               weight = excluded.weight,
               last_accessed = excluded.last_accessed,
               last_seen = excluded.last_seen,
-              vector = excluded.vector
+              vector = excluded.vector,
+              provenance = excluded.provenance
           `).run(
             node.id, node.label, node.weight,
             node.created,
             node.created_at || nowIso(),
             node.lastAccessed,
             node.last_seen || node.lastSeen || nowIso(),
-            JSON.stringify(node.vector || {})
+            JSON.stringify(node.vector || {}),
+            JSON.stringify(node.provenance ?? null)
           );
         }
         for (const edge of this._edges) {
           this._db.prepare(`
-            INSERT INTO edges (from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, evidence_type, confidence_history, company_mode, source_type, updated_at, created_at, created)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO edges (from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, evidence_type, confidence_history, company_mode, source_type, updated_at, created_at, provenance, created)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(from_id, to_id, relation) DO UPDATE SET
               weight = excluded.weight,
               confidence = excluded.confidence,
@@ -600,7 +622,8 @@ class Graph {
               confidence_history = excluded.confidence_history,
               company_mode = excluded.company_mode,
               source_type = excluded.source_type,
-              updated_at = excluded.updated_at
+              updated_at = excluded.updated_at,
+              provenance = excluded.provenance
           `).run(
             edge.from,
             edge.to,
@@ -617,6 +640,7 @@ class Graph {
             edge.source_type || '',
             edge.updated_at || nowIso(),
             edge.created_at || nowIso(),
+            JSON.stringify(edge.provenance ?? null),
             edge.created
           );
         }
@@ -647,19 +671,20 @@ class Graph {
         if (nodes.length > 0) {
           this._nodes = {};
           for (const row of nodes) {
-          this._nodes[row.id] = {
-            id: row.id,
-            label: row.label,
-            weight: row.weight,
-            created: row.created,
+            this._nodes[row.id] = {
+              id: row.id,
+              label: row.label,
+              weight: row.weight,
+              created: row.created,
               created_at: row.created_at || '',
               lastAccessed: row.last_accessed,
               lastSeen: row.last_seen || '',
-            last_seen: row.last_seen || '',
-            tags: [],
-            vector: JSON.parse(row.vector || '{}'),
-          };
-        }
+              last_seen: row.last_seen || '',
+              tags: [],
+              vector: JSON.parse(row.vector || '{}'),
+              provenance: JSON.parse(row.provenance || 'null'),
+            };
+          }
           this._edges = edges.map(row => normalizeLoadedEdge({
             from: row.from_id,
             to: row.to_id,
@@ -676,6 +701,7 @@ class Graph {
             source_type: row.source_type || '',
             updated_at: row.updated_at || '',
             created_at: row.created_at || '',
+            provenance: JSON.parse(row.provenance || 'null'),
             created: row.created,
             strength: row.strength,
           }));
