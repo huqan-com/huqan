@@ -1,0 +1,27 @@
+{
+  "name": "axiom-verify",
+  "version": "0.1.0",
+  "description": "Minimal AXIOM Verify package skeleton for ATP/AVP verification flows.",
+  "main": "index.js",
+  "type": "commonjs",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agiulucom42-del/axiom.git",
+    "directory": "packages/axiom-verify"
+  },
+  "keywords": [
+    "axiom",
+    "atp",
+    "avp",
+    "verify",
+    "trust"
+  ]
+}
