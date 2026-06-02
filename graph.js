@@ -535,6 +535,7 @@ class Graph {
       if (normalizedFilters.candidateId && candidate.candidateId !== normalizedFilters.candidateId) return false;
       if (normalizedFilters.reviewedBy && candidate.reviewedBy !== normalizedFilters.reviewedBy) return false;
       if (normalizedFilters.provenanceId && candidate.provenance?.provenanceId !== normalizedFilters.provenanceId) return false;
+      if (normalizedFilters.sourceRef && candidate.provenance?.sourceRef !== normalizedFilters.sourceRef) return false;
       return true;
     });
   }
