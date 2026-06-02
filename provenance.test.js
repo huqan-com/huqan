@@ -44,8 +44,14 @@ describe('Provenance System', () => {
     const node = kernel.graph.getNode('kedi');
     const edge = kernel.graph.getEdge('kedi', 'hayvan', 'tür');
 
-    assert.deepStrictEqual(node.provenance, provenance);
-    assert.deepStrictEqual(edge.provenance, provenance);
+    assert.strictEqual(node.provenance.provenanceId, provenance.provenanceId);
+    assert.strictEqual(edge.provenance.provenanceId, provenance.provenanceId);
+    assert.strictEqual(node.provenance.confidence, 0.91);
+    assert.strictEqual(edge.provenance.confidence, 0.91);
+    assert.strictEqual(node.provenance.trustPolicyVersion, '0.8.0');
+    assert.strictEqual(edge.provenance.trustPolicyVersion, '0.8.0');
+    assert.strictEqual(node.provenance.sourceType, 'document');
+    assert.ok(!Object.prototype.hasOwnProperty.call(node.provenance, 'sourceSubType'));
   });
 
   it('persists provenance through JSON save/load roundtrip', () => {
@@ -60,8 +66,12 @@ describe('Provenance System', () => {
     const node = reader.graph.getNode('kedi');
     const edge = reader.graph.getEdge('kedi', 'hayvan', 'tür');
 
-    assert.deepStrictEqual(node.provenance, provenance);
-    assert.deepStrictEqual(edge.provenance, provenance);
+    assert.strictEqual(node.provenance.provenanceId, provenance.provenanceId);
+    assert.strictEqual(edge.provenance.provenanceId, provenance.provenanceId);
+    assert.strictEqual(node.provenance.confidence, 0.91);
+    assert.strictEqual(edge.provenance.confidence, 0.91);
+    assert.strictEqual(node.provenance.trustPolicyVersion, '0.8.0');
+    assert.strictEqual(edge.provenance.trustPolicyVersion, '0.8.0');
   });
 
   it('persists provenance through SQLite save/load roundtrip', (t) => {
@@ -86,8 +96,12 @@ describe('Provenance System', () => {
     const node = reader.graph.getNode('kedi');
     const edge = reader.graph.getEdge('kedi', 'hayvan', 'tür');
 
-    assert.deepStrictEqual(node.provenance, provenance);
-    assert.deepStrictEqual(edge.provenance, provenance);
+    assert.strictEqual(node.provenance.provenanceId, provenance.provenanceId);
+    assert.strictEqual(edge.provenance.provenanceId, provenance.provenanceId);
+    assert.strictEqual(node.provenance.confidence, 0.91);
+    assert.strictEqual(edge.provenance.confidence, 0.91);
+    assert.strictEqual(node.provenance.trustPolicyVersion, '0.8.0');
+    assert.strictEqual(edge.provenance.trustPolicyVersion, '0.8.0');
   });
 
   it('throws ProvenanceError in strict mode when provenance is missing', () => {
@@ -110,7 +124,11 @@ describe('Provenance System', () => {
     const node = kernel.graph.getNode('kedi');
     const edge = kernel.graph.getEdge('kedi', 'hayvan', 'tür');
 
-    assert.deepStrictEqual(node.provenance, provenance);
-    assert.deepStrictEqual(edge.provenance, provenance);
+    assert.strictEqual(node.provenance.provenanceId, provenance.provenanceId);
+    assert.strictEqual(edge.provenance.provenanceId, provenance.provenanceId);
+    assert.strictEqual(node.provenance.confidence, 0.91);
+    assert.strictEqual(edge.provenance.confidence, 0.91);
+    assert.strictEqual(node.provenance.trustPolicyVersion, '0.8.0');
+    assert.strictEqual(edge.provenance.trustPolicyVersion, '0.8.0');
   });
 });

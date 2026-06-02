@@ -5,6 +5,7 @@ const path = require('path');
 const PluginManager = require('./plugin');
 const createNlp = require('./nlp');
 const VerifyService = require('./lib/verify');
+const { buildProvenance } = require('./lib/provenance-ingest');
 
 let RustGraph;
 try { RustGraph = require('./rustGraph'); } catch {}
@@ -268,14 +269,44 @@ class Kernel {
     return options;
   }
 
+  _normalizeProvenanceInput(provenanceInput, opts = {}) {
+    if (!provenanceInput && !opts.sourceType && !opts.sourceRef && !opts.sourceTitle && !opts.actor && !opts.timestamp && !opts.workspaceId) {
+      return { provenance: null, warnings: [] };
+    }
+
+    return buildProvenance(provenanceInput || {}, {
+      strictProvenance: this.strictProvenance,
+      trustPolicy: opts.trustPolicy,
+      trustPolicyPath: opts.trustPolicyPath,
+      sourceType: opts.sourceType,
+      sourceSubType: opts.sourceSubType,
+      sourceRef: opts.sourceRef,
+      sourceTitle: opts.sourceTitle,
+      actor: opts.actor,
+      timestamp: opts.timestamp,
+      workspaceId: opts.workspaceId,
+    });
+  }
+
   learn(text, opts = {}) {
     const ev = this.plugins.emit('beforeLearn', { text, opts: { ...opts } });
     text = ev.text;
     opts = ev.opts || opts;
-    const hasProvenance = Object.prototype.hasOwnProperty.call(opts, 'provenance') && opts.provenance != null;
-    const provenance = hasProvenance ? opts.provenance : null;
+    const hasProvenanceInput =
+      Object.prototype.hasOwnProperty.call(opts, 'provenance') ||
+      opts.sourceType ||
+      opts.sourceRef ||
+      opts.sourceTitle ||
+      opts.actor ||
+      opts.timestamp ||
+      opts.workspaceId;
+    const provenanceBundle = hasProvenanceInput
+      ? this._normalizeProvenanceInput(opts.provenance || {}, opts)
+      : { provenance: null, warnings: [] };
+    const provenance = provenanceBundle.provenance;
+    const provenanceWarnings = provenanceBundle.warnings;
 
-    if (this.strictProvenance && !hasProvenance) {
+    if (this.strictProvenance && !hasProvenanceInput) {
       throw new ProvenanceError();
     }
 
@@ -377,7 +408,7 @@ class Kernel {
         }
 
         // Ã–ÄRENME: d?k g?venli alternatifleri de ekle (çelişkiyi ?nlemek i?in farkl? ili?kiyle)
-        if (hasProvenance) {
+        if (provenance) {
           this.graph.addNode(subject, subject, provenance);
           this.graph.addNode(object, object, provenance);
         } else {
@@ -388,7 +419,7 @@ class Kernel {
         if (celiskiBulundu && (relation === 'tür')) {
           // tür çelişkisi ? benzer olarak kaydet
           const edgeOptions = this._learnEdgeOptions({ source: 'alt', weight: 0.15, evidence: [text] }, metadata, text);
-          if (hasProvenance) edgeOptions.provenance = provenance;
+          if (provenance) edgeOptions.provenance = provenance;
           const edge = this.graph.addEdge(
             subject,
             object,
@@ -401,7 +432,7 @@ class Kernel {
         } else if (celiskiBulundu) {
           // kistlama ? d?k weight ile kaydet
           const edgeOptions = this._learnEdgeOptions({ source: 'learn', weight: 0.2, evidence: [text] }, metadata, text);
-          if (hasProvenance) edgeOptions.provenance = provenance;
+          if (provenance) edgeOptions.provenance = provenance;
           const edge = this.graph.addEdge(
             subject,
             object,
@@ -413,7 +444,7 @@ class Kernel {
         } else {
           // Normal ?ÄŸrenme
           const edgeOptions = this._learnEdgeOptions({ source: 'learn', evidence: [text] }, metadata, text);
-          if (hasProvenance) edgeOptions.provenance = provenance;
+          if (provenance) edgeOptions.provenance = provenance;
           const edge = this.graph.addEdge(
             subject,
             object,
@@ -444,7 +475,12 @@ class Kernel {
       skipped: parsed.length - learned,
       conflicts,
       alternatives,
-    }, evidence);
+      provenanceWarnings,
+    }, evidence, {
+      provenance: provenance || null,
+      provenanceWarnings,
+      trustPolicyVersion: provenance ? provenance.trustPolicyVersion : undefined,
+    });
   }
 
   _parsePredicate(predicate) {
