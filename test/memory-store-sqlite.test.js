@@ -323,4 +323,131 @@ describe('memory-store-sqlite', () => {
     assert.strictEqual(rAll.total, 2);
     store2.close();
   });
+
+  it('links persist after SQLite reload', () => {
+    const dbPath = getDbPath('links-persist');
+    const store1 = new MemoryStore({ useSQLite: true, dbPath });
+
+    const m1 = store1.store({ content: 'm1' }).memory;
+    const m2 = store1.store({ content: 'm2' }).memory;
+    const res = store1.linkMemories({ fromMemoryId: m1.memoryId, toMemoryId: m2.memoryId, relation: 'supports' });
+
+    assert.strictEqual(res.ok, true);
+    store1.close();
+
+    // Reload
+    const store2 = new MemoryStore({ useSQLite: true, dbPath });
+    const linksRes = store2.queryLinks();
+    assert.strictEqual(linksRes.ok, true);
+    assert.strictEqual(linksRes.total, 1);
+    assert.strictEqual(linksRes.links[0].relation, 'supports');
+    store2.close();
+  });
+
+  it('timeline/eventsForMemory persist after reload', () => {
+    const dbPath = getDbPath('timeline-persist');
+    const originalDate = Date;
+    let timeIndex = 0;
+    const mockTimes = [
+      '2026-06-03T12:00:00.000Z',
+      '2026-06-03T12:00:05.000Z'
+    ];
+
+    global.Date = class extends originalDate {
+      constructor() {
+        super();
+        return new originalDate(mockTimes[timeIndex]);
+      }
+      toISOString() {
+        return mockTimes[timeIndex];
+      }
+      static now() {
+        return new originalDate(mockTimes[timeIndex]).getTime();
+      }
+    };
+
+    const store1 = new MemoryStore({ useSQLite: true, dbPath });
+
+    timeIndex = 0;
+    const m1 = store1.store({ content: 'm1' }).memory;
+    
+    timeIndex = 1;
+    store1.patchMetadata(m1.memoryId, { updated: true });
+
+    global.Date = originalDate; // Restore Date
+    store1.close();
+
+    // Reload
+    const store2 = new MemoryStore({ useSQLite: true, dbPath });
+    const eventsRes = store2.eventsForMemory(m1.memoryId);
+    assert.strictEqual(eventsRes.ok, true);
+    assert.strictEqual(eventsRes.total, 2);
+    assert.strictEqual(eventsRes.events[0].eventType, 'CREATED');
+    assert.strictEqual(eventsRes.events[1].eventType, 'UPDATED');
+
+    const timelineRes = store2.timeline();
+    assert.strictEqual(timelineRes.ok, true);
+    assert.strictEqual(timelineRes.total, 2);
+    store2.close();
+  });
+
+  it('workspace isolation survives reload for links and queries', () => {
+    const dbPath = getDbPath('ws-isolation-links');
+    const store1 = new MemoryStore({ useSQLite: true, dbPath });
+
+    const m1 = store1.store({ content: 'm1', workspaceId: 'ws-a' }).memory;
+    const m2 = store1.store({ content: 'm2', workspaceId: 'ws-a' }).memory;
+    store1.linkMemories({ fromMemoryId: m1.memoryId, toMemoryId: m2.memoryId, relation: 'supports', workspaceId: 'ws-a' });
+    store1.close();
+
+    // Reload
+    const store2 = new MemoryStore({ useSQLite: true, dbPath });
+    const linksA = store2.queryLinks({ workspaceId: 'ws-a' });
+    assert.strictEqual(linksA.total, 1);
+
+    const linksB = store2.queryLinks({ workspaceId: 'ws-b' });
+    assert.strictEqual(linksB.total, 0);
+    store2.close();
+  });
+
+  it('transaction rollback test for failed link creation', () => {
+    const dbPath = getDbPath('rollback-link');
+    const store = new MemoryStore({ useSQLite: true, dbPath });
+
+    const m1 = store.store({ content: 'm1' }).memory;
+    const m2 = store.store({ content: 'm2' }).memory;
+
+    // Mock insertEvent.run to throw an error mid-transaction
+    const originalRun = store._stmts.insertEvent.run;
+    store._stmts.insertEvent.run = () => {
+      throw new Error('Simulated event write failure');
+    };
+
+    const res = store.linkMemories({
+      fromMemoryId: m1.memoryId,
+      toMemoryId: m2.memoryId,
+      relation: 'supports'
+    });
+
+    // Verify it returned failure
+    assert.strictEqual(res.ok, false);
+    assert.strictEqual(res.error.code, 'DATABASE_ERROR');
+
+    // Restore run method
+    store._stmts.insertEvent.run = originalRun;
+
+    // Close and reload to ensure database is clean and no partial link or event got written
+    store.close();
+
+    const store2 = new MemoryStore({ useSQLite: true, dbPath });
+    const linksRes = store2.queryLinks();
+    assert.strictEqual(linksRes.total, 0);
+
+    const eventsRes = store2.timeline();
+    // Timeline should only contain CREATED events of the 2 memories (no LINKED event)
+    assert.strictEqual(eventsRes.total, 2);
+    assert.ok(!eventsRes.events.some(e => e.eventType === 'LINKED'));
+
+    store2.close();
+  });
 });
