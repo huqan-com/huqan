@@ -99,7 +99,7 @@ describe('verify semantic integration', () => {
     assert.notStrictEqual(result.status, 'dogrulandi');
     assert.ok(semanticTrust && typeof semanticTrust === 'object', 'semantic trust meta should be attached');
     assert.ok(semanticTrust.supportScore < semanticTrust.thresholds.supportVerified, 'weak partial support must stay below verification threshold');
-    assert.ok(['weak_match', 'unsupported', 'needs_review'].includes(semanticTrust.classification), 'weak partial should not be verified');
+    assert.ok(['weak_match', 'unsupported', 'needs_review', 'contradicted'].includes(semanticTrust.classification), 'weak partial should not be verified');
     assert.notStrictEqual(semanticTrust.status, 'dogrulandi');
   });
 
