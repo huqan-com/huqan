@@ -1,4 +1,4 @@
-﻿const Graph = require('./graph');
+const Graph = require('./graph');
 const Dream = require('./dream');
 const fs = require('fs');
 const path = require('path');
@@ -7,6 +7,7 @@ const createNlp = require('./nlp');
 const VerifyService = require('./lib/verify');
 const { buildProvenance } = require('./lib/provenance-ingest');
 const { detectClaimConflict, routeCandidateClaim } = require('./lib/conflict-detector');
+const MemoryStore = require('./lib/memory-store');
 
 let RustGraph;
 try { RustGraph = require('./rustGraph'); } catch {}
@@ -85,6 +86,11 @@ class Kernel {
     this._lockQueue = [];
     this._lockAcquired = false;
     this._lockTimeoutMs = opts.lockTimeoutMs || 5000;
+
+    // v0.9.1: AXIOM Memory Core — kernel.memory API
+    this.memory = new MemoryStore({
+      trustPolicyVersion: this.contractVersion,
+    });
   }
 
   // r1: Acquire lock for critical operations (verify/learn)
