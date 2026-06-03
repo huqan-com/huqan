@@ -449,6 +449,12 @@ describe('Server - API', () => {
     }
     assert.notStrictEqual(r.headers.get('access-control-allow-origin'), '*');
     assert.strictEqual(r.headers.get('cache-control'), 'no-cache');
+    // PR-C3: additive memory fields
+    assert.ok(Array.isArray(j.memoryNodes), 'memoryNodes must be an array');
+    assert.ok(Array.isArray(j.memoryLinks), 'memoryLinks must be an array');
+    assert.ok(typeof j.metadata === 'object' && j.metadata !== null, 'metadata must be an object');
+    assert.ok(typeof j.metadata.memory === 'object' && j.metadata.memory !== null, 'metadata.memory must be an object');
+    assert.strictEqual(typeof j.metadata.memory.enabled, 'boolean', 'metadata.memory.enabled must be a boolean');
   });
 
   it('GET /health servis bilgisini dÃƒÂ¶ndÃƒÂ¼rÃƒÂ¼r', async () => {

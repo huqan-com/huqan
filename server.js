@@ -176,6 +176,37 @@ async function parseJsonRequest(req, res, options = {}) {
 
 
 // Graf verisini D3 formatına dönüştür
+function getSafeMemoryLabel(content) {
+  if (content === null || content === undefined) return '';
+  let str = '';
+  if (typeof content === 'string') {
+    str = content;
+  } else if (typeof content === 'object') {
+    if (content.text && typeof content.text === 'string') {
+      str = content.text;
+    } else if (content.statement && typeof content.statement === 'string') {
+      str = content.statement;
+    } else if (content.content && typeof content.content === 'string') {
+      str = content.content;
+    } else {
+      try {
+        str = JSON.stringify(content);
+      } catch (_) {
+        str = String(content);
+      }
+    }
+  } else {
+    str = String(content);
+  }
+
+  // HTML injection guard
+  str = str.replace(/<\/?[^>]+(>|$)/g, '');
+
+  if (str.length > 100) {
+    str = str.substring(0, 97) + '...';
+  }
+  return str;
+}
 function getGraphData(workspaceId = 'default') {
   const scope = typeof workspaceId === 'string' && workspaceId.trim() ? workspaceId.trim() : 'default';
   const nodesById = cli.kernel.graph.getNodes(scope);
@@ -236,7 +267,74 @@ function getGraphData(workspaceId = 'default') {
       workspaceId: e.workspaceId || scope,
     }));
 
-  return { nodes: topNodes, links };
+  let memoryNodes = [];
+  let memoryLinks = [];
+  const memoryMetadata = {
+    enabled: false
+  };
+
+  if (cli.kernel && cli.kernel.memory && typeof cli.kernel.memory.list === 'function') {
+    try {
+      const listResult = cli.kernel.memory.list({ workspaceId: scope });
+      if (listResult && listResult.ok) {
+        const activeMemories = listResult.memories || [];
+        const topMemories = activeMemories.slice(0, 150);
+
+        memoryNodes = topMemories.map(m => ({
+          id: m.memoryId,
+          label: getSafeMemoryLabel(m.content),
+          type: 'memory',
+          workspaceId: m.workspaceId || scope,
+          status: m.status || 'active',
+          weight: typeof m.metadata?.weight === 'number' ? m.metadata.weight : 1.0,
+          metadata: m.metadata || {}
+        }));
+
+        const memoryNodeIds = new Set(memoryNodes.map(n => n.id));
+
+        let queryLinksAvailable = typeof cli.kernel.memory.queryLinks === 'function';
+        let allLinks = [];
+        if (queryLinksAvailable) {
+          const linksResult = cli.kernel.memory.queryLinks({ workspaceId: scope });
+          if (linksResult && linksResult.ok) {
+            allLinks = linksResult.links || [];
+          }
+        }
+
+        const validLinks = allLinks.filter(l => memoryNodeIds.has(l.fromMemoryId) && memoryNodeIds.has(l.toMemoryId));
+
+        memoryLinks = validLinks.slice(0, 300).map(l => ({
+          source: l.fromMemoryId,
+          target: l.toMemoryId,
+          relation: l.relation,
+          type: 'memory-link',
+          workspaceId: l.workspaceId || scope,
+          weight: typeof l.strength === 'number' ? l.strength : 1.0
+        }));
+
+        memoryMetadata.enabled = true;
+        memoryMetadata.nodeCount = memoryNodes.length;
+        memoryMetadata.linkCount = memoryLinks.length;
+        memoryMetadata.source = 'kernel.memory';
+      } else {
+        memoryMetadata.reason = 'kernel.memory list failed';
+      }
+    } catch (err) {
+      memoryMetadata.reason = 'kernel.memory access error: ' + err.message;
+    }
+  } else {
+    memoryMetadata.reason = 'kernel.memory unavailable';
+  }
+
+  return {
+    nodes: topNodes,
+    links,
+    memoryNodes,
+    memoryLinks,
+    metadata: {
+      memory: memoryMetadata
+    }
+  };
 }
 
 function getHealthData() {
