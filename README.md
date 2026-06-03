@@ -1,13 +1,35 @@
-﻿# â—‡ AXIOM
+﻿# AXIOM
 
-**LLM'ler iÃ§in deterministik doÄŸrulama motoru.**
+**Local-first trust and reasoning layer for AI systems.**
 
-LLM Ã§Ä±ktÄ±larÄ±nÄ± doÄŸrular, Ã§eliÅŸkileri tespit eder, nedensellik zinciri kurar. GPU yok, bulut API yok, sÄ±fÄ±r dÄ±ÅŸ baÄŸÄ±mlÄ±lÄ±k.
+AXIOM does not generate answers. It judges claims.
 
-> *"LLM'ler kumdan kale. AXIOM granit."*
+It learns facts into a graph, tracks provenance, detects contradictions, simulates causal impact, and explains why a claim is supported, contradicted, or unknown.
+
+## Why AXIOM exists
+
+LLMs are good at generating.
+Agents are good at acting.
+Memory tools are good at storing.
+AI systems still need a judge.
+
+AXIOM is that judge.
+
+## How AXIOM differs
+
+- Not RAG: it does more than retrieve context.
+- Not a memory tool: it reasons over provenance and contradictions.
+- Not an LLM wrapper: it does not hide model output behind a thin API.
+
+## Version story
+
+| Version | Layer | Question |
+|---|---|---|
+| v0.7 | Causal Reasoning Layer | What breaks if we do this? |
+| v0.8 | Trust Kernel & ATP | Why should we trust this? |
+| v0.9 | Semantic Trust Gate | Is this claim safe to believe? |
 
 ---
-
 ## HÄ±zlÄ± BaÅŸlangÄ±Ã§
 
 ```bash
@@ -272,6 +294,7 @@ docker-compose up
 **v0.9.0** — Trust Kernel & AXIOM Trust Protocol, 592 test
 
 [CHANGELOG](./CHANGELOG.md) Â· [ROADMAP](./ROADMAP.md) Â· [MIT Lisans](./LICENSE)
+
 
 
 
