@@ -50,9 +50,14 @@ describe('memory-store', () => {
   // ── list ─────────────────────────────────────────────────
   it('list returns memories in deterministic order', () => {
     const store = createStore();
-    store.store({ content: 'alpha' });
-    store.store({ content: 'beta' });
-    store.store({ content: 'gamma' });
+    const r1 = store.store({ content: 'alpha' });
+    const r2 = store.store({ content: 'beta' });
+    const r3 = store.store({ content: 'gamma' });
+
+    // Manually force different timestamps to avoid sub-millisecond clustering in fast environments
+    r1.memory.createdAt = '2026-06-03T12:00:00.000Z';
+    r2.memory.createdAt = '2026-06-03T12:00:01.000Z';
+    r3.memory.createdAt = '2026-06-03T12:00:02.000Z';
 
     const result = store.list();
     assert.strictEqual(result.ok, true);
