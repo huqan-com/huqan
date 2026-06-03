@@ -45,7 +45,7 @@ const cli = new CLI({ kernel: kernelOpts });
 cli.kernel.graph.load();
 let companyRuntimeReady = false;
 
-// --- GÃ¼venlik sabitleri ---
+// --- Güvenlik sabitleri ---
 const rateLimitCleanupTimer = setInterval(() => {
   clearExpiredRateLimitEntries();
 }, 60_000);
@@ -175,7 +175,7 @@ async function parseJsonRequest(req, res, options = {}) {
 }
 
 
-// Graf verisini D3 formatÄ±na dÃ¶nÃ¼ÅŸtÃ¼r
+// Graf verisini D3 formatına dönüştür
 function getGraphData(workspaceId = 'default') {
   const scope = typeof workspaceId === 'string' && workspaceId.trim() ? workspaceId.trim() : 'default';
   const nodesById = cli.kernel.graph.getNodes(scope);
@@ -211,7 +211,7 @@ function getGraphData(workspaceId = 'default') {
     };
   });
 
-  // Ã‡ok fazla node varsa en aÄŸÄ±rlÄ±klÄ± 150'yi al
+  // Çok fazla node varsa en ağırlıklı 150'yi al
   const MAX_NODES = 150;
   const sorted = nodes.sort((a, b) => (b.weight + b.edgeCount * 0.2) - (a.weight + a.edgeCount * 0.2));
   const topNodes = sorted.slice(0, MAX_NODES);
@@ -498,7 +498,7 @@ const server = http.createServer(async (req, res) => {
 
   const reqUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
 
-  // â”€â”€ /graph-data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- /graph-data ---
   if (reqUrl.pathname === '/graph-data') {
     if (req.method !== 'GET') {
       res.writeHead(405); res.end(); return;
@@ -576,7 +576,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // â”€â”€ /llm-sor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- /llm-sor ---
   if (reqUrl.pathname === '/llm-sor') {
     if (req.method !== 'POST') {
       res.writeHead(405, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
@@ -834,15 +834,15 @@ const server = http.createServer(async (req, res) => {
     const q = sanitizeInput(raw);
     if (!q) {
       res.writeHead(400, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
-      res.end(JSON.stringify({ result: 'âŒ BoÅŸ girdi.' }));
+      res.end(JSON.stringify({ result: 'HATA: Boş girdi.' }));
       return;
     }
     const p = cli.parse(q);
     let result;
     if (!p) {
-      result = 'âŒ AnlamadÄ±m.';
+      result = 'HATA: Anlamadım.';
     } else if (p.command === 'kaydet') {
-      result = 'âš ï¸ Kaydet komutu sadece CLI\'dan kullanÄ±labilir.';
+      result = '⚠️ Kaydet komutu sadece CLI\'dan kullanılabilir.';
     } else {
       try {
         // Some commands may be sync today and async tomorrow.
@@ -850,7 +850,7 @@ const server = http.createServer(async (req, res) => {
         result = await Promise.resolve(cli.execute(p.command, p.args));
       } catch (err) {
         console.error('[API hata]', err.code || err.name || 'internal');
-        result = 'âŒ Ä°ÅŸlem sÄ±rasÄ±nda hata oluÅŸtu.';
+        result = 'HATA: İşlem sırasında hata oluştu.';
       }
     }
     res.writeHead(200, {
@@ -862,7 +862,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // â”€â”€ Ana sayfa â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Ana sayfa ---
   if (reqUrl.pathname === '/') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', ...buildCorsHeaders(req) });
     res.end(getHtmlPage());
