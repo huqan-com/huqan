@@ -495,4 +495,215 @@ describe('memory-store', () => {
     assert.strictEqual(r4.ok, false);
     assert.strictEqual(r4.error.code, 'VALIDATION_ERROR');
   });
+
+  // ── PR-M5 Graph Links & Temporal Queries ──────────────────
+  describe('PR-M5 graph links', () => {
+    it('linkMemories creates a valid link and a LINKED event', () => {
+      const store = createStore();
+      const m1 = store.store({ content: 'memory 1' }).memory;
+      const m2 = store.store({ content: 'memory 2' }).memory;
+
+      const res = store.linkMemories({
+        fromMemoryId: m1.memoryId,
+        toMemoryId: m2.memoryId,
+        relation: 'supports',
+      });
+
+      assert.strictEqual(res.ok, true);
+      assert.ok(res.link);
+      assert.strictEqual(res.link.relation, 'supports');
+      assert.strictEqual(res.link.fromMemoryId, m1.memoryId);
+      assert.strictEqual(res.link.toMemoryId, m2.memoryId);
+
+      // Check event
+      assert.ok(res.event);
+      assert.strictEqual(res.event.eventType, 'LINKED');
+      assert.strictEqual(res.event.memoryId, m1.memoryId);
+    });
+
+    it('linkMemories is idempotent for duplicate same link', () => {
+      const store = createStore();
+      const m1 = store.store({ content: 'm1' }).memory;
+      const m2 = store.store({ content: 'm2' }).memory;
+
+      const res1 = store.linkMemories({
+        fromMemoryId: m1.memoryId,
+        toMemoryId: m2.memoryId,
+        relation: 'contradicts',
+      });
+      assert.strictEqual(res1.ok, true);
+
+      const res2 = store.linkMemories({
+        fromMemoryId: m1.memoryId,
+        toMemoryId: m2.memoryId,
+        relation: 'contradicts',
+      });
+      assert.strictEqual(res2.ok, true);
+      assert.strictEqual(res1.link.linkId, res2.link.linkId);
+    });
+
+    it('linkMemories rejects cross-workspace links', () => {
+      const store = createStore();
+      const m1 = store.store({ content: 'm1', workspaceId: 'ws-1' }).memory;
+      const m2 = store.store({ content: 'm2', workspaceId: 'ws-2' }).memory;
+
+      const res = store.linkMemories({
+        fromMemoryId: m1.memoryId,
+        toMemoryId: m2.memoryId,
+        relation: 'references',
+        workspaceId: 'ws-1'
+      });
+      assert.strictEqual(res.ok, false);
+      assert.strictEqual(res.error.code, 'NOT_FOUND');
+    });
+
+    it('linkMemories rejects missing memory IDs', () => {
+      const store = createStore();
+      const res = store.linkMemories({
+        relation: 'supports'
+      });
+      assert.strictEqual(res.ok, false);
+      assert.strictEqual(res.error.code, 'INVALID_INPUT');
+    });
+
+    it('linkMemories rejects deleted/tombstoned endpoints', () => {
+      const store = createStore();
+      const m1 = store.store({ content: 'm1' }).memory;
+      const m2 = store.store({ content: 'm2' }).memory;
+      store.tombstone(m2.memoryId);
+
+      const res = store.linkMemories({
+        fromMemoryId: m1.memoryId,
+        toMemoryId: m2.memoryId,
+        relation: 'supports'
+      });
+      assert.strictEqual(res.ok, false);
+      assert.strictEqual(res.error.code, 'INVALID_STATE');
+    });
+
+    it('queryLinks filters by fromMemoryId/toMemoryId/relation', () => {
+      const store = createStore();
+      const m1 = store.store({ content: 'm1' }).memory;
+      const m2 = store.store({ content: 'm2' }).memory;
+      const m3 = store.store({ content: 'm3' }).memory;
+
+      store.linkMemories({ fromMemoryId: m1.memoryId, toMemoryId: m2.memoryId, relation: 'supports' });
+      store.linkMemories({ fromMemoryId: m1.memoryId, toMemoryId: m3.memoryId, relation: 'contradicts' });
+
+      const q1 = store.queryLinks({ relation: 'supports' });
+      assert.strictEqual(q1.ok, true);
+      assert.strictEqual(q1.total, 1);
+      assert.strictEqual(q1.links[0].toMemoryId, m2.memoryId);
+
+      const q2 = store.queryLinks({ fromMemoryId: m1.memoryId });
+      assert.strictEqual(q2.total, 2);
+    });
+
+    it('queryLinks hides links connected to deleted memories by default', () => {
+      const store = createStore();
+      const m1 = store.store({ content: 'm1' }).memory;
+      const m2 = store.store({ content: 'm2' }).memory;
+      store.linkMemories({ fromMemoryId: m1.memoryId, toMemoryId: m2.memoryId, relation: 'supports' });
+
+      // Tombstone m2
+      store.tombstone(m2.memoryId);
+
+      const qDefault = store.queryLinks();
+      assert.strictEqual(qDefault.total, 0);
+
+      const qInclude = store.queryLinks({ includeDeleted: true });
+      assert.strictEqual(qInclude.total, 1);
+    });
+
+    it('linksForMemory supports incoming/outgoing/both', () => {
+      const store = createStore();
+      const m1 = store.store({ content: 'm1' }).memory;
+      const m2 = store.store({ content: 'm2' }).memory;
+      const m3 = store.store({ content: 'm3' }).memory;
+
+      store.linkMemories({ fromMemoryId: m1.memoryId, toMemoryId: m2.memoryId, relation: 'supports' });
+      store.linkMemories({ fromMemoryId: m3.memoryId, toMemoryId: m1.memoryId, relation: 'references' });
+
+      const both = store.linksForMemory(m1.memoryId, { direction: 'both' });
+      assert.strictEqual(both.links.length, 2);
+
+      const outgoing = store.linksForMemory(m1.memoryId, { direction: 'outgoing' });
+      assert.strictEqual(outgoing.links.length, 1);
+      assert.strictEqual(outgoing.links[0].relation, 'supports');
+
+      const incoming = store.linksForMemory(m1.memoryId, { direction: 'incoming' });
+      assert.strictEqual(incoming.links.length, 1);
+      assert.strictEqual(incoming.links[0].relation, 'references');
+    });
+  });
+
+  describe('PR-M5 temporal queries', () => {
+    it('eventsForMemory returns deterministic event timeline for one memory', () => {
+      const store = createStore();
+      const m = store.store({ content: 'tracked' }).memory;
+      store.getEvents(m.memoryId)[0].createdAt = '2026-06-03T12:00:00.000Z';
+
+      const patch = store.patchMetadata(m.memoryId, { tag: 'v2' });
+      patch.event.createdAt = '2026-06-03T12:00:05.000Z';
+
+      const res = store.eventsForMemory(m.memoryId);
+      assert.strictEqual(res.ok, true);
+      assert.strictEqual(res.total, 2);
+      assert.strictEqual(res.events[0].eventType, 'CREATED');
+      assert.strictEqual(res.events[1].eventType, 'UPDATED');
+    });
+
+    it('timeline filters by actor/eventType/date range inclusive', () => {
+      const store = createStore();
+      const m1 = store.store({ content: 'm1', actor: 'alice' }).memory;
+      const m2 = store.store({ content: 'm2', actor: 'bob' }).memory;
+
+      // Force timestamps
+      store.getEvents(m1.memoryId)[0].createdAt = '2026-06-03T12:00:00.000Z';
+      store.getEvents(m2.memoryId)[0].createdAt = '2026-06-03T12:00:10.000Z';
+
+      const t1 = store.timeline({ actor: 'alice' });
+      assert.strictEqual(t1.total, 1);
+      assert.strictEqual(t1.events[0].memoryId, m1.memoryId);
+
+      const t2 = store.timeline({
+        createdAfter: '2026-06-03T12:00:00.000Z',
+        createdBefore: '2026-06-03T12:00:10.000Z'
+      });
+      assert.strictEqual(t2.total, 2);
+    });
+
+    it('memoriesBetween uses inclusive boundaries', () => {
+      const store = createStore();
+      const m1 = store.store({ content: 'm1' }).memory;
+      const m2 = store.store({ content: 'm2' }).memory;
+      const m3 = store.store({ content: 'm3' }).memory;
+
+      m1.createdAt = '2026-06-03T12:00:00.000Z';
+      m2.createdAt = '2026-06-03T12:00:05.000Z';
+      m3.createdAt = '2026-06-03T12:00:10.000Z';
+
+      const res = store.memoriesBetween('2026-06-03T12:00:00.000Z', '2026-06-03T12:00:05.000Z');
+      assert.strictEqual(res.ok, true);
+      assert.strictEqual(res.total, 2);
+      assert.strictEqual(res.memories[0].content, 'm1');
+      assert.strictEqual(res.memories[1].content, 'm2');
+    });
+
+    it('limit/offset works deterministically', () => {
+      const store = createStore();
+      const m1 = store.store({ content: 'm1' }).memory;
+      const m2 = store.store({ content: 'm2' }).memory;
+      const m3 = store.store({ content: 'm3' }).memory;
+
+      m1.createdAt = '2026-06-03T12:00:00.000Z';
+      m2.createdAt = '2026-06-03T12:00:05.000Z';
+      m3.createdAt = '2026-06-03T12:00:10.000Z';
+
+      const res = store.memoriesBetween('2026-06-03T12:00:00.000Z', '2026-06-03T12:00:10.000Z', { limit: 2, offset: 1 });
+      assert.strictEqual(res.memories.length, 2);
+      assert.strictEqual(res.memories[0].content, 'm2');
+      assert.strictEqual(res.memories[1].content, 'm3');
+    });
+  });
 });
