@@ -431,7 +431,8 @@ describe('memory-store-sqlite', () => {
 
     // Verify it returned failure
     assert.strictEqual(res.ok, false);
-    assert.strictEqual(res.error.code, 'DATABASE_ERROR');
+    assert.strictEqual(res.error.code, 'PERSISTENCE_ERROR');
+    assert.strictEqual(res.error.operation, 'linkMemories');
 
     // Restore run method
     store._stmts.insertEvent.run = originalRun;
@@ -660,9 +661,10 @@ describe('memory-store-sqlite', () => {
         return originalRun.apply(this, arguments);
       };
 
-      assert.throws(() => {
-        store.supersede(mid1, 'v2');
-      }, /Simulated event write failure during supersede/);
+      const res = store.supersede(mid1, 'v2');
+      assert.strictEqual(res.ok, false);
+      assert.strictEqual(res.error.code, 'PERSISTENCE_ERROR');
+      assert.strictEqual(res.error.operation, 'supersede');
 
       store._stmts.insertEvent.run = originalRun;
 
