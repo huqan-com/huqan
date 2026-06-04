@@ -67,6 +67,13 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function clamp01(value, fallback = 0.5) {
+  const fallbackNumber = Number.isFinite(Number(fallback)) ? Number(fallback) : 0.5;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return Math.max(0, Math.min(1, fallbackNumber));
+  return Math.max(0, Math.min(1, numeric));
+}
+
 function edgeSortKey(edge) {
   return [
     edge.from || '',
@@ -136,7 +143,8 @@ function attachTraversalMeta(chain, meta) {
 function normalizeLoadedEdge(edge) {
   const normalized = {
     ...edge,
-    confidence: edge.confidence ?? edge.weight ?? 0.5,
+    weight: clamp01(edge.weight, 0.5),
+    confidence: clamp01(edge.confidence, clamp01(edge.weight, 0.5)),
     source: edge.source || 'manual',
     source_ref: edge.source_ref || '',
     session_id: edge.session_id || '',
@@ -706,17 +714,24 @@ class Graph {
       }
     }
     
-    const existing = this.getEdge(fromId, toId, relation, workspaceId);
-    const isoNow = nowIso();
-    const requestedCreatedAt = typeof opts.createdAt === 'string' && opts.createdAt ? opts.createdAt : '';
-    const nextEvidence = Array.isArray(opts.evidence) ? opts.evidence : [];
-    if (existing) {
-      const oldConfidence = existing.confidence ?? existing.weight ?? 0.5;
-      existing.weight = Math.min(1, opts.weight ?? existing.weight + 0.1);
-      existing.confidence = Math.max(existing.confidence ?? existing.weight, opts.confidence ?? existing.confidence ?? existing.weight);
-      if (opts.source) existing.source = opts.source;
-      if (typeof opts.sourceRef === 'string') existing.source_ref = opts.sourceRef;
-      if (typeof opts.sessionId === 'string') existing.session_id = opts.sessionId;
+      const existing = this.getEdge(fromId, toId, relation, workspaceId);
+      const isoNow = nowIso();
+      const requestedCreatedAt = typeof opts.createdAt === 'string' && opts.createdAt ? opts.createdAt : '';
+      const nextEvidence = Array.isArray(opts.evidence) ? opts.evidence : [];
+      if (existing) {
+        const oldConfidence = existing.confidence ?? existing.weight ?? 0.5;
+        const requestedWeight = opts.weight === undefined
+          ? (existing.weight ?? 0.5) + 0.1
+          : opts.weight;
+        const nextWeight = clamp01(requestedWeight, existing.weight ?? 0.5);
+        const requestedConfidence = opts.confidence === undefined
+          ? (Number.isFinite(Number(existing.confidence)) ? existing.confidence : nextWeight)
+          : opts.confidence;
+        existing.weight = nextWeight;
+        existing.confidence = clamp01(requestedConfidence, nextWeight);
+        if (opts.source) existing.source = opts.source;
+        if (typeof opts.sourceRef === 'string') existing.source_ref = opts.sourceRef;
+        if (typeof opts.sessionId === 'string') existing.session_id = opts.sessionId;
       if (typeof opts.evidenceType === 'string') existing.evidence_type = opts.evidenceType;
       if (typeof opts.sourceType === 'string') existing.source_type = opts.sourceType;
       if (typeof opts.companyMode === 'boolean') existing.company_mode = opts.companyMode ? 1 : 0;
@@ -753,15 +768,15 @@ class Graph {
       }
       return existing;
     }
-    const edge = {
-      from: fromId,
-      to: toId,
-      relation,
-      weight: opts.weight ?? 0.5,
-      confidence: opts.confidence ?? opts.weight ?? 0.5,
-      source: opts.source || 'manual',
-      source_ref: opts.sourceRef || '',
-      session_id: opts.sessionId || '',
+      const edge = {
+        from: fromId,
+        to: toId,
+        relation,
+        weight: clamp01(opts.weight, 0.5),
+        confidence: clamp01(opts.confidence, clamp01(opts.weight, 0.5)),
+        source: opts.source || 'manual',
+        source_ref: opts.sourceRef || '',
+        session_id: opts.sessionId || '',
       evidence: nextEvidence,
       evidence_type: opts.evidenceType || '',
       confidence_history: [],
