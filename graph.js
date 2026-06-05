@@ -23,6 +23,9 @@ const STANDARD_RELATIONS = Object.freeze([
   ...CAUSAL_RELATIONS,
 ]);
 
+const EDGE_META_NAMESPACE = 'entityResolution';
+const EDGE_META_MAX_BYTES = 4096;
+
 const CAUSAL_RELATION_PRIORITY = Object.freeze({
   CAUSES: 0,
   ENABLES: 1,
@@ -127,6 +130,26 @@ function normalizeCausalStep(edge) {
   return step;
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function sanitizeEdgeMeta(meta) {
+  if (!isPlainObject(meta)) return {};
+  const candidate = {};
+  if (Object.prototype.hasOwnProperty.call(meta, EDGE_META_NAMESPACE) && isPlainObject(meta[EDGE_META_NAMESPACE])) {
+    try {
+      candidate[EDGE_META_NAMESPACE] = JSON.parse(JSON.stringify(meta[EDGE_META_NAMESPACE]));
+      const bytes = Buffer.byteLength(JSON.stringify(candidate), 'utf8');
+      if (bytes > EDGE_META_MAX_BYTES) return {};
+      return candidate;
+    } catch (_) {
+      return {};
+    }
+  }
+  return {};
+}
+
 function attachTraversalMeta(chain, meta) {
   Object.defineProperties(chain, {
     start: { value: meta.start, enumerable: true },
@@ -156,6 +179,7 @@ function normalizeLoadedEdge(edge) {
     updated_at: edge.updated_at || '',
     created_at: edge.created_at || '',
     provenance: edge.provenance ?? null,
+    meta: sanitizeEdgeMeta(edge.meta),
     workspaceId: edge.workspaceId || edge.workspace_id || 'default',
   };
 
@@ -243,11 +267,11 @@ class Graph {
         provenance TEXT NOT NULL DEFAULT 'null',
         PRIMARY KEY (workspace_id, id)
       );
-      CREATE TABLE IF NOT EXISTS edges (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        workspace_id TEXT NOT NULL DEFAULT 'default',
-        from_id TEXT NOT NULL,
-        to_id TEXT NOT NULL,
+        CREATE TABLE IF NOT EXISTS edges (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          workspace_id TEXT NOT NULL DEFAULT 'default',
+          from_id TEXT NOT NULL,
+          to_id TEXT NOT NULL,
         relation TEXT NOT NULL,
         weight REAL NOT NULL DEFAULT 0.5,
         confidence REAL NOT NULL DEFAULT 0.5,
@@ -258,13 +282,14 @@ class Graph {
         evidence_type TEXT NOT NULL DEFAULT '',
         confidence_history TEXT NOT NULL DEFAULT '[]',
         company_mode INTEGER NOT NULL DEFAULT 0,
-        source_type TEXT NOT NULL DEFAULT '',
-        updated_at TEXT NOT NULL DEFAULT '',
-        created_at TEXT NOT NULL DEFAULT '',
-        provenance TEXT NOT NULL DEFAULT 'null',
-        created INTEGER NOT NULL,
-        UNIQUE(workspace_id, from_id, to_id, relation)
-      );
+          source_type TEXT NOT NULL DEFAULT '',
+          updated_at TEXT NOT NULL DEFAULT '',
+          created_at TEXT NOT NULL DEFAULT '',
+          provenance TEXT NOT NULL DEFAULT 'null',
+          meta TEXT NOT NULL DEFAULT '{}',
+          created INTEGER NOT NULL,
+          UNIQUE(workspace_id, from_id, to_id, relation)
+        );
       CREATE INDEX IF NOT EXISTS idx_edges_from ON edges(from_id);
       CREATE INDEX IF NOT EXISTS idx_edges_to   ON edges(to_id);
       CREATE TABLE IF NOT EXISTS audit_log (
@@ -366,6 +391,7 @@ class Graph {
     if (!edgeColumns.includes('created_at')) this._db.exec("ALTER TABLE edges ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
     if (!edgeColumns.includes('strength')) this._db.exec('ALTER TABLE edges ADD COLUMN strength REAL NOT NULL DEFAULT 0.5');
     if (!edgeColumns.includes('provenance')) this._db.exec("ALTER TABLE edges ADD COLUMN provenance TEXT NOT NULL DEFAULT 'null'");
+    if (!edgeColumns.includes('meta')) this._db.exec("ALTER TABLE edges ADD COLUMN meta TEXT NOT NULL DEFAULT '{}'");
     if (!candidateColumns.includes('candidate_id')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN candidate_id TEXT NOT NULL DEFAULT ''");
     if (!candidateColumns.includes('workspace_id')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN workspace_id TEXT NOT NULL DEFAULT 'default'");
     if (!candidateColumns.includes('claim')) this._db.exec("ALTER TABLE candidate_claims ADD COLUMN claim TEXT NOT NULL DEFAULT ''");
@@ -409,8 +435,8 @@ class Graph {
       deleteEdgesOf: this._db.prepare('DELETE FROM edges WHERE (from_id = ? OR to_id = ?) AND workspace_id = ?'),
       touchNode: this._db.prepare('UPDATE nodes SET last_accessed = ? WHERE id = ? AND workspace_id = ?'),
       upsertEdge: this._db.prepare(`
-        INSERT INTO edges (workspace_id, from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, evidence_type, confidence_history, company_mode, source_type, updated_at, created_at, provenance, created, strength)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO edges (workspace_id, from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, evidence_type, confidence_history, company_mode, source_type, updated_at, created_at, provenance, meta, created, strength)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(workspace_id, from_id, to_id, relation) DO UPDATE SET
           workspace_id = excluded.workspace_id,
           weight = excluded.weight,
@@ -425,6 +451,7 @@ class Graph {
           source_type = excluded.source_type,
           updated_at = excluded.updated_at,
           provenance = excluded.provenance,
+          meta = excluded.meta,
           strength = excluded.strength
       `),
       getEdge: this._db.prepare('SELECT * FROM edges WHERE from_id = ? AND to_id = ? AND relation = ? AND workspace_id = ?'),
@@ -454,7 +481,7 @@ class Graph {
       countEdges: this._db.prepare('SELECT COUNT(*) as c FROM edges'),
       allNodes: this._db.prepare('SELECT * FROM nodes'),
       allEdges: this._db.prepare('SELECT * FROM edges'),
-      updateEdgeWeight: this._db.prepare('UPDATE edges SET weight = ?, confidence = ?, source = ?, source_ref = ?, session_id = ?, evidence = ?, evidence_type = ?, confidence_history = ?, company_mode = ?, source_type = ?, updated_at = ?, provenance = ?, workspace_id = ? WHERE workspace_id = ? AND from_id = ? AND to_id = ? AND relation = ?'),
+      updateEdgeWeight: this._db.prepare('UPDATE edges SET weight = ?, confidence = ?, source = ?, source_ref = ?, session_id = ?, evidence = ?, evidence_type = ?, confidence_history = ?, company_mode = ?, source_type = ?, updated_at = ?, provenance = ?, meta = ?, workspace_id = ? WHERE workspace_id = ? AND from_id = ? AND to_id = ? AND relation = ?'),
       updateNodeVector: this._db.prepare('UPDATE nodes SET vector = ? WHERE id = ? AND workspace_id = ?'),
       insertAuditEvent: this._db.prepare(`
         INSERT OR IGNORE INTO audit_log (
@@ -701,6 +728,8 @@ class Graph {
     const workspaceId = normalizeWorkspaceId(opts.workspaceId || opts.provenance?.workspaceId);
     if (!this.getNode(fromId, workspaceId) || !this.getNode(toId, workspaceId)) return null;
     const hasExplicitProvenance = opts.provenance && typeof opts.provenance === 'object';
+    const hasExplicitMeta = isPlainObject(opts.meta);
+    const nextMeta = sanitizeEdgeMeta(opts.meta);
     
     // Causal relation validation for v0.7
     const isCausal = CAUSAL_RELATIONS.includes(relation);
@@ -730,12 +759,14 @@ class Graph {
         existing.weight = nextWeight;
         existing.confidence = clamp01(requestedConfidence, nextWeight);
         if (opts.source) existing.source = opts.source;
-        if (typeof opts.sourceRef === 'string') existing.source_ref = opts.sourceRef;
-        if (typeof opts.sessionId === 'string') existing.session_id = opts.sessionId;
+      if (typeof opts.sourceRef === 'string') existing.source_ref = opts.sourceRef;
+      if (typeof opts.sessionId === 'string') existing.session_id = opts.sessionId;
       if (typeof opts.evidenceType === 'string') existing.evidence_type = opts.evidenceType;
       if (typeof opts.sourceType === 'string') existing.source_type = opts.sourceType;
       if (typeof opts.companyMode === 'boolean') existing.company_mode = opts.companyMode ? 1 : 0;
       if (hasExplicitProvenance) existing.provenance = opts.provenance;
+      if (hasExplicitMeta) existing.meta = nextMeta;
+      else existing.meta = sanitizeEdgeMeta(existing.meta);
       existing.workspaceId = workspaceId;
       if (requestedCreatedAt && !existing.created_at) existing.created_at = requestedCreatedAt;
       existing.evidence = [...new Set([...(existing.evidence || []), ...nextEvidence])];
@@ -759,6 +790,7 @@ class Graph {
           existing.source_type || '',
           existing.updated_at || isoNow,
           JSON.stringify(existing.provenance ?? null),
+          JSON.stringify(existing.meta ?? {}),
           workspaceId,
           workspaceId,
           fromId,
@@ -781,13 +813,14 @@ class Graph {
       evidence_type: opts.evidenceType || '',
       confidence_history: [],
       company_mode: opts.companyMode ? 1 : 0,
-      source_type: opts.sourceType || '',
-      updated_at: isoNow,
-      created_at: requestedCreatedAt || isoNow,
-      provenance: hasExplicitProvenance ? opts.provenance : null,
-      created: Date.now(),
-      workspaceId,
-    };
+        source_type: opts.sourceType || '',
+        updated_at: isoNow,
+        created_at: requestedCreatedAt || isoNow,
+        provenance: hasExplicitProvenance ? opts.provenance : null,
+        meta: nextMeta,
+        created: Date.now(),
+        workspaceId,
+      };
     if (isCausal) {
       edge.strength = opts.strength ?? 0.5;
     }
@@ -812,6 +845,7 @@ class Graph {
         edge.updated_at || isoNow,
         edge.created_at || isoNow,
         JSON.stringify(edge.provenance ?? null),
+        JSON.stringify(edge.meta ?? {}),
         edge.created,
         edge.strength ?? 0.5
       );
@@ -974,8 +1008,8 @@ class Graph {
         }
         for (const edge of this._edges) {
         this._db.prepare(`
-          INSERT INTO edges (workspace_id, from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, evidence_type, confidence_history, company_mode, source_type, updated_at, created_at, provenance, created)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO edges (workspace_id, from_id, to_id, relation, weight, confidence, source, source_ref, session_id, evidence, evidence_type, confidence_history, company_mode, source_type, updated_at, created_at, provenance, meta, created)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(workspace_id, from_id, to_id, relation) DO UPDATE SET
               workspace_id = excluded.workspace_id,
               weight = excluded.weight,
@@ -989,7 +1023,8 @@ class Graph {
               company_mode = excluded.company_mode,
               source_type = excluded.source_type,
               updated_at = excluded.updated_at,
-              provenance = excluded.provenance
+              provenance = excluded.provenance,
+              meta = excluded.meta
           `).run(
             normalizeWorkspaceId(edge.workspaceId),
             edge.from,
@@ -1008,6 +1043,7 @@ class Graph {
             edge.updated_at || nowIso(),
             edge.created_at || nowIso(),
             JSON.stringify(edge.provenance ?? null),
+            JSON.stringify(edge.meta ?? {}),
             edge.created
           );
         }
@@ -1114,13 +1150,14 @@ class Graph {
             evidence_type: row.evidence_type || '',
             confidence_history: JSON.parse(row.confidence_history || '[]'),
             company_mode: Number(row.company_mode || 0),
-            source_type: row.source_type || '',
-            updated_at: row.updated_at || '',
-            created_at: row.created_at || '',
-            provenance: JSON.parse(row.provenance || 'null'),
-            created: row.created,
-            strength: row.strength,
-          }));
+              source_type: row.source_type || '',
+              updated_at: row.updated_at || '',
+              created_at: row.created_at || '',
+              provenance: JSON.parse(row.provenance || 'null'),
+              meta: JSON.parse(row.meta || '{}'),
+              created: row.created,
+              strength: row.strength,
+            }));
           this._candidateClaims = candidateRows.map(row => normalizeCandidateClaim({
             candidateId: row.candidate_id,
             workspaceId: row.workspace_id || 'default',
