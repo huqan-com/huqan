@@ -1,51 +1,69 @@
 # Huqan — Think Without Hallucinating
 
-> **LLM outputs lie. Huqan doesn't.**
+> **Two modes. One engine. Zero hallucination.**
 
-Huqan is a deterministic causal reasoning engine.  
-No LLM. No GPU. No cloud. No hallucination.
+Huqan is a deterministic causal reasoning engine that works in two ways:
+
+**⚡ Standalone** — No LLM, no GPU, no API key. Runs fully local. $0/query. Forever.
+
+**🛡️ Verification Layer** — Put it in front of your LLM. It catches hallucinations before they reach the user.
+
+Your choice. Same engine.
+
+---
+
+## Why Huqan?
+
+LLMs are powerful — but they guess. Huqan doesn't guess.
+
+When Huqan says *"Socrates is mortal"*, it's because it has:
+- learned `Socrates is human`
+- learned `humans are mortal`
+- traced the causal chain — deterministically
+
+No probability. No black box. Full evidence trail.
 
 ---
 
 ## Who is this for?
 
-- **Developers** building on top of LLMs who need a truth/verification layer
-- **Teams** in critical domains (legal, medical, finance, engineering) where hallucination is not acceptable
-- **Anyone** who needs reasoning that runs fully offline — no API key, no cloud, no cost per query
-- **Claude / Cursor users** who want a local MCP server for grounded, verifiable answers
+- **Developers** using LLMs who need a grounding/verification layer
+- **Teams** in legal, medical, finance, engineering — where hallucination = liability
+- **Anyone** who needs reasoning that runs fully offline, free, and explainable
+- **Claude / Cursor users** — connect Huqan as a local MCP server
 
 ---
 
 ## How it works
 
 ```
-User / LLM Output
-       |
-       v
-   Huqan Kernel
-       |
-  [Causal Graph]
-       |
-  ┌────┴────┐
-  │ Known?  │
-  └────┬────┘
-   Yes │          No
-       │           │
-  Verify &     "Evidence
-  Confirm      missing."
-       │
-  ┌────┴────────────┐
-  │ Contradiction?  │
-  └────┬────────────┘
-   Yes │          No
-       │           │
-   Reject &     Learn &
-    Warn         Store
+             Input (user query or LLM output)
+                          |
+                          v
+                    Huqan Kernel
+                          |
+                   [Causal Graph]
+                          |
+                   ┌──────┴──────┐
+                   │   Known?    │
+                   └──────┬──────┘
+                Yes        │         No
+                           │          │
+                      Verify &    "Evidence
+                      Confirm      missing."
+                           │
+                   ┌───────┴───────────┐
+                   │  Contradiction?   │
+                   └───────┬───────────┘
+                Yes        │         No
+                           │          │
+                       Reject &    Learn &
+                        Warn        Store
 ```
 
-Huqan builds a **causal knowledge graph** from what it learns.  
-When a claim arrives, it checks it deterministically — no probability, no guessing.  
-If evidence is missing, it says so. If there's a contradiction, it rejects and explains why.
+If evidence is missing → it says so.
+If there's a contradiction → it rejects and explains why.
+No guessing. Ever.
 
 ---
 
@@ -59,7 +77,7 @@ node server.js    # Web UI → http://localhost:3000
 node mcpServer.js # MCP server for Claude Desktop / Cursor
 ```
 
-> Node.js >= 18 required.
+> Node.js >= 18 required. No GPU. No API key.
 
 ---
 
@@ -74,13 +92,14 @@ node mcpServer.js # MCP server for Claude Desktop / Cursor
 | Cost per query | $0 | $/query |
 | Explainable reasoning | ✅ Full trace | ❌ Black box |
 | Causal chains | ✅ CAUSES, PREVENTS, ENABLES... | ❌ No |
-| Validation F1 | 0.88–0.91 | 0.82–0.86 |
+| Works without LLM | ✅ Yes | ❌ N/A |
+| Works with LLM | ✅ As a layer | ✅ Native |
 
 ---
 
 ## Causal Reasoning
 
-Huqan understands causal relationships:
+Huqan understands causal relationships natively:
 
 ```
 CAUSES      — A causes B
@@ -94,14 +113,33 @@ Ask Huqan why something happens — it traces the full causal chain, step by ste
 
 ---
 
+## Two Modes in Practice
+
+**Standalone:**
+```bash
+node cli.js
+> kedi hayvandır        # teach
+> kedi nedir            # ask → "kedi: hayvan, canlı"
+> kedi bitkidir         # verify → "contradiction detected"
+```
+
+**As LLM verification layer:**
+```
+LLM says: "Socrates was born in 470 BC"
+Huqan checks: known? → yes / contradiction? → no / confidence: 0.9
+Result: ✅ verified
+```
+
+---
+
 ## MCP Server (Claude / Cursor)
 
 ```bash
 node mcpServer.js
 ```
 
-Connect Huqan as a local MCP server to Claude Desktop or Cursor.  
-Your AI assistant will verify its own outputs against Huqan's knowledge graph before answering.
+Connect Huqan as a local MCP server to Claude Desktop or Cursor.
+Your AI assistant verifies its outputs against Huqan's knowledge graph before answering.
 
 ---
 
@@ -117,8 +155,6 @@ node server.js  # http://localhost:3000
 | `POST /dogrula` | Verify a statement |
 | `POST /yukle` | Load text into knowledge base |
 | `GET /graph-data` | Export the knowledge graph |
-
-Response: `{ "status": "verified" | "contradiction" | "unknown", "confidence": 0.9, "evidence": [...] }`
 
 ---
 
@@ -145,7 +181,7 @@ Use Huqan directly inside Obsidian to verify your notes and build a local knowle
 
 ## Philosophy
 
-Most AI tools are trying to make LLMs remember more.  
+Most AI tools are trying to make LLMs remember more.
 We're building something that **doesn't need to guess**.
 
 > *"While everyone is building better memory for LLMs, we removed the LLM."*
@@ -159,5 +195,5 @@ MIT — see [LICENSE](./LICENSE)
 ---
 
 <p align="center">
-  <b>huqan.ai</b> · <a href="https://github.com/agiulucom42-del/axiom/issues">Issues</a> · <a href="https://github.com/agiulucom42-del/axiom/discussions">Discussions</a>
+  <b>huqan.com</b> · <a href="https://github.com/agiulucom42-del/axiom/issues">Issues</a> · <a href="https://github.com/agiulucom42-del/axiom/discussions">Discussions</a>
 </p>
