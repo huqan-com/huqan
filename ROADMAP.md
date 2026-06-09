@@ -1,79 +1,209 @@
-# AXIOM v0.3-v0.6 Roadmap
+# HUQAN / AXIOM Roadmap
 
-## Summary
+> Models generate. Agents act. Memory stores. HUQAN judges.
 
-AXIOM'un urun yonu `Personal Thought Judge -> Company Brain -> Agent OS + Discovery Engine -> Scale` olarak kilitlenir. `Discovery Engine` ayri v0.6 isi degil, v0.5 Agent OS icinde gelir. `evidence-ranker.js` v0.3 altyapisina cekilir cunku `devil-advocate` ve `contradiction-alert` kanit kalitesi bilmeden guvenilir cikti uretemez.
+## Current Phase — Post-V2.6 / Real User Smoke
 
-## v0.3 - Personal Thought Judge
+Current status:
 
-- `P0 Graph Reliability`
-  - P0 zaten implement edildi.
-  - Sadece su regresyon testleri eklenir: duplicate hypothesis engeli, reverse edge senaryosu, relation-specific edge ayrimi.
-  - Testler gectikten sonra `P0.5`'e gecilir.
-- `P0.5 Kernel Capability System`
-  - `kernel.capabilities` eklenir.
-  - `hasCapability(name)`, `enableCapability(name)`, `requireCapability(name)` eklenir.
-  - Default: `graph=true`, `llm=true`, `contradictionDetection=true`, diger yeni capability'ler `false`.
-- `P1A Product Plugins Without Temporal`
-  - `plugins/idea-mri.js` ve `plugins/devil-advocate.js` eklenir.
-  - `idea-mri` temporal beklemedigi icin `P1B` ile eszamanli baslayabilir.
-  - `devil-advocate` graph-backed calisir; graph zayifsa ve LLM varsa fallback acikca etiketlenir; LLM yoksa soru listesi doner.
-- `P1B Temporal v1`
-  - Graph node/edge metadata kalici hale getirilir.
-  - Node: `created_at`, `last_seen`.
-  - Edge: `created_at`, `updated_at`, `source_ref`, `session_id`, `confidence_history`.
-  - Mevcut `KernelV2` temporal metadata davranisi korunur, graph persistence ile uyumlu hale getirilir.
-  - Tamamlaninca `kernel.enableCapability("temporal")`.
-- `P2 Plugin Contract v1`
-  - Mevcut hook sistemi korunur.
-  - `listCapabilities()`, `getCapability(name)`, `runCapability(name,input,opts)` eklenir.
-  - Dependency check `kernel.hasCapability()` ustunden yapilir.
-  - Tamamlaninca `kernel.enableCapability("pluginCapabilities")`.
-- `P2.5 Evidence Ranker`
-  - Root seviyede `evidence-ranker.js` eklenir.
-  - Evidence enum ve weight hiyerarsisi uygulanir.
-  - Kernel `_rankEvidence()` bu helper'a baglanir.
-  - `devil-advocate` ve `contradiction-alert` ciktilarinda evidence quality ve adjusted confidence gosterilir.
-  - Tamamlaninca `kernel.enableCapability("evidenceRanking")`.
-- `P3 Contradiction Alert`
-  - `plugins/contradiction-alert.js` eklenir.
-  - `requires=["graph","temporal"]`, `optional=["llm","evidenceRanking"]`.
-  - Yeni fikirleri eski fikirlerle karsilastirir, stratejik yon degisimi ve kanit kalitesi dondurur.
-- `P4 Minimal Personal App`
-  - Ilk ekran: `Fikrini Yargilat`.
-  - Sekmeler: `Fikrinin MR'i`, `Seytan'in Avukati`, `Gecmis Celiskiler`, `Hafiza / Graph`.
-  - Slogan: `AXIOM cevap vermez. Dusunceni yargilar.`
+* V2.5 Agent Brake Layer sealed
+* V2.6 MCP Runtime Integration complete
+* AB0 → AB6 complete
+* AB2 hardening complete: network mutation gate
+* AB6 hardening complete: temp artifact isolation
+* metadata cleanup complete
+* final MCP private alpha smoke passed
+* Show HN package ready
 
-## v0.4-v0.6 Roadmap
+Current focus:
 
-- `v0.4 Company Brain`
-  - `plugins/repo-memory.js` ve `plugins/company-brain.js`.
-  - Ilk kaynaklar: GitHub, Markdown docs, manual notes.
-  - Repo amaci, dosya-strateji iliskisi, karar dayanagi, PR/karar celiskisi, teknik borc kokeni sorulari cevaplanir.
-- `v0.5 Agent OS + Discovery Engine`
-  - MCP, CLI, API ve `workflow-agent.js` ayni agent tool contract ustunden calisir.
-  - Discovery pluginleri: `discovery-engine`, `experiment-planner`, `result-analyzer`, `replication-checker`.
-  - Kapali dongu: hipotez uret, deney tasarla, sonucu al, kaniti skorla, graph confidence guncelle, yeni hipotez uret.
-  - `evidence-ranker.js` yeniden yazilmaz; v0.3 helper genisletilir.
-- `v0.6 Scale`
-  - Obsidian plugin, multi-source connectors, Slack/Gmail/Jira/Linear/Notion, multi-user workspace, permissions, audit log, YC pitch.
-  - Discovery Engine burada baslamaz; burada olceklenir.
+* fresh install smoke
+* npm ci
+* npm test
+* server smoke
+* MCP private alpha smoke
+* real user scenarios
+* memory / verify / gate behavior checks
+* user value validation: can a user see value in 10 minutes?
 
-## Test Plan
+Required MCP smoke behavior:
 
-- Graph reliability: duplicate hypothesis, reverse edge, relation-specific lookup.
-- Capability system: default capabilities, enable/require behavior, missing capability failure.
-- Plugin contract: capability listing, dependency block, optional dependency fallback, `runCapability()` happy/error paths.
-- Product plugins: graph-backed output, LLM fallback labeling, no-data question list, structured `idea-mri` output.
-- Evidence ranker: enum weight mapping, adjusted confidence, dedupe/sort preservation, Kernel result compatibility.
-- Temporal v1: timestamp persistence, source/session metadata, confidence history append, v2 contract unchanged.
-- Contradiction alert: temporal dependency required, old/new thought comparison, evidence quality included.
-- Regression: existing Kernel, KernelV2, Agent, MCP, server, CLI, plugin, benchmark tests stay green.
+* axiom.ask → allow
+* axiom.verify → allow
+* axiom.learn → review
+* axiom.agent → dry_run_only
+* unknown tool → block
 
-## Assumptions
+Rules for current phase:
 
-- Eski v3 backlog kapandi; yeni urun yol haritasi `v0.3-v0.6`.
-- `AXIOM_AGENT_VERSION=v3` mevcut runtime tercihi olarak kalir; otomatik default yapilmaz.
-- Core kucuk kalir; urun modlari plugin olur.
-- `evidence-ranker.js` root seviyede tutulur; ayri `core/` klasoru acilmaz.
-- Dikey nisler v0.6 sonrasina birakilir.
+* No V3 implementation before smoke
+* No Dream
+* No Self-Healer
+* No plugin expansion
+* No UI rewrite
+* No TypeScript migration
+* No Rust rewrite
+* No broad refactor
+* No dirty root
+* Do not stage agent.memory.json
+
+## Pre-V3 Security & Release Hygiene Gate
+
+Before V3 implementation starts, HUQAN / AXIOM must pass a focused security and release hygiene gate.
+
+This gate is not a feature sprint.
+It must not introduce new product scope.
+It exists only to make sure the current Post-V2.6 system is safe enough to continue.
+
+Required checks:
+
+* clean clone works
+* npm ci works
+* npm test passes
+* MCP private alpha smoke passes
+* server smoke passes
+* package-lock drift is inspected before commit
+* agent.memory.json remains untracked and unstaged
+* no dirty root is used
+* no broad git add
+* gitleaks or trufflehog secret scan runs at least once before public/enterprise push
+* CodeQL or Semgrep security workflow exists or is explicitly planned
+* npm audit / audit signatures are checked where supported
+* REST/API smoke confirms unsafe public commands are blocked
+* REST/API smoke confirms mutating routes are not public by default
+* CORS is not wildcard in production/public mode
+* sandbox smoke confirms path traversal is blocked
+* sandbox smoke confirms temp artifacts stay inside sandbox
+* sandbox smoke confirms network mutation is review/block, not silent allow
+
+Required governance files:
+
+* SECURITY.md
+* THREAT_MODEL.md
+* CODEOWNERS if the repo is ready for protected review paths
+* .github/workflows/security.yml for scheduled security checks
+
+Not allowed in this gate:
+
+* full TypeScript migration
+* Rust rewrite
+* storage rewrite
+* frontend rewrite
+* plugin expansion
+* new API surface
+* new V3 runtime implementation
+* new marketplace work
+* new connector work
+
+Principle:
+
+Secure the existing behavior.
+Do not rewrite the product before validating it.
+
+## V3 — Approval Runtime + Memory Admission Gate
+
+V3 starts only after:
+
+1. Post-V2.6 Real User Smoke passes
+2. Pre-V3 Security & Release Hygiene Gate passes
+3. V3-PR0 blueprint is written and accepted
+
+V3 purpose:
+
+Turn "review required" into a real governed workflow.
+
+Main question:
+
+What happens when an action requires review?
+
+V3 capabilities:
+
+* approval request schema
+* pending approval queue
+* approve / reject flow
+* reviewed action receipts
+* blocked action receipts
+* memory admission gate
+* provenance for approved memory writes
+* MCP approval status tools
+* local-first audit of review decisions
+* deterministic status transitions
+
+V3 does not include:
+
+* UI rewrite
+* plugin marketplace
+* cloud dashboard
+* enterprise RBAC
+* Self-Healer
+* GitHub App
+* L-ASIC
+* Dream expansion
+* full TypeScript migration
+* Rust rewrite
+
+V3 plain language:
+
+V3 gives the brake pedal a dashboard.
+It records who stopped what, why it stopped, and what happened after review.
+
+## Strategic Horizon
+
+Keep these as vision/backlog only, not immediate implementation:
+
+* Shared Trust Memory
+* Huqan Trust Runtime
+* Dataset Trust Scanner / Anti-Model Collapse
+* Logical Supply Chain
+* A2A Judicial Layer
+* Causal Digital Twins
+* L-ASIC / Logic Hardware
+
+Safe positioning:
+
+HUQAN is the shared trust memory and action judgment layer for AI tools, models, and agents.
+
+Do not claim:
+
+* zero hallucinations
+* perfect truth
+* hack-proof intelligence
+* zero-risk simulation
+* end of cybersecurity
+* 100% predictive certainty
+
+Validation:
+
+Run:
+
+npm test
+
+If tests fail because this is docs-only and known unrelated local drift exists, report exact failing files and do not fix unrelated failures.
+
+Stage only roadmap/docs files changed for this PR.
+
+Expected report format:
+
+Path:
+Branch:
+Dirty root touched:
+agent.memory.json:
+Changed files:
+Tests:
+Blocker:
+Recommended next step:
+
+Expected commit message:
+
+docs: update roadmap with pre-v3 security gate
+
+Kısa özet: bu talimat roadmap'i günceller, **V3'ü başlatmaz**. Bundan sonra sıra net olur:
+
+```txt
+1. Roadmap docs patch
+2. Final smoke
+3. Pre-V3 Security & Release Hygiene Gate
+4. Real user smoke
+5. V3-PR0 blueprint
+6. V3 küçük implementation PR'ları
+```
