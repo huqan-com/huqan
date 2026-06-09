@@ -1,7 +1,7 @@
 {
     "name":  "axiom",
     "version":  "0.9.0",
-    "description":  "Deterministic symbolic AI reasoning engine â€” verifies LLM outputs, detects contradictions, learns from natural language. Zero external LLM/GPU/cloud dependencies.",
+    "description":  "Deterministic symbolic AI reasoning engine Ã¢â‚¬â€ verifies LLM outputs, detects contradictions, learns from natural language. Zero external LLM/GPU/cloud dependencies.",
     "main":  "kernel.js",
     "types":  "kernel.d.ts",
     "bin":  {
@@ -50,7 +50,7 @@
              },
     "homepage":  "https://github.com/agiulucom42-del/axiom#readme",
     "author":  "AXIOM Contributors",
-    "license":  "MIT",
+    "license": "AGPL-3.0",
     "axiom":  {
                   "testStatus":  "1242 total / 1226 pass / 0 fail / 16 skipped"
               },
