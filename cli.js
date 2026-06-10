@@ -520,6 +520,12 @@ class CLI {
 }
 
 if (require.main === module) {
+  if (process.argv.includes('--help') || process.argv.includes('-h')) {
+    const cli = new CLI({ kernel: { noLoad: true, loadPlugins: false } });
+    console.log(cli.execute('yardım', ''));
+    process.exit(0);
+  }
+
   const cli = new CLI();
   cli.kernel.graph.load();
   cli.start();

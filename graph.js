@@ -1089,14 +1089,14 @@ class Graph {
       candidateClaims: this._candidateClaims,
       auditEvents: this._auditEvents,
     };
-    fs.writeFileSync(this.memoryPath, JSON.stringify(data));
+    fs.writeFileSync(this.memoryPath, JSON.stringify(data), 'utf8');
 
     // Embedding'leri geri koy
     this._restoreEmbeddings(embeddings);
 
     // Embedding'leri ayrı dosyaya yaz
     if (Object.keys(embeddings).length > 0) {
-      fs.writeFileSync(this._embeddingPath, JSON.stringify(embeddings));
+      fs.writeFileSync(this._embeddingPath, JSON.stringify(embeddings), 'utf8');
     }
   }
 

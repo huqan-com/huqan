@@ -164,6 +164,7 @@ describe('Server - API', () => {
   it('GET /v2/verify returns structured envelope', async () => {
     const r = await request(`${BASE}/v2/verify?statement=kedi+balik+yer`);
     assert.strictEqual(r.status, 200);
+    assert.match(r.headers.get('content-type'), /application\/json;\s*charset=utf-8/i);
     const j = await r.json();
     assert.strictEqual(j.ok, true);
     assert.strictEqual(j.type, 'verify');

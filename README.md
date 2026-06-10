@@ -56,14 +56,15 @@ If evidence is missing, it says so. If there's a contradiction, it rejects and e
 ## Quick Start
 
 ```bash
-npm install
+npm ci
 node egitim.js    # Load initial knowledge base
 node cli.js       # Interactive CLI
+node cli.js --help
 node server.js    # Web UI at http://localhost:3000
 node mcpServer.js # MCP server for Claude Desktop / Cursor
 ```
 
-> Node.js >= 18 required.
+> Node.js >= 18 required. Use `npm ci` for clean clone and release smoke runs so `package-lock.json` stays deterministic.
 
 ---
 
@@ -117,12 +118,19 @@ node server.js  # http://localhost:3000
 
 | Endpoint | Description |
 |---|---|
-| `GET /api?q=query` | Ask a question |
-| `POST /dogrula` | Verify a statement |
-| `POST /yukle` | Load text into knowledge base |
-| `GET /graph-data` | Export the knowledge graph |
+| `GET /health` | Public health check |
+| `GET /v2-status` | Public v2 status |
+| `GET /api?q=query` | Public read-only question endpoint |
+| `GET /dogrula?statement=...` | Public read-only verification endpoint |
+| `GET /v2/verify?statement=...` | Public read-only structured verification endpoint |
+| `GET /graph-data` | Public read-only knowledge graph export |
+| `POST /dogrula` | Auth-required verification mutation surface |
+| `POST /v2/verify` | Auth-required structured verification |
+| `POST /yukle` | Auth-required knowledge-base load |
 
 Response: `{ "status": "verified" | "contradiction" | "unknown", "confidence": 0.9, "evidence": [...] }`
+
+Mutation endpoints require `AXIOM_API_KEY` on the server and `X-API-Key` or `Authorization: Bearer <key>` on the request. Public smoke tests should use the `GET` endpoints above.
 
 ---
 

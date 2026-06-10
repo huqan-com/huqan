@@ -62,6 +62,7 @@ function legacyVerify(result) {
 }
 
 const ALLOWED_CORS_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
+const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
 
 function isSafeOrigin(origin) {
   if (typeof origin !== 'string' || !origin) return '';
@@ -92,7 +93,7 @@ function buildCorsHeaders(req, preflight = false) {
 
 function writeJson(req, res, statusCode, payload, headers = {}) {
   res.writeHead(statusCode, {
-    'Content-Type': 'application/json',
+    'Content-Type': JSON_CONTENT_TYPE,
     ...buildCorsHeaders(req),
     ...headers,
   });
@@ -591,7 +592,7 @@ const server = http.createServer(async (req, res) => {
   const rateKey = getRateLimitKey(req);
 
   if (!checkRateLimit(rateKey)) {
-    res.writeHead(429, { 'Content-Type': 'application/json' });
+    res.writeHead(429, { 'Content-Type': JSON_CONTENT_TYPE });
     res.end(JSON.stringify({ error: 'Too many requests' }));
     return;
   }
@@ -606,7 +607,7 @@ const server = http.createServer(async (req, res) => {
     const workspaceId = reqUrl.searchParams.get('workspaceId') || 'default';
     const data = getGraphData(workspaceId);
     res.writeHead(200, {
-      'Content-Type': 'application/json',
+      'Content-Type': JSON_CONTENT_TYPE,
       ...buildCorsHeaders(req),
       'Cache-Control': 'no-cache',
     });
@@ -616,13 +617,13 @@ const server = http.createServer(async (req, res) => {
 
   if (reqUrl.pathname === '/v2-status') {
     if (req.method !== 'GET') {
-      res.writeHead(405, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(405, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ error: 'Method not allowed' }));
       return;
     }
     const data = getV2StatusData();
     res.writeHead(200, {
-      'Content-Type': 'application/json',
+      'Content-Type': JSON_CONTENT_TYPE,
       ...buildCorsHeaders(req),
       'Cache-Control': 'no-cache',
     });
@@ -632,12 +633,12 @@ const server = http.createServer(async (req, res) => {
 
   if (reqUrl.pathname === '/health') {
     if (req.method !== 'GET') {
-      res.writeHead(405, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(405, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ error: 'Method not allowed' }));
       return;
     }
     res.writeHead(200, {
-      'Content-Type': 'application/json',
+      'Content-Type': JSON_CONTENT_TYPE,
       ...buildCorsHeaders(req),
       'Cache-Control': 'no-cache',
     });
@@ -679,7 +680,7 @@ const server = http.createServer(async (req, res) => {
   // --- /llm-sor ---
   if (reqUrl.pathname === '/llm-sor') {
     if (req.method !== 'POST') {
-      res.writeHead(405, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(405, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ error: 'Method not allowed' }));
       return;
     }
@@ -690,7 +691,7 @@ const server = http.createServer(async (req, res) => {
     const autoLearn = data.autoLearn === true;
     const workspaceId = sanitizeInput(data.workspaceId || reqUrl.searchParams.get('workspaceId') || '');
     if (!question) {
-      res.writeHead(400, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(400, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ error: 'question gerekli' }));
       return;
     }
@@ -704,7 +705,7 @@ const server = http.createServer(async (req, res) => {
     const llmRes = await llm.ask(question);
 
     if (!llmRes.ok) {
-      res.writeHead(200, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(200, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({
         ok: false,
         error: llmRes.error,
@@ -729,7 +730,7 @@ const server = http.createServer(async (req, res) => {
       workspaceId,
     });
 
-    res.writeHead(200, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+    res.writeHead(200, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
     res.end(JSON.stringify({
       ok: true,
       question,
@@ -745,7 +746,7 @@ const server = http.createServer(async (req, res) => {
   }
   if (reqUrl.pathname === '/dogrula' || reqUrl.pathname === '/verify') {
     if (req.method !== 'POST' && req.method !== 'GET') {
-      res.writeHead(405, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(405, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ error: 'Method not allowed' }));
       return;
     }
@@ -756,37 +757,37 @@ const server = http.createServer(async (req, res) => {
       const text = sanitizeInput(data.statement || data.text || '');
       const workspaceId = sanitizeInput(data.workspaceId || reqUrl.searchParams.get('workspaceId') || '');
       if (!text) {
-        res.writeHead(400, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+        res.writeHead(400, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
         res.end(JSON.stringify({ error: 'statement veya text gerekli' }));
         return;
       }
       const result = legacyVerify(cli.kernel.verify(text, workspaceId ? { workspaceId } : {}));
-      res.writeHead(200, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(200, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify(result));
       return;
     }
     const text = sanitizeInput(reqUrl.searchParams.get('statement') || '');
     const workspaceId = sanitizeInput(reqUrl.searchParams.get('workspaceId') || '');
     if (!text) {
-      res.writeHead(400, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(400, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ error: 'statement parametresi gerekli' }));
       return;
     }
     const result = legacyVerify(cli.kernel.verify(text, workspaceId ? { workspaceId } : {}));
-    res.writeHead(200, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+    res.writeHead(200, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
     res.end(JSON.stringify(result));
     return;
   }
   if (reqUrl.pathname === '/yukle' || reqUrl.pathname === '/upload') {
     if (req.method !== 'POST') {
-      res.writeHead(405, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(405, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ error: 'Method not allowed' }));
       return;
     }
     if (!denyIfUnauthorized(req, res)) return;
     const contentLength = Number(req.headers['content-length'] || 0);
     if (Number.isFinite(contentLength) && contentLength > DEFAULT_MAX_UPLOAD_BODY) {
-      res.writeHead(413, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(413, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ error: 'İçerik çok büyük (max 1MB)' }));
       return;
     }
@@ -794,20 +795,20 @@ const server = http.createServer(async (req, res) => {
     if (!data) return;
     const text = data.text || data.content || '';
     if (!text) {
-      res.writeHead(400, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(400, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ error: 'text veya content gerekli' }));
       return;
     }
     const count = cli.kernel.learnDocument(text);
     cli.kernel.graph.save();
-    res.writeHead(200, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+    res.writeHead(200, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
     res.end(JSON.stringify({ ok: true, learned: count }));
     return;
   }
 
   if (reqUrl.pathname === '/api/ingest/status') {
     if (req.method !== 'GET') {
-      res.writeHead(405, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(405, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ error: 'Method not allowed' }));
       return;
     }
@@ -899,7 +900,7 @@ const server = http.createServer(async (req, res) => {
 
   if (reqUrl.pathname === '/api/ingest') {
     if (req.method !== 'POST') {
-      res.writeHead(405, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(405, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ error: 'Method not allowed' }));
       return;
     }
@@ -926,14 +927,14 @@ const server = http.createServer(async (req, res) => {
 
   if (reqUrl.pathname === '/api') {
     if (req.method !== 'GET') {
-      res.writeHead(405, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(405, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ error: 'Method not allowed' }));
       return;
     }
     const raw = reqUrl.searchParams.get('q') || '';
     const q = sanitizeInput(raw);
     if (!q) {
-      res.writeHead(400, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+      res.writeHead(400, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
       res.end(JSON.stringify({ result: 'HATA: Boş girdi.' }));
       return;
     }
@@ -974,7 +975,7 @@ const server = http.createServer(async (req, res) => {
       }
     }
     res.writeHead(200, {
-      'Content-Type': 'application/json',
+      'Content-Type': JSON_CONTENT_TYPE,
       ...buildCorsHeaders(req),
       'X-Content-Type-Options': 'nosniff',
     });
@@ -989,7 +990,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  res.writeHead(404, { 'Content-Type': 'application/json', ...buildCorsHeaders(req) });
+  res.writeHead(404, { 'Content-Type': JSON_CONTENT_TYPE, ...buildCorsHeaders(req) });
   res.end(JSON.stringify({ error: 'Not found' }));
 });
 
