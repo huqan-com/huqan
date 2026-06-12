@@ -79,6 +79,8 @@ export interface KernelMemoryRecord {
   memoryId: string;
   workspaceId: string;
   content: unknown;
+  contentHash?: string;
+  kind?: string;
   createdAt: string;
   updatedAt?: string;
   deletedAt?: string;
@@ -103,7 +105,7 @@ export interface KernelMemoryLink {
 }
 
 export interface KernelMemoryApi {
-  store(input: Record<string, unknown>): { ok: boolean; memory?: KernelMemoryRecord; event?: Record<string, unknown>; error?: Record<string, unknown> };
+  store(input: Record<string, unknown>): { ok: boolean; memory?: KernelMemoryRecord; created?: boolean; event?: Record<string, unknown>; error?: Record<string, unknown> };
   get(memoryId: string, opts?: Record<string, unknown>): { ok: boolean; memory?: KernelMemoryRecord; error?: Record<string, unknown> };
   list(opts?: Record<string, unknown>): { ok: boolean; memories: KernelMemoryRecord[]; total: number };
   search(query: string, opts?: Record<string, unknown>): { ok: boolean; memories?: KernelMemoryRecord[]; total?: number; error?: Record<string, unknown> };

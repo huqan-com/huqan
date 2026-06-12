@@ -30,6 +30,7 @@ describe('kernel.memory API', () => {
       metadata: { tag: 'core' },
     });
     assert.strictEqual(stored.ok, true);
+    assert.strictEqual(stored.created, true);
 
     const fetched = kernel.memory.get(stored.memory.memoryId, { workspaceId: 'ws-m2' });
     assert.strictEqual(fetched.ok, true);
@@ -43,6 +44,78 @@ describe('kernel.memory API', () => {
     assert.strictEqual(searched.ok, true);
     assert.strictEqual(searched.total, 1);
     assert.strictEqual(searched.memories[0].memoryId, stored.memory.memoryId);
+  });
+
+  it('is idempotent for identical content in the same workspace', () => {
+    const kernel = createKernel();
+    const first = kernel.memory.store({
+      content: { text: 'same fact' },
+      workspaceId: 'ws-idem',
+    });
+    const second = kernel.memory.store({
+      content: { text: 'same fact' },
+      workspaceId: 'ws-idem',
+    });
+
+    assert.strictEqual(first.ok, true);
+    assert.strictEqual(first.created, true);
+    assert.strictEqual(second.ok, true);
+    assert.strictEqual(second.created, false);
+    assert.strictEqual(first.memory.memoryId, second.memory.memoryId);
+
+    const listed = kernel.memory.list({ workspaceId: 'ws-idem' });
+    assert.strictEqual(listed.total, 1);
+  });
+
+  it('keeps idempotency scoped to workspace', () => {
+    const kernel = createKernel();
+    const workspaceA = kernel.memory.store({ content: { text: 'shared fact' }, workspaceId: 'ws-a' });
+    const workspaceB = kernel.memory.store({ content: { text: 'shared fact' }, workspaceId: 'ws-b' });
+
+    assert.strictEqual(workspaceA.ok, true);
+    assert.strictEqual(workspaceB.ok, true);
+    assert.notStrictEqual(workspaceA.memory.memoryId, workspaceB.memory.memoryId);
+
+    const listA = kernel.memory.list({ workspaceId: 'ws-a' });
+    const listB = kernel.memory.list({ workspaceId: 'ws-b' });
+    assert.strictEqual(listA.total, 1);
+    assert.strictEqual(listB.total, 1);
+    assert.strictEqual(listA.memories[0].memoryId, workspaceA.memory.memoryId);
+    assert.strictEqual(listB.memories[0].memoryId, workspaceB.memory.memoryId);
+  });
+
+  it('returns safe copies that do not mutate store state', () => {
+    const kernel = createKernel();
+    const stored = kernel.memory.store({
+      content: { deep: { value: 'locked' } },
+      workspaceId: 'ws-copy',
+    });
+    const memoryId = stored.memory.memoryId;
+
+    stored.memory.content.deep.value = 'changed';
+    stored.memory.status = 'deleted';
+    stored.memory.workspaceId = 'other';
+
+    const fetched = kernel.memory.get(memoryId, { workspaceId: 'ws-copy' });
+    assert.strictEqual(fetched.memory.content.deep.value, 'locked');
+    assert.strictEqual(fetched.memory.status, 'active');
+    assert.strictEqual(fetched.memory.workspaceId, 'ws-copy');
+
+    const listResult = kernel.memory.list({ workspaceId: 'ws-copy' });
+    listResult.memories[0].content.deep.value = 'list-mutated';
+    listResult.memories[0].status = 'deleted';
+
+    const fetchedAfterListMutation = kernel.memory.get(memoryId, { workspaceId: 'ws-copy' });
+    assert.strictEqual(fetchedAfterListMutation.memory.content.deep.value, 'locked');
+    assert.strictEqual(fetchedAfterListMutation.memory.status, 'active');
+
+    const searchResult = kernel.memory.search('locked', { workspaceId: 'ws-copy' });
+    searchResult.memories[0].content.deep.value = 'search-mutated';
+    searchResult.memories[0].status = 'deleted';
+
+    const fetchedAfterSearchMutation = kernel.memory.get(memoryId, { workspaceId: 'ws-copy' });
+    assert.strictEqual(fetchedAfterSearchMutation.memory.content.deep.value, 'locked');
+    assert.strictEqual(fetchedAfterSearchMutation.memory.status, 'active');
   });
 
   it('links memories and records contradiction links', () => {
