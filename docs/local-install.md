@@ -64,9 +64,9 @@ node server.js
 ```
 
 Static demo note:
-- `demo/index.html` is a concept/demo surface.
-- `public/index.html` is the local backend-connected UI served by `node server.js`.
-- Canonical public product surface selection is deferred to PTD-2.
+- `demo/index.html` is the canonical static public demo surface.
+- `public/index.html` is the canonical local backend-connected UI served by `node server.js`.
+- `docs/index.html` is only a docs/demo chooser and does not replace the local UI.
 
 ### MCP Server (for Claude Desktop / Cursor)
 

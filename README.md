@@ -83,6 +83,14 @@ node mcpServer.js
 
 > **Requirements:** Node.js >= 18. Use `npm ci --include=optional` for deterministic installs with the local SQLite path enabled.
 
+## Product Surfaces
+
+- `demo/index.html` is the canonical static public demo surface.
+- `public/index.html` is the canonical local backend-connected UI served by `node server.js`.
+- `docs/index.html` is the docs/demo chooser, not a competing product page.
+
+See [docs/product-surfaces.md](./docs/product-surfaces.md) for the explicit surface policy.
+
 ---
 
 ## Architecture
@@ -194,7 +202,7 @@ node server.js  # Starts at http://localhost:3000
 
 **Auth:** Mutation endpoints require `AXIOM_API_KEY` on the server and `X-API-Key` or `Authorization: Bearer <key>` header.
 
-**Public surface note:** `demo/index.html` is the static concept demo. `public/index.html` is the local backend-connected UI served by `node server.js`. Choosing the canonical public product surface is deferred to PTD-2.
+**Public surface note:** `demo/index.html` is the canonical static public demo. `public/index.html` is the canonical local backend-connected UI served by `node server.js`. `docs/index.html` is a chooser page, not a third product surface.
 
 **Response format:**
 ```json
