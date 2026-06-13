@@ -74,6 +74,11 @@ node egitim.js
 # Interactive CLI
 node cli.js
 
+# English-first CLI examples
+# learn: cats are animals
+# ask: cat nedir
+# verify: kedi bitkidir
+
 # Web UI (http://localhost:3000)
 node server.js
 
@@ -90,6 +95,14 @@ node mcpServer.js
 - `docs/index.html` is the docs/demo chooser, not a competing product page.
 
 See [docs/product-surfaces.md](./docs/product-surfaces.md) for the explicit surface policy.
+
+## English-first Developer UX
+
+- Public docs use English-first command examples.
+- Turkish commands remain supported for compatibility.
+- English aliases are the recommended path for global developers.
+- Guarded API examples use `POST /verify`, `POST /v2/verify`, and `POST /upload`.
+- Unsafe GET verification is not supported; `GET /verify`, `GET /dogrula`, and `GET /v2/verify` return `405 Method Not Allowed`.
 
 ---
 
@@ -193,11 +206,14 @@ node server.js  # Starts at http://localhost:3000
 | `/health` | GET | Public | Health check |
 | `/v2-status` | GET | Public | V2 status |
 | `/api?q=query` | GET | Public | Read-only allowlisted query surface |
+| `/verify?statement=...` | GET | Public | `405 Method Not Allowed` |
 | `/dogrula?statement=...` | GET | Public | `405 Method Not Allowed` |
 | `/v2/verify?statement=...` | GET | Public | `405 Method Not Allowed` |
 | `/graph-data` | GET | Public | Export knowledge graph |
+| `/verify` | POST | Required | Guarded verification endpoint |
 | `/dogrula` | POST | Required | Guarded verification endpoint |
 | `/v2/verify` | POST | Required | Guarded structured verification endpoint |
+| `/upload` | POST | Required | English alias for guarded load endpoint |
 | `/yukle` | POST | Required | Load knowledge base |
 
 **Auth:** Mutation endpoints require `AXIOM_API_KEY` on the server and `X-API-Key` or `Authorization: Bearer <key>` header.
