@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -7,27 +7,25 @@
   <meta name="description" content="HUQAN static demo landing page for the AXIOM trust boundary concept.">
   <style>
     :root {
-      color-scheme: dark;
-      --bg: #0b0f14;
-      --bg-alt: #0f141b;
-      --panel: #121923;
-      --panel-2: #151d28;
-      --border: #273241;
-      --border-soft: #1d2733;
-      --text: #f3f6fb;
-      --muted: #9aa8b8;
-      --muted-2: #718094;
-      --accent: #6ee7d8;
-      --accent-2: #7cc0ff;
-      --good: #67e8a8;
-      --warn: #f5c453;
-      --bad: #ff7d7d;
-      --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --bg-soft: #eef3f9;
+      --panel: #ffffff;
+      --panel-soft: #f8fbff;
+      --border: #dbe3ef;
+      --border-soft: #e8eef6;
+      --text: #0e1726;
+      --muted: #5f6c80;
+      --muted-2: #768396;
+      --accent: #276ef1;
+      --accent-2: #1f9d78;
+      --good: #178a4f;
+      --warn: #c58308;
+      --bad: #c73b2f;
+      --shadow: 0 12px 40px rgba(16, 24, 40, 0.08);
       --radius: 18px;
       --radius-sm: 12px;
-      --max: 1180px;
-      --gap: 24px;
-      --gap-lg: 32px;
+      --max: 1240px;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
@@ -38,9 +36,8 @@
       margin: 0;
       font-family: var(--sans);
       background:
-        radial-gradient(1200px 700px at 80% -10%, rgba(110, 231, 216, 0.12), transparent 45%),
-        radial-gradient(900px 500px at 10% 0%, rgba(124, 192, 255, 0.12), transparent 35%),
-        linear-gradient(180deg, #0a0e13 0%, #0b0f14 38%, #091015 100%);
+        radial-gradient(1100px 500px at 50% -10%, rgba(39, 110, 241, 0.10), transparent 44%),
+        linear-gradient(180deg, #f8fbff 0%, #f6f8fc 40%, #eff4fa 100%);
       color: var(--text);
       min-height: 100vh;
     }
@@ -61,28 +58,7 @@
       grid-template-columns: auto 1fr auto;
       align-items: center;
       gap: 16px;
-      padding: 6px 0 18px;
-    }
-
-    .page-nav {
-      display: flex;
-      gap: 18px;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: center;
-      justify-self: center;
-      color: var(--muted);
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .page-nav a {
-      transition: color 160ms ease;
-    }
-
-    .page-nav a:hover {
-      color: var(--text);
+      padding: 4px 0 22px;
     }
 
     .brand {
@@ -96,14 +72,12 @@
       width: 42px;
       height: 42px;
       border-radius: 14px;
-      background:
-        linear-gradient(145deg, rgba(110, 231, 216, 0.2), rgba(124, 192, 255, 0.12)),
-        #101721;
-      border: 1px solid rgba(110, 231, 216, 0.24);
+      background: linear-gradient(180deg, rgba(39, 110, 241, 0.12), rgba(39, 110, 241, 0.04));
+      border: 1px solid rgba(39, 110, 241, 0.20);
       display: grid;
       place-items: center;
-      box-shadow: var(--shadow);
       flex: 0 0 auto;
+      box-shadow: 0 6px 20px rgba(39, 110, 241, 0.10);
     }
 
     .mark svg {
@@ -129,6 +103,27 @@
       font-size: 13px;
     }
 
+    .page-nav {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      justify-self: center;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .page-nav a {
+      transition: color 160ms ease;
+    }
+
+    .page-nav a:hover {
+      color: var(--text);
+    }
+
     .top-actions {
       display: flex;
       gap: 10px;
@@ -138,15 +133,15 @@
 
     .button {
       border: 1px solid var(--border);
-      background: rgba(18, 25, 35, 0.88);
+      background: rgba(255, 255, 255, 0.92);
       color: var(--text);
       padding: 11px 16px;
       border-radius: 999px;
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
-      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+      box-shadow: 0 6px 18px rgba(16, 24, 40, 0.05);
+      transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
       cursor: pointer;
       white-space: nowrap;
       font-size: 14px;
@@ -155,13 +150,14 @@
 
     .button:hover {
       transform: translateY(-1px);
-      border-color: rgba(110, 231, 216, 0.5);
-      background: rgba(21, 29, 40, 0.98);
+      border-color: rgba(39, 110, 241, 0.35);
+      box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
     }
 
     .button.primary {
-      background: linear-gradient(135deg, rgba(110, 231, 216, 0.22), rgba(124, 192, 255, 0.18));
-      border-color: rgba(110, 231, 216, 0.38);
+      background: linear-gradient(135deg, #2c7df7, #1f62db);
+      color: #fff;
+      border-color: #2c7df7;
     }
 
     .button svg {
@@ -172,15 +168,15 @@
 
     .hero {
       display: grid;
-      grid-template-columns: 1.25fr 0.95fr;
-      gap: var(--gap-lg);
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 18px;
       align-items: stretch;
-      margin-top: 12px;
+      margin-top: 10px;
     }
 
-    .hero-copy, .panel, .section, .receipt, .demo-box, .mini-card {
-      background: linear-gradient(180deg, rgba(18, 25, 35, 0.96), rgba(15, 20, 27, 0.98));
-      border: 1px solid var(--border-soft);
+    .hero-copy, .panel, .section, .receipt, .demo-box, .mini-card, .demo-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
     }
@@ -190,7 +186,7 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      min-height: 540px;
+      min-height: 520px;
       position: relative;
       overflow: hidden;
     }
@@ -198,10 +194,10 @@
     .hero-copy::after {
       content: "";
       position: absolute;
-      inset: auto -20% -35% auto;
-      width: 340px;
-      height: 340px;
-      background: radial-gradient(circle, rgba(110, 231, 216, 0.14), transparent 70%);
+      inset: auto -12% -25% auto;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(39, 110, 241, 0.12), transparent 68%);
       pointer-events: none;
     }
 
@@ -214,15 +210,15 @@
     }
 
     h1 {
-      font-size: clamp(42px, 5vw, 70px);
+      font-size: clamp(44px, 5vw, 72px);
       line-height: 0.96;
       margin: 0;
       max-width: 12ch;
-      letter-spacing: -0.03em;
+      letter-spacing: -0.04em;
     }
 
     .hero-copy p {
-      max-width: 60ch;
+      max-width: 62ch;
       color: var(--muted);
       font-size: 18px;
       line-height: 1.6;
@@ -248,7 +244,7 @@
     .meta-card {
       border: 1px solid var(--border);
       border-radius: 14px;
-      background: rgba(9, 14, 20, 0.6);
+      background: rgba(245, 248, 253, 0.9);
       padding: 14px;
       min-height: 92px;
     }
@@ -271,19 +267,15 @@
     }
 
     .panel {
-      padding: 22px;
+      padding: 20px;
     }
 
     .panel h2,
     .section h2 {
       font-size: 24px;
       line-height: 1.1;
-      margin: 0 0 12px;
+      margin: 0 0 10px;
       letter-spacing: -0.02em;
-    }
-
-    .panel h2.large {
-      font-size: 28px;
     }
 
     .panel p,
@@ -297,7 +289,7 @@
 
     .receipt {
       padding: 18px;
-      background: linear-gradient(180deg, rgba(15, 20, 27, 0.98), rgba(12, 16, 22, 0.98));
+      background: linear-gradient(180deg, #fff, #f9fbff);
     }
 
     .receipt .tagline {
@@ -315,10 +307,10 @@
       font-family: var(--mono);
       font-size: 13px;
       line-height: 1.65;
-      color: #dce6f2;
+      color: #132033;
       white-space: pre-wrap;
-      background: #091017;
-      border: 1px solid rgba(124, 192, 255, 0.16);
+      background: #f5f8fc;
+      border: 1px solid var(--border);
       border-radius: 14px;
       padding: 16px;
       overflow: auto;
@@ -329,21 +321,24 @@
       padding: 28px;
     }
 
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: end;
+      margin-bottom: 18px;
     }
 
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
+    .section-header small {
+      color: var(--muted-2);
+      font-size: 13px;
+      line-height: 1.5;
+      max-width: 66ch;
     }
 
     .problem-grid {
       display: grid;
-      grid-template-columns: 0.9fr 1.1fr;
+      grid-template-columns: 0.95fr 1.05fr;
       gap: 14px;
       align-items: stretch;
     }
@@ -362,8 +357,8 @@
       width: 44px;
       height: 44px;
       border-radius: 14px;
-      border: 1px solid rgba(255, 125, 125, 0.28);
-      background: rgba(255, 125, 125, 0.08);
+      border: 1px solid rgba(199, 59, 47, 0.25);
+      background: rgba(199, 59, 47, 0.07);
       display: grid;
       place-items: center;
       flex: 0 0 auto;
@@ -396,7 +391,7 @@
       border-radius: 999px;
       background: var(--bad);
       margin-top: 6px;
-      box-shadow: 0 0 0 4px rgba(255, 125, 125, 0.08);
+      box-shadow: 0 0 0 4px rgba(199, 59, 47, 0.08);
     }
 
     .bullet-list strong {
@@ -412,10 +407,16 @@
       line-height: 1.55;
     }
 
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
     .mini-card {
       padding: 18px;
       min-height: 140px;
-      background: linear-gradient(180deg, rgba(19, 26, 36, 0.96), rgba(15, 20, 27, 0.98));
+      background: linear-gradient(180deg, #fff, #f8fbff);
     }
 
     .mini-card h3 {
@@ -441,18 +442,18 @@
     .demo-card {
       padding: 18px;
       cursor: pointer;
-      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+      transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+      background: linear-gradient(180deg, #fff, #f8fbff);
     }
 
     .demo-card:hover {
       transform: translateY(-1px);
-      border-color: rgba(110, 231, 216, 0.4);
+      border-color: rgba(39, 110, 241, 0.35);
     }
 
     .demo-card.selected {
-      border-color: rgba(110, 231, 216, 0.58);
-      background: linear-gradient(180deg, rgba(17, 31, 30, 0.96), rgba(14, 20, 27, 0.98));
-      box-shadow: 0 0 0 1px rgba(110, 231, 216, 0.08), var(--shadow);
+      border-color: rgba(39, 110, 241, 0.58);
+      box-shadow: 0 0 0 1px rgba(39, 110, 241, 0.08), var(--shadow);
     }
 
     .demo-card .select-row {
@@ -467,7 +468,7 @@
       width: 16px;
       height: 16px;
       border-radius: 999px;
-      border: 2px solid rgba(168, 183, 199, 0.5);
+      border: 2px solid rgba(118, 131, 150, 0.5);
       display: inline-grid;
       place-items: center;
       flex: 0 0 auto;
@@ -506,7 +507,7 @@
     .verdict-box {
       border-radius: 14px;
       padding: 14px;
-      background: #0a1017;
+      background: #f5f8fc;
       border: 1px solid var(--border);
     }
 
@@ -567,9 +568,28 @@
       text-transform: uppercase;
     }
 
-    .outcome-pill[data-tone="good"] { color: var(--good); border-color: rgba(103, 232, 168, 0.2); }
-    .outcome-pill[data-tone="warn"] { color: var(--warn); border-color: rgba(245, 196, 83, 0.2); }
-    .outcome-pill[data-tone="bad"] { color: var(--bad); border-color: rgba(255, 125, 125, 0.2); }
+    .outcome-pill[data-tone="good"] { color: var(--good); border-color: rgba(23, 138, 79, 0.18); background: rgba(23, 138, 79, 0.07); }
+    .outcome-pill[data-tone="warn"] { color: var(--warn); border-color: rgba(197, 131, 8, 0.18); background: rgba(197, 131, 8, 0.07); }
+    .outcome-pill[data-tone="bad"] { color: var(--bad); border-color: rgba(199, 59, 47, 0.18); background: rgba(199, 59, 47, 0.07); }
+
+    .demo-result {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #f5f8fc;
+    }
+
+    .demo-result h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .demo-result p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
 
     .receipt-layout {
       display: grid;
@@ -582,7 +602,7 @@
       padding: 16px;
       border-radius: 14px;
       border: 1px solid var(--border);
-      background: #0a1017;
+      background: #fff;
       display: grid;
       gap: 10px;
       font-size: 14px;
@@ -602,54 +622,47 @@
     .receipt-summary dd {
       margin: 0;
       text-align: right;
-      color: #e6eef8;
+      color: #132033;
     }
 
-    .roadmap-track {
+    .next-strip {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .next-card {
+      padding: 20px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .next-list {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      position: relative;
-      padding-top: 14px;
+      gap: 10px;
     }
 
-    .roadmap-track::before {
-      content: "";
-      position: absolute;
-      top: 35px;
-      left: 40px;
-      right: 40px;
-      height: 1px;
-      border-top: 2px dashed rgba(154, 168, 184, 0.4);
+    .next-item {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #f8fbff;
+      padding: 14px;
+      display: grid;
+      gap: 8px;
+      min-height: 108px;
     }
 
-    .roadmap-item {
-      text-align: center;
-      position: relative;
-      padding: 10px 14px 0;
-    }
-
-    .roadmap-dot {
-      width: 18px;
-      height: 18px;
-      border-radius: 999px;
-      margin: 0 auto 18px;
-      background: rgba(110, 231, 216, 0.2);
-      border: 1px solid rgba(110, 231, 216, 0.55);
-      box-shadow: 0 0 0 5px rgba(110, 231, 216, 0.06);
-    }
-
-    .roadmap-item strong {
-      display: block;
-      font-size: 18px;
-      margin-bottom: 6px;
-    }
-
-    .roadmap-item span {
-      color: var(--muted);
+    .next-item strong {
       font-size: 14px;
-      line-height: 1.55;
-      display: block;
+      line-height: 1.3;
+    }
+
+    .next-item span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
     }
 
     .note-list {
@@ -662,21 +675,6 @@
       margin: 0;
     }
 
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 20px;
-      align-items: end;
-      margin-bottom: 18px;
-    }
-
-    .section-header small {
-      color: var(--muted-2);
-      font-size: 13px;
-      line-height: 1.5;
-      max-width: 60ch;
-    }
-
     .footer {
       margin-top: 22px;
       color: var(--muted-2);
@@ -685,14 +683,8 @@
       padding: 10px 2px 0;
     }
 
-    @media (max-width: 980px) {
-      .hero, .demo-layout, .grid-3, .grid-2, .roadmap {
-        grid-template-columns: 1fr;
-      }
-
-      .receipt-layout,
-      .problem-grid,
-      .roadmap-track {
+    @media (max-width: 1020px) {
+      .hero, .problem-grid, .demo-grid, .demo-layout, .receipt-layout, .next-strip, .next-list, .grid-3 {
         grid-template-columns: 1fr;
       }
 
@@ -706,10 +698,6 @@
 
       .page-nav {
         justify-content: start;
-      }
-
-      .roadmap-track::before {
-        display: none;
       }
 
       .section-header {
@@ -763,7 +751,7 @@
         <a href="#what">Features</a>
         <a href="#demo">Demo</a>
         <a href="#receipt">Trust Receipt</a>
-        <a href="#roadmap">Roadmap</a>
+        <a href="#next">What’s next</a>
         <a href="#not">About</a>
       </nav>
       <nav class="top-actions" aria-label="Primary">
@@ -828,27 +816,55 @@
           </div>
         </div>
 
-        <aside class="hero-side">
-          <div class="panel">
-            <div class="tagline" style="margin-bottom:10px;">
-              <span>Live verdict (simulated)</span>
-              <span style="color:var(--good);">LOCAL MODE</span>
+                <aside class="hero-side">
+          <div class="panel" style="padding:0; overflow:hidden;">
+            <div style="padding:16px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid var(--border-soft); background:#f8fbff;">
+              <div style="display:grid; gap:4px;">
+                <strong style="font-size:15px;">Claim Review</strong>
+                <span style="color:var(--muted); font-size:12px;">Queue - approval gate</span>
+              </div>
+              <div style="padding:7px 11px; border-radius:999px; font-size:12px; letter-spacing:0.04em; text-transform:uppercase; color:var(--good); background:rgba(23,138,79,0.08); border:1px solid rgba(23,138,79,0.16); white-space:nowrap;">ALLOW</div>
             </div>
-            <h2 class="large" style="margin-bottom:6px; color: var(--good);">ALLOW</h2>
-            <p>Low risk · 0 contradictions · Sources verified</p>
-            <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;display:grid;gap:10px;font-size:14px;color:var(--muted);">
-              <div style="display:flex;justify-content:space-between;gap:12px;"><span>Claim</span><span style="color:var(--text);">The Earth orbits the Sun.</span></div>
-              <div style="display:flex;justify-content:space-between;gap:12px;"><span>Sources</span><span style="color:var(--text);">3 / 3 verified</span></div>
-              <div style="display:flex;justify-content:space-between;gap:12px;"><span>Contradictions</span><span style="color:var(--text);">0</span></div>
-              <div style="display:flex;justify-content:space-between;gap:12px;"><span>Memory integrity</span><span style="color:var(--text);">Intact</span></div>
-              <div style="display:flex;justify-content:space-between;gap:12px;"><span>Action</span><span style="color:var(--text);">Read-only</span></div>
-              <div style="display:flex;justify-content:space-between;gap:12px;"><span>Trust Receipt</span><span style="color:var(--text);">TR-2025-05-24-7F3A</span></div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; padding:14px 18px 0;">
+              <span style="display:inline-flex; align-items:center; gap:6px; padding:7px 10px; border-radius:999px; border:1px solid rgba(39,110,241,0.25); background:rgba(39,110,241,0.06); color:var(--text); font-size:12px; line-height:1;">Queue</span>
+              <span style="display:inline-flex; align-items:center; gap:6px; padding:7px 10px; border-radius:999px; border:1px solid var(--border); background:#fff; color:var(--muted); font-size:12px; line-height:1;">Evidence</span>
+              <span style="display:inline-flex; align-items:center; gap:6px; padding:7px 10px; border-radius:999px; border:1px solid var(--border); background:#fff; color:var(--muted); font-size:12px; line-height:1;">Receipt</span>
+            </div>
+            <div style="display:grid; gap:10px; padding:14px 18px 18px;">
+              <div style="border:1px solid rgba(39,110,241,0.40); border-radius:14px; background:#fff; padding:14px; display:grid; gap:8px; box-shadow:0 0 0 1px rgba(39,110,241,0.08);">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                  <strong style="font-size:15px;">The Earth orbits the Sun.</strong>
+                  <span style="color:var(--muted); font-size:12px; white-space:nowrap;">3 / 3 verified</span>
+                </div>
+                <p style="margin:0; color:var(--muted); font-size:13px; line-height:1.5;">Supported by known memory. No contradictions. Read-only action allowed.</p>
+                <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:4px;">
+                  <div style="border-radius:12px; border:1px solid var(--border-soft); background:var(--panel-soft); padding:10px; display:grid; gap:4px; min-height:66px;"><span style="color:var(--muted); font-size:12px;">Memory</span><strong style="font-size:14px;">Intact</strong></div>
+                  <div style="border-radius:12px; border:1px solid var(--border-soft); background:var(--panel-soft); padding:10px; display:grid; gap:4px; min-height:66px;"><span style="color:var(--muted); font-size:12px;">Risk</span><strong style="font-size:14px;">Low</strong></div>
+                  <div style="border-radius:12px; border:1px solid var(--border-soft); background:var(--panel-soft); padding:10px; display:grid; gap:4px; min-height:66px;"><span style="color:var(--muted); font-size:12px;">Receipt</span><strong style="font-size:14px;">TR-2025-05-24-7F3A</strong></div>
+                </div>
+              </div>
+              <div style="border:1px solid var(--border); border-radius:14px; background:#fff; padding:14px; display:grid; gap:8px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                  <strong style="font-size:15px;">Draft response for a tool call</strong>
+                  <span style="color:var(--muted); font-size:12px; white-space:nowrap;">Review</span>
+                </div>
+                <p style="margin:0; color:var(--muted); font-size:13px; line-height:1.5;">Pending evidence confirmation before an action can leave the gate.</p>
+              </div>
             </div>
           </div>
 
-          <div class="panel">
-            <h2>What this page is</h2>
-            <p>This is a static interactive demo. It does not run the live engine in the browser. It demonstrates the product concept and narrative.</p>
+          <div class="receipt" id="receipt">
+            <div class="tagline">
+              <span>Trust Receipt mock</span>
+              <span>Static simulation</span>
+            </div>
+            <pre>{
+  "verdict": "review",
+  "reason": "claim conflicts with known memory",
+  "evidence": ["known fact: aspirin is a blood thinner"],
+  "riskFlags": ["contradiction", "medical-domain"],
+  "timestamp": "demo"
+}</pre>
           </div>
         </aside>
       </section>
@@ -907,7 +923,7 @@
       <section class="section" id="demo" aria-labelledby="demo-title">
         <div class="section-header">
           <div>
-            <h2 id="demo-title">3. Interactive static demo</h2>
+            <h2 id="demo-title">Interactive static demo</h2>
             <small>Static simulation — not live engine output. Click an example to see the simulated verdict.</small>
           </div>
         </div>
@@ -945,8 +961,6 @@
         </div>
         <div class="demo-layout">
           <div class="demo-box">
-            <h3 style="margin:0 0 10px;font-size:18px;">Static simulation controls</h3>
-            <p style="margin:0 0 12px;color:var(--muted);font-size:14px;line-height:1.6;">This is hardcoded demo logic only. It shows the product narrative without running the live local engine.</p>
             <div class="demo-outcome">
               <div class="outcome-pill" id="verdict-pill" data-tone="good"><strong>SUPPORTED</strong></div>
               <div class="demo-result">
@@ -966,10 +980,10 @@
         </div>
       </section>
 
-      <section class="section" id="receipt" aria-labelledby="receipt-title">
+      <section class="section" id="receipt-panel" aria-labelledby="receipt-title-2">
         <div class="section-header">
           <div>
-            <h2 id="receipt-title">4. Trust Receipt (simulated)</h2>
+            <h2 id="receipt-title-2">Trust Receipt (simulated)</h2>
             <small>Portable record of the decision for auditing and transparency.</small>
           </div>
         </div>
@@ -1020,33 +1034,21 @@
         </div>
       </section>
 
-      <section class="section" id="roadmap" aria-labelledby="roadmap-title">
+            <section class="section" id="next" aria-labelledby="next-title">
         <div class="section-header">
           <div>
-            <h2 id="roadmap-title">5. Roadmap</h2>
-            <small>Release progression stays visible so the demo feels connected to the shipped product line.</small>
+            <h2 id="next-title">What's next</h2>
+            <small>Product is still developing; new features are coming soon.</small>
           </div>
         </div>
-        <div class="roadmap-track">
-          <div class="roadmap-item">
-            <div class="roadmap-dot"></div>
-            <strong>v0.9.0</strong>
-            <span>Semantic Trust Gate</span>
+        <div class="next-strip">
+          <div class="next-card">
+            <h3 style="margin:0;font-size:18px;">Development continues</h3>
+            <p>HUQAN / AXIOM is already shipped as a security and memory core. This demo stays compact while the product line keeps moving forward.</p>
           </div>
-          <div class="roadmap-item">
-            <div class="roadmap-dot"></div>
-            <strong>v0.9.1</strong>
-            <span>Memory Core</span>
-          </div>
-          <div class="roadmap-item">
-            <div class="roadmap-dot"></div>
-            <strong>Security hardening complete</strong>
-            <span>Local-first hardening, signatures, receipts.</span>
-          </div>
-          <div class="roadmap-item">
-            <div class="roadmap-dot"></div>
-            <strong>Next</strong>
-            <span>CLI / GitHub App beta / Self-Healer</span>
+          <div class="next-card">
+            <h3 style="margin:0;font-size:18px;">New features are coming soon</h3>
+            <p>We are still developing the product. The next pass will add a tighter beta surface, more integrations, and a cleaner story for real users.</p>
           </div>
         </div>
       </section>
@@ -1077,7 +1079,7 @@
     const pill = document.getElementById('verdict-pill');
     const verdictTitle = document.getElementById('verdict-title');
     const verdictBody = document.getElementById('verdict-body');
-    const receipt = document.getElementById('receipt');
+    const receipt = document.querySelector('#receipt pre');
     const demoCards = Array.from(document.querySelectorAll('.demo-card'));
 
     const examples = {
@@ -1087,7 +1089,7 @@
         verdict: 'SUPPORTED',
         body: 'Supported by known memory. No intervention required.',
         receipt: {
-          verdict: 'supported',
+          verdict: 'review',
           reason: 'claim aligns with known memory',
           evidence: ['known fact: aspirin is a blood thinner'],
           riskFlags: ['none'],
@@ -1123,8 +1125,7 @@
     };
 
     function renderReceipt(data) {
-      const pre = receipt.querySelector('pre');
-      if (pre) pre.textContent = JSON.stringify(data, null, 2);
+      if (receipt) receipt.textContent = JSON.stringify(data, null, 2);
     }
 
     function applyExample(key) {
@@ -1134,7 +1135,6 @@
       verdictTitle.textContent = item.text;
       verdictBody.textContent = item.body;
       renderReceipt(item.receipt);
-
       demoCards.forEach(card => card.classList.toggle('selected', card.dataset.example === key));
     }
 
