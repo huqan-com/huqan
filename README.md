@@ -1,146 +1,204 @@
-# Huqan - Think Without Hallucinating
+<div align="center">
 
-> **LLM outputs lie. Huqan doesn't.**
+# Huqan
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![README Score](https://github.com/agiulucom42-del/axiom/actions/workflows/readme-score.yml/badge.svg)](https://github.com/agiulucom42-del/axiom/actions/workflows/readme-score.yml)
+### Think Without Hallucinating
 
-Huqan is a deterministic causal reasoning engine.  
-No LLM. No GPU. No cloud. No hallucination.
+**A deterministic causal reasoning engine that verifies claims — no LLM, no GPU, no cloud.**
 
----
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Tests](https://img.shields.io/badge/tests-1277%20pass-brightgreen)](./test)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js)](https://nodejs.org)
 
-## Who is this for?
+[Quick Start](#quick-start) · [Architecture](#architecture) · [Safety Gates](#safety-gates) · [MCP Server](#mcp-server-claude--cursor) · [API](#rest-api) · [Roadmap](#roadmap)
 
-- **Developers** building on top of LLMs who need a truth/verification layer
-- **Teams** in critical domains (legal, medical, finance, engineering) where hallucination is not acceptable
-- **Anyone** who needs reasoning that runs fully offline - no API key, no cloud, no cost per query
-- **Claude / Cursor users** who want a local MCP server for grounded, verifiable answers
+</div>
 
 ---
 
-## How it works
+## The Problem
 
-```
-User / LLM Output
-       |
-       v
-   Huqan Kernel
-       |
-  [Causal Graph]
-       |
-  +-----------+
-  | Known?    |
-  +-----------+
-   Yes       No
-    |        |
-  Verify    "Evidence
-  &         missing."
-  Confirm
-    |
-  +-----------------+
-  | Contradiction?  |
-  +-----------------+
-   Yes             No
-    |              |
-  Reject &       Learn &
-   Warn          Store
-```
+LLMs hallucinate. In regulated industries — healthcare, finance, legal, engineering — a confident wrong answer isn't just annoying. It's **dangerous** and **expensive**.
 
-Huqan builds a **causal knowledge graph** from what it learns.  
-When a claim arrives, it checks it deterministically - no probability, no guessing.  
-If evidence is missing, it says so. If there's a contradiction, it rejects and explains why.
+Existing guardrails are probabilistic: they use another LLM to check the first LLM. That's using fire to fight fire.
+
+**Huqan takes a different approach: deterministic verification.**
+
+Same input → same output. Every time. No probability, no guessing, no hallucination.
+
+---
+
+## What Huqan Does
+
+| Capability | How It Works |
+|---|---|
+| **Claim Verification** | Checks claims against a causal knowledge graph — deterministic, reproducible |
+| **Contradiction Detection** | Finds logical conflicts between claims using causal relation analysis |
+| **Safety Gating** | AB1–AB6 gates intercept dangerous LLM outputs before they reach users |
+| **Audit Trail** | Every operation is logged with provenance — who, what, when, why |
+| **MCP Integration** | Plug into Claude Desktop, Cursor, or any MCP-compatible client |
+| **Offline First** | No API keys, no cloud, no cost per query — runs entirely local |
+
+---
+
+## Comparison
+
+| Feature | Huqan | LLM-only | Guardrails AI |
+|---|---|---|---|
+| Deterministic answers | ✅ Always | ❌ Never | ⚠️ Partial |
+| Contradiction detection | ✅ Built-in | ❌ No | ⚠️ Heuristic |
+| Runs fully offline | ✅ Yes | ❌ Needs API | ❌ Needs API |
+| GPU required | ❌ No | ✅ Yes | ❌ No |
+| Cost per query | **$0** | $/query | $/query |
+| Explainable reasoning | ✅ Full trace | ❌ Black box | ⚠️ Limited |
+| Causal chains | ✅ CAUSES, PREVENTS, ENABLES… | ❌ No | ❌ No |
+| Provenance / Audit | ✅ Append-only | ❌ No | ❌ No |
 
 ---
 
 ## Quick Start
 
 ```bash
+# Clone and install
+git clone https://github.com/agiulucom42-del/axiom.git
+cd axiom
 npm ci
-node egitim.js    # Load initial knowledge base
-node cli.js       # Interactive CLI
-node cli.js --help
-node server.js    # Web UI at http://localhost:3000
-node mcpServer.js # MCP server for Claude Desktop / Cursor
+
+# Load initial knowledge base
+node egitim.js
+
+# Interactive CLI
+node cli.js
+
+# Web UI (http://localhost:3000)
+node server.js
+
+# MCP Server for Claude Desktop / Cursor
+node mcpServer.js
 ```
 
-> Node.js >= 18 required. Use `npm ci` for clean clone and release smoke runs so `package-lock.json` stays deterministic.
+> **Requirements:** Node.js >= 18. Use `npm ci` for deterministic installs.
 
 ---
 
-## Core Features
+## Architecture
 
-| Feature | Huqan | LLM-only |
+```
+┌─────────────────────────────────────────────────┐
+│                  Surface Layer                   │
+│            (CLI, REST API, Web UI)               │
+├─────────────────────────────────────────────────┤
+│                  Agent Layer                      │
+│          (Query routing, task dispatch)           │
+├─────────────────────────────────────────────────┤
+│                 Safety Layer                      │
+│          AB1–AB6 gates, risk classification       │
+├─────────────────────────────────────────────────┤
+│                 Kernel Layer                      │
+│      Verify, learn, causal graph engine           │
+├─────────────────────────────────────────────────┤
+│                 Trust Layer                       │
+│       ATP protocol, provenance receipts           │
+├─────────────────────────────────────────────────┤
+│                Causal Layer                       │
+│   CAUSES / PREVENTS / ENABLES / DEPENDS_ON        │
+├─────────────────────────────────────────────────┤
+│            Memory + Data Layer                    │
+│     SQLite store, append-only audit trail         │
+└─────────────────────────────────────────────────┘
+```
+
+Each layer is independent and testable. The **Safety Layer** and **Kernel** can operate standalone — no need to run the full stack.
+
+---
+
+## Safety Gates
+
+Huqan's safety system intercepts and classifies LLM outputs through six deterministic gates:
+
+| Gate | Function | Example Catch |
 |---|---|---|
-| Deterministic answers | ✅ Always | ❌ Never |
-| Contradiction detection | ✅ Built-in | ❌ No |
-| Runs offline | ✅ Fully | ❌ Needs API |
-| GPU required | ❌ No | ✅ Yes |
-| Cost per query | $0 | $/query |
-| Explainable reasoning | ✅ Full trace | ❌ Black box |
-| Causal chains | ✅ CAUSES, PREVENTS, ENABLES... | ❌ No |
-| Validation F1 | 0.88-0.91 | 0.82-0.86 |
+| **AB1** | Harmful content detection | "How to make a bomb" |
+| **AB2** | PII / sensitive data leak | SSN, medical records in output |
+| **AB3** | Instruction injection | Prompt-injection attempts |
+| **AB4** | Code change risk assessment | Destructive SQL / shell commands |
+| **AB5** | Tool-call gating | Unauthorized API calls |
+| **AB6** | Cross-gate risk aggregation | Combined risk scoring |
 
-## v0.9.1 Memory Core
-
-AXIOM v0.9.1 is shipped from `main` with Memory Core compatibility aligned through PR #42.
-
-- Deterministic memory behavior is preserved.
-- The normalized SQLite `MemoryStore` architecture remains intact.
-- Memory Core compatibility aliases are available on `kernel.memory`.
-- Provenance, audit, and workspace invariants remain in place.
-- Final verified suite result: `1277 pass / 0 fail / 16 skipped`.
+Every gate produces a **deterministic verdict**: `ALLOW`, `BLOCK`, or `ESCALATE`. No probability, no ambiguity.
 
 ---
 
 ## Causal Reasoning
 
-Huqan understands causal relationships:
+Huqan understands and reasons about causal relationships:
 
 ```
-CAUSES      - A causes B
-PREVENTS    - A prevents B
-ENABLES     - A enables B
-DEPENDS_ON  - A depends on B
-LEADS_TO    - A leads to B
+CAUSES      - Smoking causes lung cancer
+PREVENTS    - Vaccination prevents disease
+ENABLES     - Education enables opportunity
+DEPENDS_ON  - Growth depends on investment
+LEADS_TO    - Neglect leads to failure
 ```
 
-Ask Huqan why something happens - it traces the full causal chain, step by step.
+Ask "why?" and Huqan traces the full causal chain — step by step, with evidence at every link.
 
 ---
 
 ## MCP Server (Claude / Cursor)
 
+Connect Huqan as a local MCP server to give your AI assistant a deterministic verification layer:
+
 ```bash
 node mcpServer.js
 ```
 
-Connect Huqan as a local MCP server to Claude Desktop or Cursor.  
-Your AI assistant will verify its own outputs against Huqan's knowledge graph before answering.
+**Claude Desktop config** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "huqan": {
+      "command": "node",
+      "args": ["/path/to/axiom/mcpServer.js"]
+    }
+  }
+}
+```
+
+Your AI assistant now verifies its own outputs against Huqan's knowledge graph before answering.
 
 ---
 
 ## REST API
 
 ```bash
-node server.js  # http://localhost:3000
+node server.js  # Starts at http://localhost:3000
 ```
 
-| Endpoint | Description |
-|---|---|
-| `GET /health` | Public health check |
-| `GET /v2-status` | Public v2 status |
-| `GET /api?q=query` | Public read-only question endpoint |
-| `GET /dogrula?statement=...` | Public read-only verification endpoint |
-| `GET /v2/verify?statement=...` | Public read-only structured verification endpoint |
-| `GET /graph-data` | Public read-only knowledge graph export |
-| `POST /dogrula` | Auth-required verification mutation surface |
-| `POST /v2/verify` | Auth-required structured verification |
-| `POST /yukle` | Auth-required knowledge-base load |
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/health` | GET | Public | Health check |
+| `/v2-status` | GET | Public | V2 status |
+| `/api?q=query` | GET | Public | Ask a question |
+| `/dogrula?statement=...` | GET | Public | Verify a claim |
+| `/v2/verify?statement=...` | GET | Public | Structured verification |
+| `/graph-data` | GET | Public | Export knowledge graph |
+| `/dogrula` | POST | Required | Verification mutation |
+| `/v2/verify` | POST | Required | Structured verification mutation |
+| `/yukle` | POST | Required | Load knowledge base |
 
-Response: `{ "status": "verified" | "contradiction" | "unknown", "confidence": 0.9, "evidence": [...] }`
+**Auth:** Mutation endpoints require `AXIOM_API_KEY` on the server and `X-API-Key` or `Authorization: Bearer <key>` header.
 
-Mutation endpoints require `AXIOM_API_KEY` on the server and `X-API-Key` or `Authorization: Bearer <key>` on the request. Public smoke tests should use the `GET` endpoints above.
+**Response format:**
+```json
+{
+  "status": "verified" | "contradiction" | "unknown",
+  "confidence": 0.9,
+  "evidence": ["..."],
+  "provenance": { "source": "...", "timestamp": "..." }
+}
+```
 
 ---
 
@@ -152,34 +210,74 @@ Use Huqan directly inside Obsidian to verify your notes and build a local knowle
 
 ---
 
+## Use Cases
+
+| Industry | Application |
+|---|---|
+| **Healthcare** | Verify drug interaction claims against known causal data |
+| **Finance** | Gate LLM outputs that could trigger unauthorized transactions |
+| **Legal** | Detect contradictions in contract analysis outputs |
+| **Engineering** | Validate safety-critical claims with deterministic reasoning |
+| **Compliance** | Full audit trail for every AI-assisted decision (GDPR, SOX, HIPAA) |
+
+---
+
+## v0.9.1 — Memory Core
+
+AXIOM v0.9.1 ships from `main` with Memory Core compatibility aligned through PR #42.
+
+- Deterministic memory behavior preserved
+- Normalized SQLite `MemoryStore` architecture
+- Memory Core compatibility aliases on `kernel.memory`
+- Provenance, audit, and workspace invariants in place
+- Test suite: **1277 pass / 0 fail / 16 skipped**
+
+---
+
 ## Roadmap
 
 - [x] Causal graph engine
 - [x] Contradiction detection
-- [x] MCP server
+- [x] MCP server (Claude / Cursor)
 - [x] Obsidian plugin
 - [x] Trust Receipts (ATP v0.1)
+- [x] Safety gates AB1–AB6
+- [ ] Standalone Safety Gate package (`@huqan/safety-gate`)
+- [ ] npm package distribution
 - [ ] A2A Internal Exchange (agent-to-agent task economy)
 - [ ] Distributed trust layer
-- [ ] Public API
+- [ ] Self-healer audit loop (v0.9.2)
+- [ ] Public API with rate limiting
 
 ---
 
 ## Philosophy
 
-Most AI tools are trying to make LLMs remember more.  
+Most AI tools try to make LLMs remember more.  
 We're building something that **doesn't need to guess**.
 
 > *"While everyone is building better memory for LLMs, we removed the LLM."*
 
 ---
 
-## License
+## Contributing
 
-AGPL-3.0 - see [LICENSE](./LICENSE) and [NOTICE](./NOTICE)
+Contributions are welcome. Please open an issue first to discuss what you'd like to change.
 
 ---
 
-<p align="center">
-  <b>huqan.ai</b> · <a href="https://github.com/agiulucom42-del/axiom/issues">Issues</a> · <a href="https://github.com/agiulucom42-del/axiom/discussions">Discussions</a>
-</p>
+## License
+
+Apache License 2.0 — see [LICENSE](./LICENSE) and [NOTICE](./NOTICE)
+
+This project was previously licensed under AGPL-3.0. The license was changed to Apache 2.0
+to enable broader adoption, including enterprise use and proprietary integration.
+For commercial licensing inquiries, please open an issue.
+
+---
+
+<div align="center">
+
+**huqan.ai** · [Issues](https://github.com/agiulucom42-del/axiom/issues) · [Discussions](https://github.com/agiulucom42-del/axiom/discussions)
+
+</div>
