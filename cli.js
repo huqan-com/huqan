@@ -66,6 +66,16 @@ function normalizeCommandText(input) {
     .replace(/[ü]/g, 'u');
 }
 
+function normalizeCompareArgs(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return '';
+  const pipeParts = text.split('|').map(part => part.trim()).filter(Boolean);
+  if (pipeParts.length === 2) return `${pipeParts[0]}|${pipeParts[1]}`;
+  const vsParts = text.split(/\s+vs\s+/i).map(part => part.trim()).filter(Boolean);
+  if (vsParts.length === 2) return `${vsParts[0]}|${vsParts[1]}`;
+  return text;
+}
+
 function isWorkflowRuntime(agent) {
   return Boolean(agent && (agent.kind === 'workflow' || agent.runtime === 'workflow'));
 }
@@ -107,6 +117,14 @@ class CLI {
     }
     if (trimmed.startsWith('sirket-sor:')) return { command: 'company-query', args: raw.slice(11).trim() };
     if (trimmed === 'ingest-durum') return { command: 'ingest-status', args: '' };
+    if (trimmed.startsWith('learn:')) return { command: '\u00f6\u011fret', args: raw.slice(6).trim() };
+    if (trimmed.startsWith('teach:')) return { command: '\u00f6\u011fret', args: raw.slice(6).trim() };
+    if (trimmed.startsWith('ask:')) return { command: 'sor', args: raw.slice(4).trim() };
+    if (trimmed.startsWith('why:')) return { command: 'neden', args: raw.slice(4).trim() };
+    if (trimmed.startsWith('compare:')) return { command: 'kar\u015f\u0131la\u015ft\u0131r', args: normalizeCompareArgs(raw.slice(8).trim()) };
+    if (trimmed.startsWith('verify:')) return { command: 'verify', args: raw.slice(7).trim() };
+    if (trimmed.startsWith('dogrula:')) return { command: 'verify', args: raw.slice(8).trim() };
+    if (trimmed.startsWith('upload:')) return { command: 'y\u00fckle', args: raw.slice(7).trim() };
 
     if (plain.startsWith('mri:') || plain.startsWith('mr:') || plain.startsWith('tartis:') || plain.startsWith('celiski:')) {
       const sep = raw.indexOf(':');
@@ -207,6 +225,14 @@ class CLI {
         this.kernel.learn(args);
         const subject = String(args || '').toLowerCase().split(/\s+/)[0];
         return `OK "${subject}" öğrendim.`;
+      }
+      case 'verify': {
+        const result = this.kernel.verify(args);
+        const data = result.data || {};
+        const evidence = Array.isArray(result.evidence) ? result.evidence : [];
+        let out = `Verify: ${data.status || 'unknown'} (confidence: ${typeof data.confidence === 'number' ? data.confidence.toFixed(2) : 'n/a'})`;
+        if (evidence.length > 0 && evidence[0] && evidence[0].text) out += `\nEvidence: ${evidence[0].text}`;
+        return out;
       }
       case 'sor': {
         const result = this.kernel.ask(args);
@@ -470,6 +496,14 @@ class CLI {
           '  "kaydet"                  -> hafizayi kaydederim',
           '  "llm-sor: soru"           -> LLM tavsiyesi hazirlarim',
           '  "yükle: dosya.txt"        -> dosyadan ogrenirim',
+          '  English-first aliases:',
+          '  "learn: cats are animals" -> teach alias',
+          '  "ask: cat nedir"          -> ask alias',
+          '  "why: tavuk"              -> why alias',
+          '  "compare: tavuk | yumurta"-> compare alias',
+          '  "verify: kedi bitkidir"   -> guarded verify alias',
+          '  "upload: notes.txt"       -> upload alias',
+          '  Turkish compatibility aliases: \u00f6\u011fret, sor, neden, kar\u015f\u0131la\u015ft\u0131r, do\u011frula, y\u00fckle',
           '  "çıkış"                   -> cikis',
         ].join('\n');
       case 'anlamadım':
@@ -489,6 +523,9 @@ class CLI {
     console.log('AXIOM - dogal dil ile konus, ogret, sor');
     console.log('  "kedi balik yer"       | Bilgi ogret');
     console.log('  "kedi nedir"           | Soru sor');
+    console.log('  "learn: cats are animals" | English-first teach alias');
+    console.log('  "ask: cat nedir"          | English-first ask alias');
+    console.log('  "verify: kedi bitkidir"   | English-first verify alias');
     console.log('  "plan: hedef"          | Ajan plani');
     console.log('  "ajan: hedef"          | Ajan calistir');
     console.log('  "backup"               | Durumu yedekle');

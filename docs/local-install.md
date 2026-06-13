@@ -51,10 +51,12 @@ node cli.js
 ```
 
 ```
-> kedi hayvandır          # teach: "cats are animals"
-> kedi nedir              # ask: "what is a cat?" → "kedi: hayvan, canlı"
-> kedi bitkidir           # verify: "cats are plants" → contradiction detected
+> learn: cats are animals
+> ask: cat nedir
+> verify: kedi bitkidir
 ```
+
+Turkish compatibility aliases remain supported: `öğret`, `sor`, `neden`, `karşılaştır`, `doğrula`, `yükle`.
 
 ### Web UI
 
@@ -67,6 +69,11 @@ Static demo note:
 - `demo/index.html` is the canonical static public demo surface.
 - `public/index.html` is the canonical local backend-connected UI served by `node server.js`.
 - `docs/index.html` is only a docs/demo chooser and does not replace the local UI.
+
+English-first developer UX:
+- Public docs use English command names first.
+- Turkish commands remain supported for compatibility.
+- Unsafe GET verification is not supported. Use guarded POST endpoints.
 
 ### MCP Server (for Claude Desktop / Cursor)
 
@@ -82,9 +89,9 @@ Add to your MCP client config — see [MCP setup instructions](./demo-mcp-agent-
 
 | Action | Command |
 |--------|---------|
-| Teach it something | `kedi hayvandır` (CLI) or `POST /yukle` (API) |
-| Ask a question | `kedi nedir` (CLI) or `GET /api?q=kedi+nedir` (API) |
-| Verify a claim | `kedi bitkidir` (CLI) or `POST /dogrula` (API) |
+| Teach it something | `learn: cats are animals` (CLI) or `POST /upload` (API) |
+| Ask a question | `ask: cat nedir` (CLI) or `GET /api?q=cat+nedir` (API) |
+| Verify a claim | `verify: kedi bitkidir` (CLI) or `POST /verify` (API) |
 | Export the graph | `GET /graph-data` (API) |
 | Connect to Claude | `node mcpServer.js` + MCP config |
 
@@ -95,10 +102,13 @@ Add to your MCP client config — see [MCP setup instructions](./demo-mcp-agent-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api?q=query` | Read-only allowlisted query surface |
+| GET | `/verify?statement=...` | `405 Method Not Allowed` |
 | GET | `/dogrula?statement=...` | `405 Method Not Allowed` |
 | GET | `/v2/verify?statement=...` | `405 Method Not Allowed` |
+| POST | `/verify` | Guarded verification endpoint |
 | POST | `/dogrula` | Guarded verification endpoint |
 | POST | `/v2/verify` | Guarded structured verification endpoint |
+| POST | `/upload` | English alias for guarded load endpoint |
 | POST | `/yukle` | Load text into knowledge base |
 | GET | `/graph-data` | Export the knowledge graph |
 
