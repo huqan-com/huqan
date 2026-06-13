@@ -1,0 +1,1148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>HUQAN - Static Demo Landing</title>
+  <meta name="description" content="HUQAN static demo landing page for the AXIOM trust boundary concept.">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f14;
+      --bg-alt: #0f141b;
+      --panel: #121923;
+      --panel-2: #151d28;
+      --border: #273241;
+      --border-soft: #1d2733;
+      --text: #f3f6fb;
+      --muted: #9aa8b8;
+      --muted-2: #718094;
+      --accent: #6ee7d8;
+      --accent-2: #7cc0ff;
+      --good: #67e8a8;
+      --warn: #f5c453;
+      --bad: #ff7d7d;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --max: 1180px;
+      --gap: 24px;
+      --gap-lg: 32px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background:
+        radial-gradient(1200px 700px at 80% -10%, rgba(110, 231, 216, 0.12), transparent 45%),
+        radial-gradient(900px 500px at 10% 0%, rgba(124, 192, 255, 0.12), transparent 35%),
+        linear-gradient(180deg, #0a0e13 0%, #0b0f14 38%, #091015 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, input {
+      font: inherit;
+    }
+
+    .shell {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 20px 24px 48px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 16px;
+      padding: 6px 0 18px;
+    }
+
+    .page-nav {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      justify-self: center;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .page-nav a {
+      transition: color 160ms ease;
+    }
+
+    .page-nav a:hover {
+      color: var(--text);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background:
+        linear-gradient(145deg, rgba(110, 231, 216, 0.2), rgba(124, 192, 255, 0.12)),
+        #101721;
+      border: 1px solid rgba(110, 231, 216, 0.24);
+      display: grid;
+      place-items: center;
+      box-shadow: var(--shadow);
+      flex: 0 0 auto;
+    }
+
+    .mark svg {
+      width: 22px;
+      height: 22px;
+      color: var(--accent);
+    }
+
+    .brand-text {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .brand-text strong {
+      font-size: 15px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .brand-text span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .button {
+      border: 1px solid var(--border);
+      background: rgba(18, 25, 35, 0.88);
+      color: var(--text);
+      padding: 11px 16px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(110, 231, 216, 0.5);
+      background: rgba(21, 29, 40, 0.98);
+    }
+
+    .button.primary {
+      background: linear-gradient(135deg, rgba(110, 231, 216, 0.22), rgba(124, 192, 255, 0.18));
+      border-color: rgba(110, 231, 216, 0.38);
+    }
+
+    .button svg {
+      width: 15px;
+      height: 15px;
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.25fr 0.95fr;
+      gap: var(--gap-lg);
+      align-items: stretch;
+      margin-top: 12px;
+    }
+
+    .hero-copy, .panel, .section, .receipt, .demo-box, .mini-card {
+      background: linear-gradient(180deg, rgba(18, 25, 35, 0.96), rgba(15, 20, 27, 0.98));
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-copy {
+      padding: 34px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 540px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-copy::after {
+      content: "";
+      position: absolute;
+      inset: auto -20% -35% auto;
+      width: 340px;
+      height: 340px;
+      background: radial-gradient(circle, rgba(110, 231, 216, 0.14), transparent 70%);
+      pointer-events: none;
+    }
+
+    .kicker {
+      color: var(--accent);
+      font-size: 13px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: clamp(42px, 5vw, 70px);
+      line-height: 0.96;
+      margin: 0;
+      max-width: 12ch;
+      letter-spacing: -0.03em;
+    }
+
+    .hero-copy p {
+      max-width: 60ch;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.6;
+      margin: 18px 0 0;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 28px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .meta-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(9, 14, 20, 0.6);
+      padding: 14px;
+      min-height: 92px;
+    }
+
+    .meta-card strong {
+      display: block;
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+
+    .meta-card span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .hero-side {
+      display: grid;
+      gap: 16px;
+    }
+
+    .panel {
+      padding: 22px;
+    }
+
+    .panel h2,
+    .section h2 {
+      font-size: 24px;
+      line-height: 1.1;
+      margin: 0 0 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .panel h2.large {
+      font-size: 28px;
+    }
+
+    .panel p,
+    .section p,
+    .note-list {
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .receipt {
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(15, 20, 27, 0.98), rgba(12, 16, 22, 0.98));
+    }
+
+    .receipt .tagline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .receipt pre {
+      margin: 0;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.65;
+      color: #dce6f2;
+      white-space: pre-wrap;
+      background: #091017;
+      border: 1px solid rgba(124, 192, 255, 0.16);
+      border-radius: 14px;
+      padding: 16px;
+      overflow: auto;
+    }
+
+    .section {
+      margin-top: 22px;
+      padding: 28px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .problem-card {
+      padding: 22px;
+    }
+
+    .problem-left {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .problem-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 125, 125, 0.28);
+      background: rgba(255, 125, 125, 0.08);
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      color: var(--bad);
+    }
+
+    .problem-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .bullet-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 16px;
+    }
+
+    .bullet-list li {
+      display: grid;
+      grid-template-columns: 12px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .bullet-list span {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--bad);
+      margin-top: 6px;
+      box-shadow: 0 0 0 4px rgba(255, 125, 125, 0.08);
+    }
+
+    .bullet-list strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+
+    .bullet-list p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .mini-card {
+      padding: 18px;
+      min-height: 140px;
+      background: linear-gradient(180deg, rgba(19, 26, 36, 0.96), rgba(15, 20, 27, 0.98));
+    }
+
+    .mini-card h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    .mini-card p {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 0;
+      line-height: 1.55;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .demo-card {
+      padding: 18px;
+      cursor: pointer;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .demo-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(110, 231, 216, 0.4);
+    }
+
+    .demo-card.selected {
+      border-color: rgba(110, 231, 216, 0.58);
+      background: linear-gradient(180deg, rgba(17, 31, 30, 0.96), rgba(14, 20, 27, 0.98));
+      box-shadow: 0 0 0 1px rgba(110, 231, 216, 0.08), var(--shadow);
+    }
+
+    .demo-card .select-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      color: var(--muted);
+    }
+
+    .radio {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 2px solid rgba(168, 183, 199, 0.5);
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+
+    .demo-card.selected .radio {
+      border-color: var(--accent);
+    }
+
+    .radio::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      transform: scale(0);
+      transition: transform 140ms ease;
+    }
+
+    .demo-card.selected .radio::after {
+      transform: scale(1);
+    }
+
+    .demo-card h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .demo-card p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .verdict-box {
+      border-radius: 14px;
+      padding: 14px;
+      background: #0a1017;
+      border: 1px solid var(--border);
+    }
+
+    .verdict-box .verdict-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .verdict-box .verdict-main {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .verdict-box .verdict-support {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .demo-layout {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 16px;
+      align-items: start;
+      margin-top: 16px;
+    }
+
+    .demo-box {
+      padding: 18px;
+    }
+
+    .demo-outcome {
+      display: grid;
+      gap: 10px;
+    }
+
+    .outcome-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      border: 1px solid transparent;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .outcome-pill strong {
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .outcome-pill[data-tone="good"] { color: var(--good); border-color: rgba(103, 232, 168, 0.2); }
+    .outcome-pill[data-tone="warn"] { color: var(--warn); border-color: rgba(245, 196, 83, 0.2); }
+    .outcome-pill[data-tone="bad"] { color: var(--bad); border-color: rgba(255, 125, 125, 0.2); }
+
+    .receipt-layout {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .receipt-summary {
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #0a1017;
+      display: grid;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .receipt-summary dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px 16px;
+    }
+
+    .receipt-summary dt {
+      color: var(--muted);
+    }
+
+    .receipt-summary dd {
+      margin: 0;
+      text-align: right;
+      color: #e6eef8;
+    }
+
+    .roadmap-track {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      position: relative;
+      padding-top: 14px;
+    }
+
+    .roadmap-track::before {
+      content: "";
+      position: absolute;
+      top: 35px;
+      left: 40px;
+      right: 40px;
+      height: 1px;
+      border-top: 2px dashed rgba(154, 168, 184, 0.4);
+    }
+
+    .roadmap-item {
+      text-align: center;
+      position: relative;
+      padding: 10px 14px 0;
+    }
+
+    .roadmap-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      margin: 0 auto 18px;
+      background: rgba(110, 231, 216, 0.2);
+      border: 1px solid rgba(110, 231, 216, 0.55);
+      box-shadow: 0 0 0 5px rgba(110, 231, 216, 0.06);
+    }
+
+    .roadmap-item strong {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    .roadmap-item span {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      display: block;
+    }
+
+    .note-list {
+      display: grid;
+      gap: 10px;
+      padding-left: 18px;
+    }
+
+    .note-list li {
+      margin: 0;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .section-header small {
+      color: var(--muted-2);
+      font-size: 13px;
+      line-height: 1.5;
+      max-width: 60ch;
+    }
+
+    .footer {
+      margin-top: 22px;
+      color: var(--muted-2);
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 10px 2px 0;
+    }
+
+    @media (max-width: 980px) {
+      .hero, .demo-layout, .grid-3, .grid-2, .roadmap {
+        grid-template-columns: 1fr;
+      }
+
+      .receipt-layout,
+      .problem-grid,
+      .roadmap-track {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-copy {
+        min-height: auto;
+      }
+
+      .hero-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .page-nav {
+        justify-content: start;
+      }
+
+      .roadmap-track::before {
+        display: none;
+      }
+
+      .section-header {
+        flex-direction: column;
+        align-items: start;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        padding: 16px 14px 32px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .page-nav {
+        flex-direction: column;
+        align-items: start;
+      }
+
+      .hero-copy, .panel, .section, .receipt, .demo-box {
+        padding: 18px;
+      }
+
+      h1 {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l7 4v10l-7 4-7-4V7l7-4z"></path>
+            <path d="M12 7v10"></path>
+            <path d="M8.5 9.5l3.5 2 3.5-2"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <strong>HUQAN / AXIOM</strong>
+          <span>Static demo landing</span>
+        </div>
+      </div>
+      <nav class="page-nav" aria-label="Sections">
+        <a href="#problem">Problem</a>
+        <a href="#what">Features</a>
+        <a href="#demo">Demo</a>
+        <a href="#receipt">Trust Receipt</a>
+        <a href="#roadmap">Roadmap</a>
+        <a href="#not">About</a>
+      </nav>
+      <nav class="top-actions" aria-label="Primary">
+        <a class="button" href="https://github.com/agiulucom42-del/axiom" target="_blank" rel="noreferrer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 3h7v7"></path>
+            <path d="M10 14L21 3"></path>
+            <path d="M21 14v7h-7"></path>
+            <path d="M3 10v11h11"></path>
+          </svg>
+          View GitHub
+        </a>
+        <a class="button primary" href="#demo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 5l11 7-11 7V5z"></path>
+          </svg>
+          See Static Demo
+        </a>
+        <a class="button" href="#receipt">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"></path>
+            <path d="M8 8h8"></path>
+            <path d="M8 12h8"></path>
+          </svg>
+          Read Trust Receipt Concept
+        </a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <div>
+            <div class="kicker">Static interactive demo</div>
+            <h1 id="hero-title">Trust boundary for AI agents</h1>
+            <p>
+              Models generate. Agents act. Memory stores. HUQAN judges.
+            </p>
+            <p>
+              HUQAN is a local-first trust and memory layer for AI systems. It judges claims, memory changes, and risky agent actions before they become trusted or executed.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="https://github.com/agiulucom42-del/axiom" target="_blank" rel="noreferrer">View GitHub</a>
+              <a class="button" href="#demo">See Static Demo</a>
+              <a class="button" href="#receipt">Read Trust Receipt Concept</a>
+            </div>
+          </div>
+
+          <div class="hero-meta" aria-label="Product summary">
+            <div class="meta-card">
+              <strong>Local-first</strong>
+              <span>Repo-based trust boundary, not browser-only simulation.</span>
+            </div>
+            <div class="meta-card">
+              <strong>Auditable</strong>
+              <span>Every trust receipt is explainable and reviewable.</span>
+            </div>
+            <div class="meta-card">
+              <strong>Deterministic</strong>
+              <span>Claims and risky actions are judged before execution.</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="hero-side">
+          <div class="panel">
+            <div class="tagline" style="margin-bottom:10px;">
+              <span>Live verdict (simulated)</span>
+              <span style="color:var(--good);">LOCAL MODE</span>
+            </div>
+            <h2 class="large" style="margin-bottom:6px; color: var(--good);">ALLOW</h2>
+            <p>Low risk · 0 contradictions · Sources verified</p>
+            <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;display:grid;gap:10px;font-size:14px;color:var(--muted);">
+              <div style="display:flex;justify-content:space-between;gap:12px;"><span>Claim</span><span style="color:var(--text);">The Earth orbits the Sun.</span></div>
+              <div style="display:flex;justify-content:space-between;gap:12px;"><span>Sources</span><span style="color:var(--text);">3 / 3 verified</span></div>
+              <div style="display:flex;justify-content:space-between;gap:12px;"><span>Contradictions</span><span style="color:var(--text);">0</span></div>
+              <div style="display:flex;justify-content:space-between;gap:12px;"><span>Memory integrity</span><span style="color:var(--text);">Intact</span></div>
+              <div style="display:flex;justify-content:space-between;gap:12px;"><span>Action</span><span style="color:var(--text);">Read-only</span></div>
+              <div style="display:flex;justify-content:space-between;gap:12px;"><span>Trust Receipt</span><span style="color:var(--text);">TR-2025-05-24-7F3A</span></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>What this page is</h2>
+            <p>This is a static interactive demo. It does not run the live engine in the browser. It demonstrates the product concept and narrative.</p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section" id="problem" aria-labelledby="problem-title">
+        <div class="section-header">
+          <div>
+            <h2 id="problem-title">The problem</h2>
+            <small>LLMs generate plausible output. Agents can act with tools. Memory can store wrong state. Teams need a deterministic judge before execution.</small>
+          </div>
+        </div>
+        <div class="problem-grid">
+          <div class="panel problem-card">
+            <div class="problem-left">
+              <div class="problem-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 9v4"></path>
+                  <path d="M12 17h.01"></path>
+                  <path d="M10.3 4.8 2.8 19a1.8 1.8 0 0 0 1.6 2.6h15.2a1.8 1.8 0 0 0 1.6-2.6L13.7 4.8a2 2 0 0 0-3.4 0Z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 style="margin:0 0 8px;font-size:22px;">1. Problem</h3>
+                <p>AI agents can be persuasive and wrong. They can contradict themselves, forget context, or act on weak or unverifiable claims. Without a trust boundary, errors scale and actions have consequences.</p>
+              </div>
+            </div>
+          </div>
+          <div class="panel problem-card">
+            <ul class="bullet-list">
+              <li><span></span><div><strong>Unverifiable claims</strong><p>Agents cite sources that don't exist or can't be checked.</p></div></li>
+              <li><span></span><div><strong>Contradictions</strong><p>New information conflicts with what was previously accepted.</p></div></li>
+              <li><span></span><div><strong>Memory drift</strong><p>Long contexts and updates corrupt or overwrite facts.</p></div></li>
+              <li><span></span><div><strong>Unsafe actions</strong><p>Agents act before trust is established.</p></div></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="what" aria-labelledby="what-title">
+        <div class="section-header">
+          <div>
+            <h2 id="what-title">What HUQAN does</h2>
+            <small>A small set of trust primitives that keep the product boundary clear.</small>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="mini-card"><h3>Claim verification</h3><p>Checks whether a claim is supported, contradicted, or needs review.</p></div>
+          <div class="mini-card"><h3>Contradiction detection</h3><p>Flags conflicts between new input and known memory or provenance.</p></div>
+          <div class="mini-card"><h3>Memory integrity</h3><p>Preserves auditable state instead of letting convenience overwrite truth.</p></div>
+          <div class="mini-card"><h3>Action gate</h3><p>Blocks risky agent actions until the trust boundary is satisfied.</p></div>
+          <div class="mini-card"><h3>Approval runtime</h3><p>Supports human-gated workflows without collapsing into a black box.</p></div>
+          <div class="mini-card"><h3>Trust Receipt</h3><p>Emits a compact, reviewable receipt for each judgment or gate decision.</p></div>
+        </div>
+      </section>
+
+      <section class="section" id="demo" aria-labelledby="demo-title">
+        <div class="section-header">
+          <div>
+            <h2 id="demo-title">3. Interactive static demo</h2>
+            <small>Static simulation — not live engine output. Click an example to see the simulated verdict.</small>
+          </div>
+        </div>
+        <div class="demo-grid">
+          <div class="demo-card selected" data-example="supported">
+            <div class="select-row"><span class="radio"></span><strong>Example A: Factual claim</strong></div>
+            <h3>Claim: The Earth orbits the Sun.</h3>
+            <p>Supported by known memory and verified sources.</p>
+            <div class="verdict-box">
+              <div class="verdict-label"><span>ALLOW</span><span>Low risk · Verified · 0 contradictions</span></div>
+              <div class="verdict-main" style="color:var(--good);">ALLOW</div>
+              <p class="verdict-support">sources verified · Read-only action</p>
+            </div>
+          </div>
+          <div class="demo-card" data-example="contradiction">
+            <div class="select-row"><span class="radio"></span><strong>Example B: Contradiction</strong></div>
+            <h3>Claim: The Earth is flat.</h3>
+            <p>Conflicts with trusted memory and must go to review.</p>
+            <div class="verdict-box">
+              <div class="verdict-label"><span>BLOCK</span><span>High risk · 2 contradictions</span></div>
+              <div class="verdict-main" style="color:var(--bad);">BLOCK</div>
+              <p class="verdict-support">0 sources verified · Action blocked</p>
+            </div>
+          </div>
+          <div class="demo-card" data-example="blocked">
+            <div class="select-row"><span class="radio"></span><strong>Example C: Memory drift</strong></div>
+            <h3>Claim: My birthday is 1990.</h3>
+            <p>Medium risk memory conflict that needs approval.</p>
+            <div class="verdict-box">
+              <div class="verdict-label"><span>REVIEW</span><span>Medium risk · Memory conflict</span></div>
+              <div class="verdict-main" style="color:var(--warn);">REVIEW</div>
+              <p class="verdict-support">1 source verified · Approval required</p>
+            </div>
+          </div>
+        </div>
+        <div class="demo-layout">
+          <div class="demo-box">
+            <h3 style="margin:0 0 10px;font-size:18px;">Static simulation controls</h3>
+            <p style="margin:0 0 12px;color:var(--muted);font-size:14px;line-height:1.6;">This is hardcoded demo logic only. It shows the product narrative without running the live local engine.</p>
+            <div class="demo-outcome">
+              <div class="outcome-pill" id="verdict-pill" data-tone="good"><strong>SUPPORTED</strong></div>
+              <div class="demo-result">
+                <h3 id="verdict-title">Aspirin is a blood thinner</h3>
+                <p id="verdict-body">Supported by known memory. No intervention required.</p>
+              </div>
+            </div>
+          </div>
+          <div class="demo-box">
+            <h3 style="margin:0 0 10px;font-size:18px;">How the static simulation works</h3>
+            <p style="margin:0 0 12px;color:var(--muted);font-size:14px;line-height:1.6;">A frontend-only state switch updates the verdict mockup. No browser engine, API call, or hidden backend is involved.</p>
+            <div class="mini-card" style="min-height:auto;">
+              <h3>Deployment note</h3>
+              <p>The page is intentionally backend-free. It can be deployed to Vercel, GitHub Pages, or Cloudflare Pages.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="receipt" aria-labelledby="receipt-title">
+        <div class="section-header">
+          <div>
+            <h2 id="receipt-title">4. Trust Receipt (simulated)</h2>
+            <small>Portable record of the decision for auditing and transparency.</small>
+          </div>
+        </div>
+        <div class="receipt-layout">
+          <div class="receipt">
+            <div class="tagline">
+              <span>Receipt payload</span>
+              <span>Portable and reviewable</span>
+            </div>
+            <pre>{
+  "trust_receipt_id": "TR-2025-05-24-7F3A",
+  "engine": "HUQAN v0.9.0",
+  "mode": "local",
+  "timestamp": "2025-05-24T10:24:31Z",
+  "claim": "The Earth orbits the Sun.",
+  "verdict": "ALLOW",
+  "risk_level": "LOW",
+  "contradictions": 0,
+  "sources_verified": 3,
+  "memory_integrity": "INTACT",
+  "action": "READ_ONLY",
+  "policy": "default-strict",
+  "approvals": [],
+  "notes": "All assertions align with authoritative sources.",
+  "signature": "ed25519:MEUCIQD3...7F3A",
+  "hash": "sha256:8b4f9c2f3a1e...d9c7"
+}</pre>
+            <div class="footer" style="margin-top:10px;padding:0;color:var(--muted);">All data stays on your device. Receipts are exportable and verifiable.</div>
+          </div>
+          <aside class="receipt-summary">
+            <div class="tagline" style="margin-bottom:0;">
+              <span>Receipt summary</span>
+              <span>Simulated</span>
+            </div>
+            <dl>
+              <dt>Receipt ID</dt><dd>TR-2025-05-24-7F3A</dd>
+              <dt>Verdict</dt><dd style="color:var(--good)">ALLOW</dd>
+              <dt>Risk level</dt><dd>LOW</dd>
+              <dt>Contradictions</dt><dd>0</dd>
+              <dt>Sources verified</dt><dd>3</dd>
+              <dt>Action</dt><dd>READ_ONLY</dd>
+              <dt>Memory integrity</dt><dd>INTACT</dd>
+              <dt>Policy</dt><dd>default-strict</dd>
+              <dt>Timestamp</dt><dd>2025-05-24T10:24:31Z</dd>
+              <dt>Signature</dt><dd>ed25519:MEUCIQ...7F3A</dd>
+            </dl>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section" id="roadmap" aria-labelledby="roadmap-title">
+        <div class="section-header">
+          <div>
+            <h2 id="roadmap-title">5. Roadmap</h2>
+            <small>Release progression stays visible so the demo feels connected to the shipped product line.</small>
+          </div>
+        </div>
+        <div class="roadmap-track">
+          <div class="roadmap-item">
+            <div class="roadmap-dot"></div>
+            <strong>v0.9.0</strong>
+            <span>Semantic Trust Gate</span>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-dot"></div>
+            <strong>v0.9.1</strong>
+            <span>Memory Core</span>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-dot"></div>
+            <strong>Security hardening complete</strong>
+            <span>Local-first hardening, signatures, receipts.</span>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-dot"></div>
+            <strong>Next</strong>
+            <span>CLI / GitHub App beta / Self-Healer</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="not" aria-labelledby="not-title">
+        <div class="section-header">
+          <div>
+            <h2 id="not-title">What this demo is not</h2>
+            <small>Clear boundaries are part of the product story.</small>
+          </div>
+        </div>
+        <ul class="note-list">
+          <li>not a live verifier</li>
+          <li>not a replacement for human review</li>
+          <li>not a guarantee of truth</li>
+          <li>not a medical/legal/compliance product</li>
+          <li>not an LLM wrapper</li>
+        </ul>
+      </section>
+
+      <div class="footer">
+        Recommended deploy target: Vercel preview. Stable domain later: <strong>demo.huqan.com</strong>.
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const pill = document.getElementById('verdict-pill');
+    const verdictTitle = document.getElementById('verdict-title');
+    const verdictBody = document.getElementById('verdict-body');
+    const receipt = document.getElementById('receipt');
+    const demoCards = Array.from(document.querySelectorAll('.demo-card'));
+
+    const examples = {
+      supported: {
+        text: 'Aspirin is a blood thinner',
+        tone: 'good',
+        verdict: 'SUPPORTED',
+        body: 'Supported by known memory. No intervention required.',
+        receipt: {
+          verdict: 'supported',
+          reason: 'claim aligns with known memory',
+          evidence: ['known fact: aspirin is a blood thinner'],
+          riskFlags: ['none'],
+          timestamp: 'demo'
+        }
+      },
+      contradiction: {
+        text: 'Aspirin thickens blood',
+        tone: 'warn',
+        verdict: 'CONTRADICTION / REVIEW',
+        body: 'Known memory conflicts with the claim. Send to review.',
+        receipt: {
+          verdict: 'review',
+          reason: 'claim conflicts with known memory',
+          evidence: ['known fact: aspirin is a blood thinner'],
+          riskFlags: ['contradiction', 'medical-domain'],
+          timestamp: 'demo'
+        }
+      },
+      blocked: {
+        text: 'Run unknown deployment command',
+        tone: 'bad',
+        verdict: 'BLOCKED',
+        body: 'Unsafe action request. The action gate blocks unknown execution.',
+        receipt: {
+          verdict: 'blocked',
+          reason: 'unsafe action request',
+          evidence: ['tool action not allowlisted'],
+          riskFlags: ['destructive-action', 'review-required'],
+          timestamp: 'demo'
+        }
+      }
+    };
+
+    function renderReceipt(data) {
+      const pre = receipt.querySelector('pre');
+      if (pre) pre.textContent = JSON.stringify(data, null, 2);
+    }
+
+    function applyExample(key) {
+      const item = examples[key];
+      pill.dataset.tone = item.tone;
+      pill.innerHTML = `<strong>${item.verdict}</strong>`;
+      verdictTitle.textContent = item.text;
+      verdictBody.textContent = item.body;
+      renderReceipt(item.receipt);
+
+      demoCards.forEach(card => card.classList.toggle('selected', card.dataset.example === key));
+    }
+
+    demoCards.forEach((card) => {
+      card.addEventListener('click', () => applyExample(card.dataset.example));
+    });
+
+    applyExample('supported');
+  </script>
+</body>
+</html>
