@@ -423,7 +423,7 @@ class Kernel {
     try {
       provenanceBundle = hasProvenanceInput
         ? this._normalizeProvenanceInput(opts.provenance || {}, opts)
-        : { provenance: null, warnings: [] };
+        : { provenance: { provenanceId: `auto-${Date.now()}-${Math.random().toString(36).slice(2,8)}`, timestamp: new Date().toISOString(), source: 'learn', actor: 'kernel' }, warnings: [] };
     } catch (error) {
       if (error instanceof ProvenanceError || error.code === 'PROVENANCE_REQUIRED') {
         this._appendAuditEvent({

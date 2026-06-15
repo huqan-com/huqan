@@ -134,9 +134,32 @@ function ingestMarkdown(targetPath, options = {}) {
   };
 }
 
+function ingestAndLearn(targetPath, kernel, options = {}) {
+  const result = ingestMarkdown(targetPath, options);
+  const learned = [];
+  for (const section of result.sections) {
+    const provenance = {
+      provenanceId: `markdown-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+      source: 'markdown-adapter',
+      sourceRef: section.sourceRef,
+      sourceType: 'markdown',
+      actor: options.actor || 'markdown-adapter',
+      timestamp: new Date().toISOString(),
+    };
+    try {
+      const r = kernel.learn(section.content, { provenance, sourceType: 'markdown', sourceRef: provenance.sourceRef });
+      learned.push({ section: section.sectionTitle, learned: r.data.learned, ok: true });
+    } catch (e) {
+      learned.push({ section: section.sectionTitle, error: e.message, ok: false });
+    }
+  }
+  return { ...result, learned };
+}
+
 module.exports = {
   parseMarkdown,
   listMarkdownFiles,
   ingestMarkdown,
+  ingestAndLearn,
   hasMarkdownExtension,
 };
