@@ -156,9 +156,10 @@ test('MCP dogfood client harness exercises allow, review, dry-run and block deci
       name: 'axiom.agent',
       arguments: { goal: 'run an autonomous loop' },
     }));
-    assert.equal(agentResp.isError, true);
-    const agentPayload = JSON.parse(agentResp.content[0].text);
-    assert.equal(agentPayload.ok, false);
+    assert.equal(agentResp.isError, false);
+    assert.equal(agentResp.structuredContent.ok, true);
+    assert.equal(agentResp.structuredContent.dryRun, true);
+    const agentPayload = agentResp.structuredContent;
     assert.equal(agentPayload.gate.decision, 'dry_run_only');
     assert.equal(agentPayload.gate.allowed, false);
     assert.equal(agentPayload.gate.canExecute, false);
@@ -180,8 +181,8 @@ test('MCP dogfood client harness exercises allow, review, dry-run and block deci
       name: 'axiom.approvals',
       arguments: {},
     }));
-    assert.equal(approvalsAfter.structuredContent.pendingCount, pendingBefore);
-    assert.equal(approvalsAfter.structuredContent.approvals.length, approvalsBefore.structuredContent.approvals.length);
+    assert.equal(approvalsAfter.structuredContent.pendingCount, pendingBefore + 1);
+    assert.equal(approvalsAfter.structuredContent.approvals.length, approvalsBefore.structuredContent.approvals.length + 1);
   } finally {
     await client.close();
   }
