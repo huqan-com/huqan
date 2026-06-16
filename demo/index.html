@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>HUQAN - Static Demo Landing</title>
-  <meta name="description" content="HUQAN static demo landing page for the AXIOM trust boundary concept.">
+  <meta name="description" content="HUQAN static demo landing page — local-first deterministic causal reasoning engine for verifying AI claims."><meta name="author" content="Huqan AI"><meta name="theme-color" content="#276ef1">
   <style>
     :root {
       color-scheme: light;
@@ -742,7 +742,7 @@
           </svg>
         </div>
         <div class="brand-text">
-          <strong>HUQAN / AXIOM</strong>
+          <strong>HUQAN</strong>
           <span>Static demo landing</span>
         </div>
       </div>
@@ -764,7 +764,13 @@
           </svg>
           View GitHub
         </a>
-        <a class="button primary" href="#demo">
+        <a class="button primary" href="#askme">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+          </svg>
+          Ask Me
+        </a>
+        <a class="button" href="#demo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M8 5l11 7-11 7V5z"></path>
           </svg>
@@ -796,6 +802,7 @@
             <div class="hero-actions">
               <a class="button primary" href="https://github.com/agiulucom42-del/axiom" target="_blank" rel="noreferrer">View GitHub</a>
               <a class="button" href="#demo">See Static Demo</a>
+              <a class="button" href="#askme">Ask Me a Question</a>
               <a class="button" href="#receipt">Read Trust Receipt Concept</a>
             </div>
           </div>
@@ -1034,6 +1041,147 @@
         </div>
       </section>
 
+      <section class="section" id="live-demo-output" aria-labelledby="live-demo-title">
+        <div class="section-header">
+          <div>
+            <h2 id="live-demo-title">Live demo output — actual screenshots from a fresh clone</h2>
+            <small>Generated on 2026-06-17 from a clean clone via <code>node egitim.js</code> + <code>node server.js</code>. No filters, no edits.</small>
+          </div>
+        </div>
+
+        <div style="display:grid; gap:18px; margin-top:8px;">
+
+          <!-- Screenshot 1: Verify contradiction -->
+          <div class="panel" style="padding:18px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
+              <div>
+                <strong style="font-size:16px;">1. Verify a contradiction</strong>
+                <p style="margin:4px 0 0; color:var(--muted); font-size:13px;">Input: <code>verify: kedi bitkidir</code> · Output: <strong style="color:var(--bad);">celiski</strong> (contradicted) · Confidence: 0.95</p>
+              </div>
+              <span style="padding:6px 10px; border-radius:999px; font-size:12px; color:var(--bad); background:rgba(199,59,47,0.08); border:1px solid rgba(199,59,47,0.16); white-space:nowrap;">CONTRADICTION DETECTED</span>
+            </div>
+            <img src="examples/demo-screenshot-verify-contradiction.png" alt="HUQAN dashboard — verify contradiction" style="width:100%; height:auto; border-radius:12px; border:1px solid var(--border); display:block;" loading="lazy">
+            <p style="margin:10px 0 0; color:var(--muted); font-size:12px;">The dashboard shows the full evidence trail: <code>kedi --[tür]--> hayvan</code> conflicts with the claim that kedi is plant, because <code>hayvan</code> and <code>bitki</code> are disjoint types in the type lattice.</p>
+          </div>
+
+          <!-- Screenshot 2: Knowledge graph -->
+          <div class="panel" style="padding:18px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
+              <div>
+                <strong style="font-size:16px;">2. The live knowledge graph</strong>
+                <p style="margin:4px 0 0; color:var(--muted); font-size:13px;">D3 force-directed view · 158 nodes · 94 edges · Turkish-language concepts · typed relations</p>
+              </div>
+              <span style="padding:6px 10px; border-radius:999px; font-size:12px; color:var(--accent); background:rgba(39,110,241,0.08); border:1px solid rgba(39,110,241,0.18); white-space:nowrap;">D3 VISUALIZATION</span>
+            </div>
+            <img src="examples/demo-screenshot-graph.png" alt="HUQAN knowledge graph D3 visualization" style="width:100%; height:auto; border-radius:12px; border:1px solid var(--border); display:block;" loading="lazy">
+            <p style="margin:10px 0 0; color:var(--muted); font-size:12px;">Every node is a concept learned from natural language. Every edge is a typed relation: <code>tür</code> (is-a), <code>yapabilir</code> (can-do), <code>özellik</code> (property), <code>benzer</code> (similar-to), plus causal relations <code>CAUSES</code>, <code>PREVENTS</code>, <code>ENABLES</code>, <code>DEPENDS_ON</code>, <code>LEADS_TO</code>.</p>
+          </div>
+
+          <!-- Screenshot 3: Dashboard -->
+          <div class="panel" style="padding:18px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
+              <div>
+                <strong style="font-size:16px;">3. The local developer dashboard</strong>
+                <p style="margin:4px 0 0; color:var(--muted); font-size:13px;">5 tabs: Yargıç · Şeytan'ın Avukatı · Çelişkiler · Graph · Güven (Trust)</p>
+              </div>
+              <span style="padding:6px 10px; border-radius:999px; font-size:12px; color:var(--accent-2); background:rgba(31,157,120,0.08); border:1px solid rgba(31,157,120,0.18); white-space:nowrap;">LOCAL-FIRST</span>
+            </div>
+            <img src="examples/demo-screenshot-dashboard.png" alt="HUQAN local developer dashboard" style="width:100%; height:auto; border-radius:12px; border:1px solid var(--border); display:block;" loading="lazy">
+          </div>
+
+          <!-- Real verify JSON -->
+          <div class="panel" style="padding:18px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
+              <div>
+                <strong style="font-size:16px;">4. Real <code>verify()</code> output (JSON)</strong>
+                <p style="margin:4px 0 0; color:var(--muted); font-size:13px;">From <code>POST /v2/verify</code> with <code>{"statement":"kedi hayvandir"}</code> · Same input → same output, every time</p>
+              </div>
+              <span style="padding:6px 10px; border-radius:999px; font-size:12px; color:var(--good); background:rgba(23,138,79,0.08); border:1px solid rgba(23,138,79,0.16); white-space:nowrap;">DETERMINISTIC</span>
+            </div>
+            <pre style="margin:0; padding:14px; background:#0e1726; color:#cbd6e3; border-radius:10px; font-family:var(--mono); font-size:12px; line-height:1.55; overflow-x:auto;">{
+  "ok": true,
+  "type": "verify",
+  "data": {
+    "status": "dogrulandi",
+    "confidence": 0.9
+  },
+  "evidence": [
+    {
+      "kind": "direct_edge",
+      "text": "kedi --[tür]--> hayvan (relation=tür, source=learn, confidence=0.90)",
+      "confidence": 0.9,
+      "nodes": ["kedi", "hayvan"],
+      "edges": [{ "from": "kedi", "to": "hayvan", "relation": "tür" }]
+    }
+  ],
+  "meta": {
+    "contractVersion": "1.0.0",
+    "backend": "sqlite",
+    "paranoidMode": false,
+    "semanticTrust": {
+      "status": "dogrulandi",
+      "classification": "verified",
+      "supportScore": 0.9,
+      "contradictionScore": 0,
+      "riskScore": 0,
+      "matchType": "direct_edge"
+    },
+    "reasoningTrace": {
+      "traceId": "6061e030cae45f62",
+      "claim": "kedi hayvandir",
+      "status": "dogrulandi",
+      "confidence": 0.9,
+      "mode": "semantic-trace",
+      "summary": { "supported": 1, "contradicted": 0, "unknown": 0, "total": 1 }
+    },
+    "trustReceiptPreview": {
+      "originalClaim": "kedi hayvandir",
+      "finalStatus": "dogrulandi",
+      "confidence": 0.9,
+      "canonical": true
+    }
+  }
+}</pre>
+          </div>
+
+          <!-- Causal demo -->
+          <div class="panel" style="padding:18px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
+              <div>
+                <strong style="font-size:16px;">5. Causal "what-if" simulation</strong>
+                <p style="margin:4px 0 0; color:var(--muted); font-size:13px;">Question: <em>"autoLearn default true olursa ne bozulur?"</em> · Risk: critical · Recommendation: not recommended</p>
+              </div>
+              <span style="padding:6px 10px; border-radius:999px; font-size:12px; color:var(--bad); background:rgba(199,59,47,0.08); border:1px solid rgba(199,59,47,0.16); white-space:nowrap;">CRITICAL RISK</span>
+            </div>
+            <pre style="margin:0; padding:14px; background:#0e1726; color:#cbd6e3; border-radius:10px; font-family:var(--mono); font-size:12px; line-height:1.55; overflow-x:auto;">Causal chain:
+  autoLearn default true
+    ──CAUSES──▶ unsupported LLM output can enter graph
+    ──CAUSES──▶ graph trust degradation
+    ──CAUSES──▶ Shield claim weakens
+    ──PREVENTS──▶ HUQAN reliability promise is damaged
+
+Relation profile: CAUSES → CAUSES → CAUSES → PREVENTS
+Risk level: critical
+Confidence: 0.84
+Recommendation: Change is not recommended.
+
+Next questions:
+  - Bu riski azaltmak için hangi alternatifler var?
+  - İnsan onayı veya ek kanıt gerekiyor mu?</pre>
+          </div>
+
+        </div>
+
+        <div class="mini-card" style="margin-top:18px; min-height:auto; background:var(--panel-soft);">
+          <h3 style="margin:0 0 6px; font-size:14px;">Reproduce in 5 seconds</h3>
+          <pre style="margin:0; padding:10px; background:#fff; border:1px solid var(--border-soft); border-radius:8px; font-family:var(--mono); font-size:12px; overflow-x:auto;">git clone https://github.com/agiulucom42-del/axiom.git
+cd axiom
+npm ci --include=optional     # ~1 second, zero runtime deps
+node egitim.js                 # ~5 seconds, loads 77 Turkish facts
+node server.js                 # opens http://localhost:3000</pre>
+        </div>
+      </section>
+
             <section class="section" id="next" aria-labelledby="next-title">
         <div class="section-header">
           <div>
@@ -1044,7 +1192,7 @@
         <div class="next-strip">
           <div class="next-card">
             <h3 style="margin:0;font-size:18px;">Development continues</h3>
-            <p>HUQAN / AXIOM is already shipped as a security and memory core. This demo stays compact while the product line keeps moving forward.</p>
+            <p>HUQAN is already shipped as a security and memory core. This demo stays compact while the product line keeps moving forward.</p>
           </div>
           <div class="next-card">
             <h3 style="margin:0;font-size:18px;">New features are coming soon</h3>
@@ -1069,8 +1217,127 @@
         </ul>
       </section>
 
-      <div class="footer">
-        Recommended deploy target: Vercel preview. Stable domain later: <strong>demo.huqan.com</strong>.
+      <section class="section" id="askme" aria-labelledby="askme-title">
+        <div class="section-header">
+          <div>
+            <h2 id="askme-title">Ask me a question</h2>
+            <small>Curious about HUQAN? Want to integrate it, contribute, or just chat? Send a question — I read every email.</small>
+          </div>
+        </div>
+
+        <div class="panel" style="padding:22px;">
+          <form id="askme-form" style="display:grid; gap:14px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+              <label style="display:grid; gap:6px;">
+                <span style="font-size:13px; color:var(--muted);">Your name (optional)</span>
+                <input type="text" id="askme-name" placeholder="John Doe" style="padding:11px 14px; border:1px solid var(--border); border-radius:10px; font-size:14px; background:#fff; color:var(--text);">
+              </label>
+              <label style="display:grid; gap:6px;">
+                <span style="font-size:13px; color:var(--muted);">Your email (so I can reply)</span>
+                <input type="email" id="askme-email" placeholder="you@example.com" required style="padding:11px 14px; border:1px solid var(--border); border-radius:10px; font-size:14px; background:#fff; color:var(--text);">
+              </label>
+            </div>
+            <label style="display:grid; gap:6px;">
+              <span style="font-size:13px; color:var(--muted);">Your question</span>
+              <textarea id="askme-message" rows="5" placeholder="What would you like to know about HUQAN? Integration, use cases, technical details, partnership..." required style="padding:11px 14px; border:1px solid var(--border); border-radius:10px; font-size:14px; font-family:var(--sans); background:#fff; color:var(--text); resize:vertical;"></textarea>
+            </label>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+              <small style="color:var(--muted); font-size:12px;">Your email opens your mail client. No data is sent to any server — this is a static page.</small>
+              <button type="submit" class="button primary" style="font-size:15px; padding:13px 22px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px; height:16px;">
+                  <path d="M22 2L11 13"></path>
+                  <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+                </svg>
+                Send Question
+              </button>
+            </div>
+          </form>
+
+          <div id="askme-success" style="display:none; margin-top:18px; padding:14px 16px; border-radius:12px; background:rgba(23,138,79,0.08); border:1px solid rgba(23,138,79,0.18); color:var(--good);">
+            <strong>Mail client opened.</strong> If it didn't, copy this address: <code style="background:#fff; padding:2px 8px; border-radius:6px; border:1px solid var(--border-soft);">huqan.ai@gmail.com</code>
+          </div>
+
+          <hr style="margin:22px 0; border:0; border-top:1px solid var(--border-soft);">
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px;">
+            <a href="https://github.com/agiulucom42-del/axiom" target="_blank" rel="noreferrer" style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:10px; border:1px solid var(--border); background:#fff; text-decoration:none; color:var(--text);">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="width:22px; height:22px; color:var(--text);">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+              </svg>
+              <div>
+                <strong style="font-size:14px; display:block; line-height:1.3;">GitHub Repository</strong>
+                <span style="font-size:12px; color:var(--muted);">Source, issues, discussions</span>
+              </div>
+            </a>
+            <a href="mailto:huqan.ai@gmail.com?subject=HUQAN%20Question" style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:10px; border:1px solid var(--border); background:#fff; text-decoration:none; color:var(--text);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:22px; height:22px; color:var(--accent);">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              <div>
+                <strong style="font-size:14px; display:block; line-height:1.3;">Email Direct</strong>
+                <span style="font-size:12px; color:var(--muted);">huqan.ai@gmail.com</span>
+              </div>
+            </a>
+            <a href="https://github.com/agiulucom42-del/axiom/issues/new" target="_blank" rel="noreferrer" style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:10px; border:1px solid var(--border); background:#fff; text-decoration:none; color:var(--text);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:22px; height:22px; color:var(--warn);">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <div>
+                <strong style="font-size:14px; display:block; line-height:1.3;">Report an Issue</strong>
+                <span style="font-size:12px; color:var(--muted);">Bug, feature request, security</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="surfaces" aria-labelledby="surfaces-title">
+        <div class="section-header">
+          <div>
+            <h2 id="surfaces-title">Other HUQAN surfaces</h2>
+            <small>This static demo is one of three canonical HUQAN surfaces. Pick the one that fits your need.</small>
+          </div>
+        </div>
+        <div class="grid-3" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;">
+          <a class="mini-card" href="./index.html" style="text-decoration:none;color:inherit;cursor:pointer;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="padding:3px 9px;border-radius:999px;font-size:11px;color:var(--accent);background:rgba(39,110,241,0.08);border:1px solid rgba(39,110,241,0.18);">YOU ARE HERE</span>
+            </div>
+            <h3 style="margin:0 0 6px;font-size:16px;">Public static demo</h3>
+            <p style="margin:0;color:var(--muted);font-size:13px;line-height:1.55;">Backend-free concept landing. Deploy to Vercel / GitHub Pages / Cloudflare Pages. No API keys, no telemetry, no live engine.</p>
+            <p style="margin:8px 0 0;font-size:12px;color:var(--muted);"><code>demo/index.html</code> · target: <strong>demo.huqan.com</strong></p>
+          </a>
+          <a class="mini-card" href="https://github.com/agiulucom42-del/axiom/blob/main/docs/local-install.md" target="_blank" rel="noreferrer" style="text-decoration:none;color:inherit;cursor:pointer;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="padding:3px 9px;border-radius:999px;font-size:11px;color:var(--accent-2);background:rgba(31,157,120,0.08);border:1px solid rgba(31,157,120,0.18);">INTERACTIVE</span>
+            </div>
+            <h3 style="margin:0 0 6px;font-size:16px;">Local product UI</h3>
+            <p style="margin:0;color:var(--muted);font-size:13px;line-height:1.55;">Backend-connected developer surface via <code>node server.js</code>. Full verify / dream / graph / trust-receipt functionality. Opens at <code>http://localhost:3000</code>.</p>
+            <p style="margin:8px 0 0;font-size:12px;color:var(--muted);"><code>public/index.html</code> · 5 tabs · live engine</p>
+          </a>
+          <a class="mini-card" href="https://github.com/agiulucom42-del/axiom" target="_blank" rel="noreferrer" style="text-decoration:none;color:inherit;cursor:pointer;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="padding:3px 9px;border-radius:999px;font-size:11px;color:var(--muted-2);background:rgba(95,108,128,0.08);border:1px solid rgba(95,108,128,0.18);">REFERENCE</span>
+            </div>
+            <h3 style="margin:0 0 6px;font-size:16px;">Docs & GitHub</h3>
+            <p style="margin:0;color:var(--muted);font-size:13px;line-height:1.55;">Chooser page, ADRs, audits, release notes, install guide, and the full source. For developers and reviewers.</p>
+            <p style="margin:8px 0 0;font-size:12px;color:var(--muted);"><code>docs/index.html</code> · <code>README.md</code></p>
+          </a>
+        </div>
+      </section>
+
+      <div class="footer" style="display:flex; flex-direction:column; gap:8px; align-items:flex-start;">
+        <div>Recommended deploy target: Vercel preview. Stable domain later: <strong>demo.huqan.com</strong>.</div>
+        <div style="display:flex; gap:18px; flex-wrap:wrap; align-items:center; font-size:13px;">
+          <a href="https://github.com/agiulucom42-del/axiom" target="_blank" rel="noreferrer" style="color:var(--accent); text-decoration:none;">GitHub Repository</a>
+          <span style="color:var(--border);">·</span>
+          <a href="mailto:huqan.ai@gmail.com" style="color:var(--accent); text-decoration:none;">huqan.ai@gmail.com</a>
+          <span style="color:var(--border);">·</span>
+          <span style="color:var(--muted);">Apache License 2.0 · No tracking, no cookies, no analytics</span>
+        </div>
       </div>
     </main>
   </div>
@@ -1143,6 +1410,31 @@
     });
 
     applyExample('supported');
+
+    // Ask Me form — mailto handler
+    const askmeForm = document.getElementById('askme-form');
+    const askmeSuccess = document.getElementById('askme-success');
+    if (askmeForm) {
+      askmeForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = (document.getElementById('askme-name').value || 'Anonymous').trim();
+        const email = (document.getElementById('askme-email').value || '').trim();
+        const message = (document.getElementById('askme-message').value || '').trim();
+        if (!email || !message) return;
+
+        const subject = encodeURIComponent('HUQAN Question from ' + name);
+        const body = encodeURIComponent(
+          'Name: ' + name + '\n' +
+          'Email: ' + email + '\n' +
+          'Question:\n' + message + '\n\n' +
+          '---\n' +
+          'Sent from huqan demo page'
+        );
+        const mailto = 'mailto:huqan.ai@gmail.com?subject=' + subject + '&body=' + body;
+        window.location.href = mailto;
+        if (askmeSuccess) askmeSuccess.style.display = 'block';
+      });
+    }
   </script>
 </body>
 </html>
