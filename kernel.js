@@ -902,7 +902,7 @@ class Kernel {
       { relation: 'CAUSES', mode: 'prefix', trimCaseSuffixes: false, marker: /^(causes|cause|leads to|triggers)\s+(.+)$/i },
       { relation: 'PREVENTS', mode: 'suffix', trimCaseSuffixes: true, marker: /^(.*?)\s+(onler|önler|engeller|durdurur|onune gecer|önüne geçer)$/i },
       { relation: 'PREVENTS', mode: 'prefix', trimCaseSuffixes: false, marker: /^(prevents|prevent|blocks|stops)\s+(.+)$/i },
-      { relation: 'DEPENDS_ON', mode: 'suffix', trimCaseSuffixes: true, marker: /^(.*?)\s+(baglidir|bağlıdır|gerektirir|dayanir|dayanır|olmadan)$/i },
+      { relation: 'DEPENDS_ON', mode: 'suffix', trimCaseSuffixes: true, marker: /^(.*?)\s+(bagli|baglı|bağlı|baglidir|baglıdır|bağlıdır|gerektirir|dayanir|dayanır|olmadan)$/i },
       { relation: 'DEPENDS_ON', mode: 'prefix', trimCaseSuffixes: false, marker: /^(requires|depends on)\s+(.+)$/i },
       { relation: 'ENABLES', mode: 'suffix', trimCaseSuffixes: true, marker: /^(.*?)\s+(saglar|sağlar|mumkun kilar|mümkün kılar|olanak verir|etkinlestirir|etkinleştirir)$/i },
       { relation: 'ENABLES', mode: 'prefix', trimCaseSuffixes: false, marker: /^(enables|enable)\s+(.+)$/i },
@@ -965,6 +965,13 @@ class Kernel {
       return { object: predicate, relation: 'değil' };
     }
 
+    // Explicit DEPENDS_ON check before -dır suffix catch-all.
+    // Prevents "baglidir" / "bağlıdır" / "bagli" / "bağlı" from
+    // being swallowed by the generic -dir/-dır tür pattern.
+    const earlyDepends = this._parseExplicitRelationPredicate(predicate);
+    if (earlyDepends && earlyDepends.relation === 'DEPENDS_ON') {
+      return earlyDepends;
+    }
     // -dır/-dir/-dur/-dır/-tür/-tir/-tur/-tür ? tür ili?kisi
     const tirSuffix = /(dır|dir|dur|dır|tür|tir|tur|tür)$/i;
     if (tirSuffix.test(predicate)) {

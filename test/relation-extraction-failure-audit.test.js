@@ -134,7 +134,13 @@ test('relation extraction audit keeps explicit marker fixes while broad gaps sta
       text: 'Deployment testlerin gecmesine baglidir',
       expectedRelation: 'DEPENDS_ON',
       expectedObjectHints: ['test'],
-      expectedClassification: 'relation_drift',
+      expectedClassification: 'clean_relation_extracted',
+    },
+    {
+      text: 'Sistem veritabanina baglidir',
+      expectedRelation: 'DEPENDS_ON',
+      expectedObjectHints: ['veritabanin'],
+      expectedClassification: 'clean_relation_extracted',
     },
     {
       text: 'Deployment requires passing tests',
