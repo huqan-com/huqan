@@ -1,10 +1,10 @@
-﻿# ◇ AXIOM
+# HUQAN
 
-**LLM'ler için deterministik doğrulama motoru.**
+**LLM'ler icin local-first guven ve dogrulama katmani.**
 
 LLM çıktılarını doğrular, çelişkileri tespit eder, nedensellik zinciri kurar. GPU yok, bulut API yok. (better-sqlite3 opsiyonel bağımlılıktır).
 
-> *"LLM'ler kumdan kale. AXIOM granit."*
+> *"LLM'ler kumdan kale. HUQAN trust boundary, AXIOM engine."*
 
 ---
 
@@ -20,7 +20,7 @@ node mcpServer.js  # Claude Desktop / Cursor için MCP sunucu
 
 Node.js >= 18 gereklidir. better-sqlite3 veritabanı kalıcılığı için opsiyonel (native) bağımlılıktır.
 
-AXIOM v0.8 introduces the Trust Kernel and AXIOM Trust Protocol v0.1: provenance, trust policy, append-only audit, workspace scoping, conflict quarantine, Trust Receipts, ATP/AVP conformance, `.axiom` package format draft, and the minimal `axiom-verify` package skeleton.
+HUQAN, powered by the AXIOM trust engine, is the product layer. Trust Kernel ve AXIOM Trust Protocol v0.1 hatti; provenance, trust policy, append-only audit, workspace scoping, conflict quarantine, Trust Receipts, ATP/AVP conformance, `.axiom` package format draft ve minimal `axiom-verify` package skeleton ile korunur.
 
 ---
 
@@ -41,7 +41,7 @@ LLM (Ollama/OpenAI)     Kullanıcı (CLI/REST/MCP)
         Uyarı + reddet   Öğren + kaydet
 ```
 
-| Özellik | AXIOM | LLM-only |
+| Ozellik | HUQAN | LLM-only |
 |---|---|---|
 | Doğrulama | Deterministik, sembolik | Olasılıksal |
 | Çelişki tespiti | Evet (olumsuzlama, zıt, çok adımlı) | Hayır |

@@ -1,7 +1,7 @@
 {
   "name": "axiom-obsidian",
   "version": "1.0.0",
-  "description": "Axiom reasoning engine for Obsidian",
+  "description": "HUQAN Trust Panel for Obsidian, powered by the AXIOM trust engine",
   "main": "dist/main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",

@@ -1,6 +1,6 @@
-# AXIOM v2.0.0
+# HUQAN v2.0.0
 
-AXIOM v2.0.0 is the first release where the reasoning core, integration surface, and performance baseline all line up as a usable local symbolic AI engine.
+HUQAN v2.0.0 is the first product-facing release where the AXIOM reasoning core, integration surface, and performance baseline line up as a usable local symbolic AI engine.
 
 ## Highlights
 

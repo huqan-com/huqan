@@ -1,7 +1,7 @@
 {
   "name": "axiom",
   "version": "0.9.0",
-  "description": "Deterministic symbolic AI reasoning engine — verifies LLM outputs, detects contradictions, learns from natural language. Zero external LLM/GPU/cloud dependencies.",
+  "description": "HUQAN is the local-first product layer powered by the AXIOM trust engine for deterministic verification, contradiction checks, and controlled AI workflows.",
   "main": "kernel.js",
   "types": "kernel.d.ts",
   "bin": {
@@ -49,7 +49,7 @@
     "url": "https://github.com/agiulucom42-del/axiom/issues"
   },
   "homepage": "https://github.com/agiulucom42-del/axiom#readme",
-  "author": "AXIOM Contributors",
+  "author": "HUQAN / AXIOM Contributors",
   "license": "MIT",
   "axiom": {
     "testStatus": "592/592"

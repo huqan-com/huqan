@@ -1,6 +1,6 @@
-# AXIOM v2.0 — The Granite Truth Layer for LLMs
+# HUQAN v2.0 - The Trust Boundary for LLMs
 
-> *"LLM'ler kumdan kale. AXIOM granit."*
+> *"LLM'ler kumdan kale. HUQAN trust boundary, AXIOM engine."*
 
 ---
 
@@ -17,7 +17,7 @@ Current answers are all inadequate:
 
 ## The Solution
 
-AXIOM is a **deterministic symbolic reasoning engine** that provides the missing System 2 for LLMs.
+HUQAN is the **product layer** built on the deterministic AXIOM trust engine that provides the missing System 2 for LLMs.
 
 It doesn't guess. It verifies. It detects contradictions. It builds an evidence-backed knowledge graph from natural language — and uses that graph to validate or reject LLM outputs.
 
@@ -25,13 +25,13 @@ It doesn't guess. It verifies. It detects contradictions. It builds an evidence-
 
 ## Academic Grounding
 
-Independent Gemini analysis confirmed AXIOM's architecture maps to the work of **three Turing Award / equivalent-level researchers**:
+Independent Gemini analysis confirmed the AXIOM engine architecture behind HUQAN maps to the work of **three Turing Award / equivalent-level researchers**:
 
 ### 1. Kahneman — System 1 / System 2 (Nobel Prize 2002)
 - LLMs are pure System 1: fast, probabilistic, intuitive
 - AXIOM's `verify()` is System 2: slow (relatively), deterministic, evidence-based
 - Every `llm-sor` command runs: LLM → AXIOM verify → accept/reject → conditional learn
-- The LLM generates; AXIOM **judges**
+- The LLM generates; HUQAN **judges**
 
 ### 2. Pearl — Causality / Do-Calculus (Turing Award 2011)
 - `reason()` + `detectCycle()` = explicit causal graph inference
@@ -47,7 +47,7 @@ Independent Gemini analysis confirmed AXIOM's architecture maps to the work of *
 ### 4. LeCun — World Models (Turing Award 2018)
 - `dream.js` + `autoThink` = latent-space hypothesis generation
 - Node2Vec graph embeddings → similarity discovery → novel hypothesis synthesis
-- AXIOM simulates "what if" scenarios autonomously in the background
+- The AXIOM engine simulates "what if" scenarios autonomously in the background
 
 ---
 
@@ -63,9 +63,9 @@ Academic GraphEval benchmark: AXIOM's graph-based triplet extraction + NLI compa
 
 ---
 
-## What Makes AXIOM Different
+## What Makes HUQAN Different
 
-| Feature | AXIOM | LLM-only systems |
+| Feature | HUQAN | LLM-only systems |
 |---|---|---|
 | Verification | Symbolic, deterministic | Probabilistic ("trust me") |
 | Contradiction detection | Yes (negation, opposite, multi-hop) | No |
@@ -151,9 +151,9 @@ mcpServer.js  — MCP stdio for AI tool integration
 
 The LLM industry is building sand castles on probabilistic foundations.
 
-AXIOM provides the **granite truth layer** underneath.
+HUQAN provides the product-facing trust boundary, powered by the AXIOM engine underneath.
 
-LLMs guess. AXIOM **knows**.
+Models generate. Agents act. Memory stores. HUQAN judges.
 
 ---
 

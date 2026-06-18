@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AXIOM - Trust Control Center</title>
+<title>HUQAN - Trust Control Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
@@ -1490,7 +1490,7 @@ body[data-theme="avant"] .theme-switcher button.active{
     <div class="brand">
       <div class="brand-mark"><i class="ri-shield-keyhole-fill"></i></div>
       <div>
-        <h1 class="brand-title">AXIOM</h1>
+        <h1 class="brand-title">HUQAN</h1>
         <div class="brand-subtitle">Trust control layer</div>
       </div>
     </div>
@@ -1542,7 +1542,7 @@ body[data-theme="avant"] .theme-switcher button.active{
     </div>
 
     <div class="sidebar-footer">
-      <div class="version" id="footer-version">AXIOM v0.7.0<br>© 2025 AXIOM Labs</div>
+      <div class="version" id="footer-version">HUQAN v0.7.0<br>Powered by AXIOM</div>
     </div>
   </aside>
 
@@ -1579,7 +1579,7 @@ body[data-theme="avant"] .theme-switcher button.active{
     <section class="hero" id="overview-section">
       <div>
         <h1>Trust Control Center</h1>
-        <p>AXIOM judges actions before execution. <strong>You stay in control.</strong> The layout is tuned for fast scanning, strong hierarchy, and obvious review states.</p>
+        <p>HUQAN judges actions before execution. <strong>You stay in control.</strong> Powered by the AXIOM trust engine, the layout is tuned for fast scanning, strong hierarchy, and obvious review states.</p>
         <div class="hero-actions">
           <button class="ghost-btn" type="button" data-preset="review: show pending SQL actions"><i class="ri-filter-3-line"></i>Review queue</button>
           <button class="ghost-btn" type="button" data-preset="search memory for policy contradictions"><i class="ri-brain-line"></i>Search memory</button>
@@ -2579,7 +2579,7 @@ async function loadStatus() {
     state.queue.forEach((item, index) => { item.order = index; });
     state.selectedId = state.queue[0]?.id || null;
     document.getElementById('system-status-copy').textContent = `${status.backend || 'memory'} backend · ${formatNumber(status.nodes || 0)} nodes · ${formatNumber(status.edges || 0)} edges`;
-    document.getElementById('footer-version').innerHTML = `AXIOM v${escapeHtml(status.version || '0.0.0')}<br>© 2025 AXIOM Labs`;
+    document.getElementById('footer-version').innerHTML = `HUQAN v${escapeHtml(status.version || '0.0.0')}<br>Powered by AXIOM`;
     document.getElementById('runtime-label').textContent = `${status.activeKernel || 'v1'} · ${status.backend || 'memory'}`;
     document.getElementById('version-label').textContent = `${status.version || '0.0.0'} · commit ${status.lastCommit || 'unknown'}`;
     document.getElementById('focus-label').textContent = `${status.currentFocus || 'Overview'} · ${status.nextAction || 'Awaiting action'}`;

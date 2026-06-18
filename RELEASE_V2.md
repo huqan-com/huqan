@@ -1,6 +1,8 @@
-﻿# AXIOM v2 Release Summary
+# HUQAN v2 Release Summary
 
 ## What is shipped
+
+HUQAN is the product layer; AXIOM remains the technical engine and protocol lineage for the shipped runtime below.
 
 - Core `Kernel` contract now returns a stable envelope for public methods.
 - `paranoidMode` disables `learnFromLLM` and any external LLM-backed learning path.
