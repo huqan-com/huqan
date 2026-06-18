@@ -1,182 +1,118 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, parseYaml, stringifyYaml } from 'obsidian';
-import Kernel from '../../kernel';
+import { App, Modal, Notice, Plugin } from 'obsidian';
 
-interface AxiomPluginSettings {
-  memoryPath: string;
-  lang: string;
+type ReceiptScope = 'current_note' | 'selection';
+
+interface TrustReceipt {
+  scope: ReceiptScope;
+  source: string;
+  inputPreview: string;
+  mode: 'mock-only';
+  verdict: 'mock_review';
+  status: 'BLOCKED_TODO';
+  notes: string[];
 }
 
-const DEFAULT_SETTINGS: AxiomPluginSettings = {
-  memoryPath: '.obsidian/axiom-memory.json',
-  lang: 'tr',
-};
+const MOCK_NOTES = [
+  'Local verify endpoint: BLOCKED/TODO for the next PR.',
+  'No network calls.',
+  'No external integrations.',
+  'No note writes.',
+  'No graph or memory writes.',
+  'Explicit user command required.',
+];
 
-export default class AxiomPlugin extends Plugin {
-  kernel: Kernel;
-  settings: AxiomPluginSettings;
+function normalizePreview(text: string, limit = 180): string {
+  const compact = text.replace(/\s+/g, ' ').trim();
+  if (!compact) return '(empty)';
+  if (compact.length <= limit) return compact;
+  return `${compact.slice(0, limit - 1)}…`;
+}
 
-  async onload() {
-    await this.loadSettings();
-
-    const vaultPath = this.app.vault.getRoot().path;
-    const memoryPath = `${vaultPath}${this.settings.memoryPath}`;
-    this.kernel = new Kernel({
-      memoryPath,
-      lang: this.settings.lang,
-    });
-
-    this.addCommand({
-      id: 'axiom-learn-selection',
-      name: 'Learn from selection',
-      editorCallback: (editor) => {
-        const text = editor.getSelection();
-        if (!text) {
-          new Notice('Select text first');
-          return;
-        }
-        const result = this.kernel.learn(text);
-        new Notice(
-          `Öğrenildi: ${result.data.learned} önerme, ` +
-          `${result.data.conflicts.length} çelişki`
-        );
-      },
-    });
-
-    this.addCommand({
-      id: 'axiom-dream',
-      name: 'Dream',
-      callback: () => {
-        const result = this.kernel.dream({ limit: 10 });
-        const h = result.data.hypotheses;
-        if (h.length === 0) {
-          new Notice('Hiç hipotez üretilmedi');
-          return;
-        }
-        const lines = h.slice(0, 10).map((x, i) =>
-          `${i + 1}. ${x.from} → ${x.to} (${(x.confidence * 100).toFixed(0)}%)`
-        );
-        new Notice(`Rüya sonuçları:\n${lines.join('\n')}`, 8000);
-      },
-    });
-
-    this.addCommand({
-      id: 'axiom-learn-note',
-      name: 'Learn current note',
-      editorCallback: (editor) => {
-        const text = editor.getValue();
-        if (!text) {
-          new Notice('Note is empty');
-          return;
-        }
-        const result = this.kernel.learnDocument(text);
-        new Notice(
-          `Öğrenildi: ${result.data.learned} önerme`
-        );
-      },
-    });
-
-    this.addCommand({
-      id: 'axiom-stats',
-      name: 'Show graph stats',
-      callback: () => {
-        const stats = this.kernel.graph.getStats();
-        new Notice(
-          `Düğüm: ${stats.nodes}\n` +
-          `Kenar: ${stats.edges}\n` +
-          `Altyapı: ${stats.backend}`
-        );
-      },
-    });
-
-    this.addCommand({
-      id: 'axiom-contradictions',
-      name: 'Show contradictions',
-      callback: () => {
-        const result = this.kernel.detectContradictions();
-        const c = result.data?.contradictions || [];
-        if (c.length === 0) {
-          new Notice('Çelişki bulunamadı');
-          return;
-        }
-        const lines = c.slice(0, 10).map((x, i) =>
-          `${i + 1}. ${x.subject}: ${x.current} ≠ ${x.existing} (${x.type})`
-        );
-        new Notice(`Çelişkiler:\n${lines.join('\n')}`, 8000);
-      },
-    });
-
-    this.addCommand({
-      id: 'axiom-save',
-      name: 'Save graph to file',
-      callback: () => {
-        this.kernel.graph.save();
-        new Notice('Grafik kaydedildi');
-      },
-    });
-
-    this.addSettingTab(new AxiomSettingTab(this.app, this));
+class TrustReceiptModal extends Modal {
+  constructor(app: App, private readonly receipt: TrustReceipt) {
+    super(app);
   }
 
-  onunload() {
-    this.kernel.graph.save();
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass('huqan-trust-panel-modal');
+
+    contentEl.createEl('h2', { text: 'HUQAN Trust Panel' });
+    contentEl.createEl('p', { text: 'Mock receipt - no external calls' });
+
+    const details = contentEl.createEl('div', { cls: 'huqan-trust-panel-modal__details' });
+    this.addRow(details, 'Scope', this.receipt.scope);
+    this.addRow(details, 'Source', this.receipt.source);
+    this.addRow(details, 'Mode', this.receipt.mode);
+    this.addRow(details, 'Verdict', this.receipt.verdict);
+    this.addRow(details, 'Status', this.receipt.status);
+    this.addRow(details, 'Input preview', this.receipt.inputPreview);
+
+    const notes = contentEl.createEl('ul', { cls: 'huqan-trust-panel-modal__notes' });
+    for (const note of this.receipt.notes) {
+      notes.createEl('li', { text: note });
+    }
   }
 
-  async loadSettings() {
-    this.settings = Object.assign(
-      {},
-      DEFAULT_SETTINGS,
-      await this.loadData()
-    );
+  onClose(): void {
+    this.contentEl.empty();
   }
 
-  async saveSettings() {
-    await this.saveData(this.settings);
+  private addRow(container: HTMLElement, label: string, value: string): void {
+    const row = container.createEl('p', { cls: 'huqan-trust-panel-modal__row' });
+    row.createEl('strong', { text: `${label}: ` });
+    row.createSpan({ text: value });
   }
 }
 
-class AxiomSettingTab extends PluginSettingTab {
-  plugin: AxiomPlugin;
+export default class HuqanTrustPanelPlugin extends Plugin {
+  async onload(): Promise<void> {
+    this.addCommand({
+      id: 'huqan-verify-current-note',
+      name: 'Verify current note',
+      callback: async () => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file) {
+          new Notice('Open a note first.');
+          return;
+        }
 
-  constructor(app: App, plugin: AxiomPlugin) {
-    super(app, plugin);
-    this.plugin = plugin;
+        const text = await this.app.vault.read(file);
+        this.openReceiptModal('current_note', file.path, text);
+      },
+    });
+
+    this.addCommand({
+      id: 'huqan-verify-selected-text',
+      name: 'Verify selected text',
+      editorCallback: (editor) => {
+        const selectedText = editor.getSelection().trim();
+        if (!selectedText) {
+          new Notice('Select text first.');
+          return;
+        }
+
+        this.openReceiptModal('selection', 'selected text', selectedText);
+      },
+    });
   }
 
-  display(): void {
-    const { containerEl } = this;
-    containerEl.empty();
-    containerEl.createEl('h2', { text: 'Axiom Ayarları' });
+  onunload(): void {
+    // Intentionally no writes or cleanup that mutates vault state.
+  }
 
-    new Setting(containerEl)
-      .setName('Hafıza dosyası')
-      .setDesc('Vault köküne göreli yol')
-      .addText(text =>
-        text
-          .setPlaceholder('.obsidian/axiom-memory.json')
-          .setValue(this.plugin.settings.memoryPath)
-          .onChange(async v => {
-            this.plugin.settings.memoryPath = v;
-            await this.plugin.saveSettings();
-          })
-      );
+  private openReceiptModal(scope: ReceiptScope, source: string, rawInput: string): void {
+    const receipt: TrustReceipt = {
+      scope,
+      source,
+      inputPreview: normalizePreview(rawInput),
+      mode: 'mock-only',
+      verdict: 'mock_review',
+      status: 'BLOCKED_TODO',
+      notes: MOCK_NOTES,
+    };
 
-    new Setting(containerEl)
-      .setName('Dil')
-      .setDesc('NLP dili (tr, en, auto)')
-      .addText(text =>
-        text
-          .setPlaceholder('tr')
-          .setValue(this.plugin.settings.lang)
-          .onChange(async v => {
-            this.plugin.settings.lang = v;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    containerEl.createEl('hr');
-    const stats = this.plugin.kernel.graph.getStats();
-    containerEl.createEl('p', {
-      text: `Düğüm: ${stats.nodes} | Kenar: ${stats.edges} | Altyapı: ${stats.backend}`,
-    });
+    new TrustReceiptModal(this.app, receipt).open();
   }
 }
