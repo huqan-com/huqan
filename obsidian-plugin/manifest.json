@@ -1,9 +1,9 @@
 {
-  "id": "axiom-plugin",
-  "name": "Axiom",
+  "id": "huqan-trust-panel",
+  "name": "HUQAN Trust Panel",
   "version": "1.0.0",
   "minAppVersion": "1.5.0",
-  "description": "Deterministic reasoning engine — learn facts, detect contradictions, generate hypotheses",
-  "author": "AXIOM",
+  "description": "Local-only mock verification panel for HUQAN / AXIOM",
+  "author": "HUQAN",
   "isDesktopOnly": true
 }
