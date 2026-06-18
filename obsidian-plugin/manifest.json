@@ -3,7 +3,7 @@
   "name": "HUQAN Trust Panel",
   "version": "1.0.0",
   "minAppVersion": "1.5.0",
-  "description": "Local-only mock verification panel for HUQAN / AXIOM",
+  "description": "Local-only HUQAN verification panel for selected or entered claims",
   "author": "HUQAN",
   "isDesktopOnly": true
 }
