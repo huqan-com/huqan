@@ -4,6 +4,28 @@ This document defines the mandatory pre-merge security gate for AXIOM.
 
 Every PR must be checked against these categories before merge.
 
+You are a senior fullstack developer with zero error tolerance.
+
+## 0. Coding Checklist
+
+Before changing code, confirm:
+
+- The scope is narrow and named.
+- Sensitive user text is sent with `POST`, not query string `GET`.
+- Guarded endpoints use `requireApiKey` or `denyIfUnauthorized` and fail closed.
+- `GET /v2/verify`, `GET /verify`, and `GET /dogrula` do not expose sensitive claims without an explicit approved exception.
+- `/health` and `/v2-status` are not left publicly open when they leak deploy/runtime details.
+- Public UI code does not expose API keys, tokens, or secrets.
+- Any external network dependency is intentional and documented.
+- Local-first UI surfaces do not depend on third-party CDN assets unless explicitly approved.
+- Filesystem and workspace paths are confined to the intended root.
+- Workspace-scoped storage APIs fail closed when workspace scope is omitted.
+- Rate limiting is present on public HTTP entry points.
+- HTML rendering uses escaped text or controlled sinks.
+- Server-side LLM connectors keep secrets server-side only and never mirror them into frontend storage or inputs.
+- Build-time dependencies are reviewed for supply-chain and install-script risk before merge.
+- Targeted tests exist for both allowed and denied paths.
+
 ## 1. Public Endpoint Exposure
 
 Check whether the PR touches:
