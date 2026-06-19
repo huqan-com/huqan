@@ -144,6 +144,34 @@ Responsibilities:
 - LangChain tool wrapper
 - Vercel AI middleware wrapper
 
+## Execution Model
+
+AXIOM is best treated as a **hybrid system**:
+
+- **Async at the boundary**
+  - HTTP handlers
+  - file/network I/O
+  - LLM/provider adapters
+  - Obsidian callback surfaces
+- **Sync in the core**
+  - claim decomposition
+  - graph lookup and traversal
+  - verification decisions
+  - trust / risk classification
+
+Recommended rule:
+
+- keep async logic at the edge
+- keep deterministic reasoning and verdict generation sync where practical
+- use lock-protected async wrappers only when concurrency or I/O actually requires them
+
+Concrete examples in this repo:
+
+- `server.js` request handlers are async because they parse requests and may call verification or adapter code.
+- `public/index.html` uses `fetch()` for UI-driven verification and status loading.
+- `kernel.js` exposes `verifyAsync()` as a wrapper, while the underlying verify path remains a core decision surface.
+- `llmAdapter.js` is async because provider calls are network-bound.
+
 ## Product Surfaces
 
 - CLI: `cli.js`
