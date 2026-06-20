@@ -173,31 +173,7 @@ If a file is accidentally touched:
 * report
 * do not silently restore unless instructed
 
-## 9. Current AXIOM Project State
-
-Current project state:
-
-* Memory Core PR-M1 through PR-M7 are merged into main.
-* v0.9.1 tag/release is intentionally skipped for now.
-* Productization cleanup is ongoing.
-* PR-C1 README/server encoding cleanup is done.
-* PR-C2 UI loading + Trust Receipt rendering is done.
-* PR-C3 `/graph-data` Memory Core alignment is done and audited.
-* Gemini/Antigravity process violations were observed; strict rules are mandatory.
-
-Do not start:
-
-* Self-Healer
-* Bug Bounty scanner
-* MCP tools
-* new HTTP APIs
-* release tag
-* version bump
-* README/UI/server rescue outside approved PR scope
-
-without explicit approval.
-
-## 10. Final Report Format
+## 9. Final Report Format
 
 After every task, report in Turkish:
 
