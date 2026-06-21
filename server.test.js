@@ -548,7 +548,7 @@ describe('Server - API', () => {
     assert.strictEqual(j.progressPercent, 91);
     assert.strictEqual(j.remainingPhases, 1);
     assert.strictEqual(typeof j.currentFocus, 'string');
-    assert.strictEqual(j.currentFocus, 'v3.0 Agent Workflow');
+    assert.strictEqual(j.currentFocus, 'v3.0 Ajan İş Akışı');
     assert.strictEqual(j.agentRuntime, 'v2');
     assert.strictEqual(j.checkpointBackend, 'json');
     assert.strictEqual(typeof j.agentCheckpointPath, 'string');
@@ -578,7 +578,7 @@ describe('Server - API', () => {
     assert.ok(html.includes('AXIOM'));
     assert.ok(html.includes('d3@7'));
     assert.ok(html.includes('forceSimulation'));
-    assert.ok(html.includes('Trust Dashboard'));
+    assert.ok(html.includes('Güven Kontrol Merkezi'));
   });
 
   it('bilinmeyen rota 404 dÃƒÂ¶ndÃƒÂ¼rÃƒÂ¼r', async () => {
