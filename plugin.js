@@ -124,7 +124,11 @@ class PluginManager {
   load(dir) {
     const pDir = path.resolve(dir);
     if (!fs.existsSync(pDir)) return 0;
-    const files = fs.readdirSync(pDir).filter(f => f.endsWith('.js'));
+    const files = fs.readdirSync(pDir).filter(f => {
+      if (!f.endsWith('.js')) return false;
+      const lower = f.toLowerCase();
+      return !lower.endsWith('.test.js') && !lower.endsWith('.spec.js');
+    });
     let count = 0;
     for (const file of files) {
       const filePath = path.join(pDir, file);
