@@ -620,13 +620,12 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ error: 'Method not allowed' }));
       return;
     }
-    const data = getV2StatusData();
     res.writeHead(200, {
       'Content-Type': 'application/json',
       ...buildCorsHeaders(req),
       'Cache-Control': 'no-cache',
     });
-    res.end(JSON.stringify(data));
+    res.end(JSON.stringify({ ok: true, service: 'axiom', status: 'running', version: pkg.version }));
     return;
   }
 
@@ -636,12 +635,25 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ error: 'Method not allowed' }));
       return;
     }
-    res.writeHead(200, {
+    let healthBody;
+    let healthStatus;
+    try {
+      // Minimal public health probe: confirm the kernel graph is reachable.
+      // Persistence path inspection is intentionally excluded — it leaks
+      // workspace/persistence details and is not a liveness signal.
+      cli.kernel.graph.getStats();
+      healthBody = { ok: true };
+      healthStatus = 200;
+    } catch (_) {
+      healthBody = { ok: false, error: 'HEALTH_CHECK_FAILED' };
+      healthStatus = 500;
+    }
+    res.writeHead(healthStatus, {
       'Content-Type': 'application/json',
       ...buildCorsHeaders(req),
       'Cache-Control': 'no-cache',
     });
-    res.end(JSON.stringify(getHealthData()));
+    res.end(JSON.stringify(healthBody));
     return;
   }
 

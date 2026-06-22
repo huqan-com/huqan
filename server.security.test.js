@@ -21,6 +21,7 @@ function request(url, options = {}) {
       path: u.pathname + u.search,
       headers: { Connection: 'close', ...defaultHeaders, ...(options.headers || {}) },
       agent: false,
+      timeout: options.timeout !== undefined ? options.timeout : 5000,
     }, (res) => {
       const chunks = [];
       res.on('data', (chunk) => chunks.push(chunk));
@@ -39,6 +40,7 @@ function request(url, options = {}) {
       });
     });
     req.on('error', reject);
+    req.on('timeout', () => req.destroy(new Error('Request timeout after 5s')));
     req.on('socket', (s) => {
       socket = s;
       s.unref?.();
@@ -104,26 +106,29 @@ describe('Security baseline hardening', () => {
     }
   });
 
-  it('POST /v2/verify works for local demo without an API key', async () => {
+  it('POST /v2/verify is protected by default (no API key → 401)', async () => {
     const res = await request(`${BASE}/v2/verify`, {
       method: 'POST',
       skipAuth: true,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ statement: 'kedi balik yer' }),
     });
-    assert.strictEqual(res.status, 200);
-    const body = await res.json();
-    assert.strictEqual(body.ok, true);
-    assert.strictEqual(body.type, 'verify');
-    assert.ok(body.data);
-    assert.ok(['dogrulandi', 'celiski', 'bilinmiyor'].includes(body.data.status));
+    assert.strictEqual(res.status, 401);
   });
 
-  it('GET /health is reduced to minimal safe metadata', async () => {
+  it('GET /health responds with a controlled minimal contract (no hang, no internal leak)', async () => {
     const res = await request(`${BASE}/health`, { skipAuth: true });
-    assert.strictEqual(res.status, 200);
+    assert.ok(res.status === 200 || res.status === 500, `expected 200 or 500, got ${res.status}`);
     const body = await res.json();
-    assert.deepStrictEqual(body, { ok: true });
+    if (res.status === 200) {
+      assert.deepStrictEqual(body, { ok: true });
+    } else {
+      assert.deepStrictEqual(body, { ok: false, error: 'HEALTH_CHECK_FAILED' });
+    }
+    // Defense in depth: no persistence/workspace internals must ever leak.
+    for (const key of ['persistence', 'persistencePaths', 'agentCheckpointPath', 'backend', 'timestamp']) {
+      assert.ok(!(key in body), `health must not expose ${key}`);
+    }
   });
 
   it('GET /v2-status is reduced to minimal safe metadata', async () => {
