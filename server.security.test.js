@@ -116,14 +116,19 @@ describe('Security baseline hardening', () => {
     assert.strictEqual(res.status, 401);
   });
 
-  it('GET /health responds with a controlled safe response (no hang, no internal path exposure)', async () => {
+  it('GET /health responds with a controlled minimal contract (no hang, no internal leak)', async () => {
     const res = await request(`${BASE}/health`, { skipAuth: true });
     assert.ok(res.status === 200 || res.status === 500, `expected 200 or 500, got ${res.status}`);
     const body = await res.json();
-    assert.ok(typeof body === 'object' && body !== null);
-    assert.ok('ok' in body);
-    assert.ok(!('persistencePaths' in body), 'health must not expose persistence paths');
-    assert.ok(!('agentCheckpointPath' in body), 'health must not expose agent checkpoint path');
+    if (res.status === 200) {
+      assert.deepStrictEqual(body, { ok: true });
+    } else {
+      assert.deepStrictEqual(body, { ok: false, error: 'HEALTH_CHECK_FAILED' });
+    }
+    // Defense in depth: no persistence/workspace internals must ever leak.
+    for (const key of ['persistence', 'persistencePaths', 'agentCheckpointPath', 'backend', 'timestamp']) {
+      assert.ok(!(key in body), `health must not expose ${key}`);
+    }
   });
 
   it('GET /v2-status is reduced to minimal safe metadata', async () => {

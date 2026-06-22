@@ -635,12 +635,17 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ error: 'Method not allowed' }));
       return;
     }
-    let healthData;
-    let healthStatus = 200;
+    let healthBody;
+    let healthStatus;
     try {
-      healthData = getHealthData();
+      // Minimal public health probe: confirm the kernel graph is reachable.
+      // Persistence path inspection is intentionally excluded — it leaks
+      // workspace/persistence details and is not a liveness signal.
+      cli.kernel.graph.getStats();
+      healthBody = { ok: true };
+      healthStatus = 200;
     } catch (_) {
-      healthData = { ok: false, error: 'HEALTH_CHECK_FAILED' };
+      healthBody = { ok: false, error: 'HEALTH_CHECK_FAILED' };
       healthStatus = 500;
     }
     res.writeHead(healthStatus, {
@@ -648,7 +653,7 @@ const server = http.createServer(async (req, res) => {
       ...buildCorsHeaders(req),
       'Cache-Control': 'no-cache',
     });
-    res.end(JSON.stringify(healthData));
+    res.end(JSON.stringify(healthBody));
     return;
   }
 
