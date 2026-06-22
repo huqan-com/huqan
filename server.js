@@ -652,6 +652,15 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    const auth = requireApiKey(req);
+    const isAuthenticated = auth.ok === true;
+    const publicVerifyEnabled = process.env.HUQAN_PUBLIC_VERIFY === '1';
+
+    if (!isAuthenticated && !publicVerifyEnabled) {
+      writeJson(req, res, auth.status, auth.error, auth.headers);
+      return;
+    }
+
     const sendVerifyResult = (statement, workspaceId = '') => {
       const text = sanitizeInput(statement || '');
       if (!text) {
@@ -659,15 +668,33 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      const normalizedWorkspaceId = sanitizeInput(workspaceId || reqUrl.searchParams.get('workspaceId') || '');
-      const result = cli.kernel.verify(text, normalizedWorkspaceId ? { workspaceId: normalizedWorkspaceId } : {});
-      writeJson(req, res, 200, result, { 'Cache-Control': 'no-cache' });
+      if (isAuthenticated) {
+        const normalizedWorkspaceId = sanitizeInput(workspaceId || reqUrl.searchParams.get('workspaceId') || '');
+        const result = cli.kernel.verify(text, normalizedWorkspaceId ? { workspaceId: normalizedWorkspaceId } : {});
+        writeJson(req, res, 200, result, { 'Cache-Control': 'no-cache' });
+        return;
+      }
+
+      // Public/demo mode: ignore client-supplied workspaceId, return sanitized envelope only.
+      const full = cli.kernel.verify(text, {});
+      const data = (full && typeof full === 'object' && full.data && typeof full.data === 'object') ? full.data : full;
+      const sanitized = {
+        ok: true,
+        type: 'verify',
+        data: {
+          status: data?.status ?? null,
+          confidence: typeof data?.confidence === 'number' ? data.confidence : null,
+          classification: data?.classification ?? null,
+          risk: { flags: Array.isArray(data?.risk?.flags) ? data.risk.flags.slice(0, 16) : [] },
+        },
+        public: true,
+      };
+      writeJson(req, res, 200, sanitized, { 'Cache-Control': 'no-cache' });
     };
 
-    if (!denyIfUnauthorized(req, res)) return;
     const data = await parseJsonRequest(req, res, { maxBytes: 4_096 });
     if (!data) return;
-    sendVerifyResult(data.statement || data.text || '', data.workspaceId || '');
+    sendVerifyResult(data.statement || data.text || '', isAuthenticated ? (data.workspaceId || '') : '');
     return;
   }
 
