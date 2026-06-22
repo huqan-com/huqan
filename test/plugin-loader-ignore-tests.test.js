@@ -17,7 +17,7 @@ module.exports = {
 };
 `);
 
-  // Should be ignored — would emit TAP if loaded
+  // Should be ignored — lowercase
   fs.writeFileSync(path.join(dir, 'sample.test.js'), `
 const { test } = require('node:test');
 test('SHOULD NOT RUN during plugin load', () => {
@@ -26,13 +26,33 @@ test('SHOULD NOT RUN during plugin load', () => {
 module.exports = { name: 'sample-test-plugin' };
 `);
 
-  // Should be ignored — would emit TAP if loaded
+  // Should be ignored — lowercase
   fs.writeFileSync(path.join(dir, 'sample.spec.js'), `
 const { test } = require('node:test');
 test('SHOULD NOT RUN during plugin load', () => {
   throw new Error('spec file was loaded as plugin');
 });
 module.exports = { name: 'sample-spec-plugin' };
+`);
+
+  // Should be ignored — uppercase (Windows case-insensitive filesystem risk)
+  fs.writeFileSync(path.join(dir, 'SAMPLE.TEST.js'), `
+module.exports = { name: 'upper-test-plugin' };
+`);
+
+  // Should be ignored — uppercase
+  fs.writeFileSync(path.join(dir, 'SAMPLE.SPEC.js'), `
+module.exports = { name: 'upper-spec-plugin' };
+`);
+
+  // Should be ignored — mixed case
+  fs.writeFileSync(path.join(dir, 'sample.Test.js'), `
+module.exports = { name: 'mixed-test-plugin' };
+`);
+
+  // Should be ignored — mixed case
+  fs.writeFileSync(path.join(dir, 'sample.Spec.js'), `
+module.exports = { name: 'mixed-spec-plugin' };
 `);
 
   return dir;
@@ -61,6 +81,36 @@ test('plugin loader ignores .spec.js files', () => {
     pm.register = (plugin) => { loaded.push(plugin.name); origRegister(plugin); };
     pm.load(dir);
     assert.ok(!loaded.includes('sample-spec-plugin'), '.spec.js must not be loaded');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('plugin loader ignores uppercase .TEST.js and .SPEC.js files', () => {
+  const dir = makeTmpPluginDir();
+  try {
+    const pm = new PluginManager({ hasCapability: () => false });
+    const loaded = [];
+    const origRegister = pm.register.bind(pm);
+    pm.register = (plugin) => { loaded.push(plugin.name); origRegister(plugin); };
+    pm.load(dir);
+    assert.ok(!loaded.includes('upper-test-plugin'), 'SAMPLE.TEST.js must not be loaded');
+    assert.ok(!loaded.includes('upper-spec-plugin'), 'SAMPLE.SPEC.js must not be loaded');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('plugin loader ignores mixed-case .Test.js and .Spec.js files', () => {
+  const dir = makeTmpPluginDir();
+  try {
+    const pm = new PluginManager({ hasCapability: () => false });
+    const loaded = [];
+    const origRegister = pm.register.bind(pm);
+    pm.register = (plugin) => { loaded.push(plugin.name); origRegister(plugin); };
+    pm.load(dir);
+    assert.ok(!loaded.includes('mixed-test-plugin'), 'sample.Test.js must not be loaded');
+    assert.ok(!loaded.includes('mixed-spec-plugin'), 'sample.Spec.js must not be loaded');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
