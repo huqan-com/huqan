@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { setTimeout: delay } = require('node:timers/promises');
 const { callTool } = require('../mcpServer');
 
 const repoRoot = path.resolve(__dirname, '..');
@@ -25,21 +26,44 @@ function makeSpyKernel() {
 
 describe('SEC-1A MCP direct tool safety matrix', () => {
   let tempDir;
+  const rootArtifacts = ['memory.db', 'memory.json', 'memory.agent.json', 'memory.embeddings.json'];
+  let rootArtifactBaseline;
 
   before(() => {
+    rootArtifactBaseline = new Map(
+      rootArtifacts.map((name) => [name, fs.existsSync(path.join(repoRoot, name))]),
+    );
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'axiom-gate-test-'));
     process.env.AXIOM_DB_PATH = path.join(tempDir, 'memory.db');
     process.env.AXIOM_MEMORY_PATH = path.join(tempDir, 'memory.json');
   });
 
-  after(() => {
+  after(async () => {
     delete process.env.AXIOM_DB_PATH;
     delete process.env.AXIOM_MEMORY_PATH;
-    fs.rmSync(tempDir, { recursive: true, force: true });
-    for (const name of ['memory.db', 'memory.json', 'memory.agent.json', 'memory.embeddings.json']) {
+    const cleanupErrors = new Set(['EPERM', 'EBUSY', 'ENOTEMPTY']);
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+        break;
+      } catch (error) {
+        if (!cleanupErrors.has(error && error.code)) {
+          throw error;
+        }
+        if (attempt === 4) {
+          break;
+        }
+      }
+      // Windows file handles can linger briefly after SQLite closes.
+      // Best-effort cleanup is enough here; repo-root leak detection stays strict.
+      await delay(50);
+    }
+    for (const name of rootArtifacts) {
+      const existedBefore = rootArtifactBaseline.get(name);
+      const existsAfter = fs.existsSync(path.join(repoRoot, name));
       assert.equal(
-        fs.existsSync(path.join(repoRoot, name)),
-        false,
+        existedBefore || existsAfter,
+        existedBefore,
         `storage artifact must not leak to repo root: ${name}`,
       );
     }
