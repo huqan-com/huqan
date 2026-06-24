@@ -156,23 +156,29 @@ function writeApiError(req, res, statusCode, code, message, details = {}) {
   }, { 'Cache-Control': 'no-cache' });
 }
 
+const TRUST_FILTER_MAX_ID = 128;
+const TRUST_FILTER_MAX_REF = 256;
+const TRUST_FILTER_MAX_ENUM = 32;
+
 function readTrustFilters(reqUrl) {
   const params = reqUrl.searchParams;
-  const read = (name) => sanitizeInput(params.get(name) || '');
+  const readId = (name) => sanitizeInput(params.get(name) || '', TRUST_FILTER_MAX_ID);
+  const readRef = (name) => sanitizeInput(params.get(name) || '', TRUST_FILTER_MAX_REF);
+  const readEnum = (name) => sanitizeInput(params.get(name) || '', TRUST_FILTER_MAX_ENUM);
   return {
-    workspaceId: read('workspaceId'),
-    targetId: read('targetId'),
-    provenanceId: read('provenanceId'),
-    sourceRef: read('sourceRef'),
-    sourceType: read('sourceType'),
-    sourceSubType: read('sourceSubType'),
-    actor: read('actor'),
-    eventType: read('eventType'),
-    candidateId: read('candidateId'),
-    status: read('status'),
-    recommendation: read('recommendation'),
-    order: read('order'),
-    targetType: read('targetType'),
+    workspaceId: readId('workspaceId'),
+    targetId: readId('targetId'),
+    provenanceId: readId('provenanceId'),
+    sourceRef: readRef('sourceRef'),
+    sourceType: readEnum('sourceType'),
+    sourceSubType: readEnum('sourceSubType'),
+    actor: readId('actor'),
+    eventType: readEnum('eventType'),
+    candidateId: readId('candidateId'),
+    status: readEnum('status'),
+    recommendation: readEnum('recommendation'),
+    order: readEnum('order'),
+    targetType: readEnum('targetType'),
   };
 }
 
@@ -186,8 +192,10 @@ function getRateLimitKey(req) {
     return 'key:' + crypto.createHash('sha256').update(apiKey).digest('hex').slice(0, 16);
   }
   if (process.env.AXIOM_TRUST_PROXY === '1') {
-    const forwarded = String(req.headers?.['x-forwarded-for'] || '').split(',')[0].trim();
-    if (forwarded) return 'ip:' + forwarded;
+    const xffList = String(req.headers?.['x-forwarded-for'] || '').split(',');
+    const forwarded = xffList[xffList.length - 1].trim();
+    // Validate looks like an IP before trusting it for rate-limit keying
+    if (forwarded && /^[\d.:a-fA-F]+$/.test(forwarded)) return 'ip:' + forwarded;
   }
   return 'ip:' + String(req.socket?.remoteAddress || 'unknown');
 }
@@ -247,8 +255,13 @@ function getSafeMemoryLabel(content) {
     str = String(content);
   }
 
-  // HTML injection guard
-  str = str.replace(/<\/?[^>]+(>|$)/g, '');
+  // Encode HTML entities so content is safe in both textContent and innerHTML contexts
+  str = str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
 
   if (str.length > 100) {
     str = str.substring(0, 97) + '...';
@@ -335,7 +348,12 @@ function getGraphData(workspaceId = 'default') {
           workspaceId: m.workspaceId || scope,
           status: m.status || 'active',
           weight: typeof m.metadata?.weight === 'number' ? m.metadata.weight : 1.0,
-          metadata: m.metadata || {}
+          metadata: {
+            weight: typeof m.metadata?.weight === 'number' ? m.metadata.weight : undefined,
+            tags: Array.isArray(m.metadata?.tags)
+              ? m.metadata.tags.slice(0, 10).map(t => String(t || '').slice(0, 64))
+              : undefined,
+          },
         }));
 
         const memoryNodeIds = new Set(memoryNodes.map(n => n.id));
@@ -368,7 +386,8 @@ function getGraphData(workspaceId = 'default') {
         memoryMetadata.reason = 'kernel.memory list failed';
       }
     } catch (err) {
-      memoryMetadata.reason = 'kernel.memory access error: ' + err.message;
+      console.error('[graph-data] kernel.memory access error:', err);
+      memoryMetadata.reason = 'kernel.memory access error';
     }
   } else {
     memoryMetadata.reason = 'kernel.memory unavailable';
@@ -610,7 +629,11 @@ const server = http.createServer(async (req, res) => {
     if (req.method !== 'GET') {
       res.writeHead(405); res.end(); return;
     }
-    const workspaceId = reqUrl.searchParams.get('workspaceId') || 'default';
+    const rawWorkspaceId = reqUrl.searchParams.get('workspaceId') || '';
+    const requestedWorkspaceId = sanitizeInput(rawWorkspaceId);
+    const isDefaultScope = !requestedWorkspaceId || requestedWorkspaceId === 'default';
+    if (!isDefaultScope && !denyIfUnauthorized(req, res)) return;
+    const workspaceId = requestedWorkspaceId || 'default';
     const data = getGraphData(workspaceId);
     res.writeHead(200, {
       'Content-Type': JSON_CONTENT_TYPE,
@@ -826,7 +849,8 @@ const server = http.createServer(async (req, res) => {
       const status = await cli.kernel.runCapability('ingestStatus', {});
       writeJson(req, res, 200, status, { 'Cache-Control': 'no-cache' });
     } catch (err) {
-      writeJson(req, res, 500, { error: err.message || 'ingest status failed' });
+      console.error('[ingest-status] failed:', err);
+      writeJson(req, res, 500, { error: 'ingest status failed' });
     }
     return;
   }
@@ -902,7 +926,8 @@ const server = http.createServer(async (req, res) => {
         data: receipt,
       }, { 'Cache-Control': 'no-cache' });
     } catch (err) {
-      writeApiError(req, res, 500, 'TRUST_QUERY_FAILED', err.message || 'trust query failed');
+      console.error('[trust-query] failed:', err);
+      writeApiError(req, res, 500, 'TRUST_QUERY_FAILED', 'trust query failed');
     }
     return;
   }
@@ -929,7 +954,8 @@ const server = http.createServer(async (req, res) => {
       }
       writeJson(req, res, 200, result, { 'Cache-Control': 'no-cache' });
     } catch (err) {
-      writeJson(req, res, 500, { error: err.message || 'ingest failed' });
+      console.error('[ingest] failed:', err);
+      writeJson(req, res, 500, { error: 'ingest failed' });
     }
     return;
   }
