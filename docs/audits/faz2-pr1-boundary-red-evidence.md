@@ -215,7 +215,7 @@ kernel._commitMutation(mutation, context)
 be refactored to go through `_commitMutation`.
 
 **Default:** `admissionRequired` defaults to `true` in `kernel.learn()` once
-FAZ2-3 is merged.  Callers may not bypass it without an explicit approved context.
+FAZ2-2 is merged.  Callers may not bypass it without an explicit approved context.
 
 ---
 
@@ -227,13 +227,14 @@ Contract tests for future invariants use `it.skip(...)` rather than failing asse
    would fail today and block CI.  Skipping keeps the suite green while registering
    the requirement.
 
-2. **Later PRs own the green signal.** FAZ2-2 through FAZ2-7 each target one gap.
-   When a PR merges, the corresponding skip is removed and the test is expected to pass.
-   This prevents "skip rot" — skips have explicit `[FAZ2-N]` prefixes and PR references.
+2. **Later PRs own the green signal.** FAZ2-2 through FAZ2-7 each target the
+   canonical follow-up scope listed below.  When a PR merges, the corresponding
+   skip is removed and the test is expected to pass.  This prevents "skip rot" —
+   skips have explicit `[FAZ2-N]` prefixes and PR references.
 
 3. **Red evidence is captured as passing gap-inventory tests.** The current unsafe behavior
    (e.g., `_evaluateCliGate('kaydet') === null`) is asserted as a FACT, not blessed as
-   desired.  When FAZ2-5 closes the gap, these gap-inventory tests must be removed and
+   desired.  When FAZ2-6 closes the gap, these gap-inventory tests must be removed and
    the future-contract tests un-skipped.
 
 ---
@@ -242,12 +243,13 @@ Contract tests for future invariants use `it.skip(...)` rather than failing asse
 
 | Gap | PR | Action |
 |-----|----|--------|
-| F-001 (background paths) | FAZ2-2 | Add `_commitMutation`; refactor `_autoThinkTick`, `dream`, `selfEvolve`, `_crossLink` to call it. Remove skip from Section 2 of boundary contract test. |
-| F-002 (admission opt-in) | FAZ2-3 | Default `admissionRequired: true` in `kernel.learn()`; pass it from MCP execution. Remove skip from Section 3. |
-| F-003 (plugin direct writes) | FAZ2-4 | Refactor `company-brain.js` and `repo-memory.js` to call `kernel._commitMutation`; gate `plugin.run()` in ingest. Remove skip from Section 4. |
-| F-004 (CLI gate parity) | FAZ2-5 | Extend `mapCliCommandToMcpTool` switch to cover all mutation commands; add `öğren` alias. Remove gap-inventory tests; un-skip future-contract tests. |
-| F-005 (MCP kernel isolation) | FAZ2-6 | Inject shared kernel instance (or shared SQLite path + graph reload) so MCP and REST see same state. Remove skip from F-005 section. |
-| F-006 (in-memory approvals) | FAZ2-7 | Replace `_pendingApprovals = []` with SQLite-backed queue; add `axiom.approve` handler. Remove skip from F-006 section. |
+| F-001 (background paths) | FAZ2-3 | Add background write gate + audit; refactor `_autoThinkTick`, `dream`, `selfEvolve`, `_crossLink` to route writes through the controlled mutation path. Remove skip from Section 2 of boundary contract test. |
+| F-002 (admission opt-in) | FAZ2-2 | Default `admissionRequired: true` in `kernel.learn()` and harden callers that currently bypass admission. Remove skip from Section 3. |
+| F-003 (plugin direct writes) | FAZ2-4 | Refactor `company-brain.js` and `repo-memory.js` to stop direct graph writes; gate `plugin.run()` in ingest. Remove skip from Section 4. |
+| F-004 (CLI gate parity) | FAZ2-6 | Extend REST/CLI mutation gate parity so all mutation commands map to reviewable MCP tool keys; add `öğren` alias. Remove gap-inventory tests; un-skip future-contract tests. |
+| F-005 (MCP kernel isolation) | FAZ2-5 | Inject shared MCP/REST state via shared kernel instance or shared persistence path. Remove skip from F-005 section. |
+| F-006 (in-memory approvals) | FAZ2-5 | Replace `_pendingApprovals = []` with persistent approval storage and add the approval execution path. Remove skip from F-006 section. |
+| Production plugin signing enforcement | FAZ2-7 | Enforce production plugin signing/hash policy after mutation-boundary contract work is in place. |
 
 ---
 
