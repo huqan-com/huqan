@@ -243,10 +243,82 @@ class Kernel {
     });
   }
 
-  // F-003: Thin wrapper so plugins avoid direct kernel.graph.addNode access.
+  // F-003: Plugin-facing admission-gated node write.
   proposeNode(id, label, provenance, opts = {}) {
-    if (!this.graph || typeof this.graph.addNode !== 'function') return null;
-    return this.graph.addNode(id, label, provenance, opts);
+    if (!this.graph || typeof this.graph.addNode !== 'function') {
+      return { decision: 'review', node: null, audit: null, admission: null };
+    }
+
+    const workspaceId = normalizeWorkspaceId(opts.workspaceId || provenance?.workspaceId || 'default');
+    const pluginProvenance = provenance && typeof provenance === 'object'
+      ? provenance
+      : this._backgroundProvenance('plugin', workspaceId, {
+        sourceType: opts.sourceType || 'plugin',
+        sourceRef: opts.sourceRef || '',
+        actor: opts.actor || opts.sessionId || 'plugin',
+      });
+    const proposalText = `${id} ${label || id}`;
+    const admissionOpts = {
+      workspaceId,
+      provenanceId: pluginProvenance.provenanceId,
+      actor: pluginProvenance.actor,
+      agentId: opts.sessionId || pluginProvenance.actor,
+      sourceType: pluginProvenance.sourceType,
+      sourceRef: pluginProvenance.sourceRef,
+      approvalRequired: false,
+      admissionReason: 'background_plugin_node_write',
+      admissionContext: {
+        backgroundSource: 'plugin',
+        nodeId: id,
+      },
+    };
+    const admission = this._evaluateLearnAdmission(proposalText, admissionOpts, pluginProvenance, workspaceId);
+
+    if (!admission) {
+      const audit = this._appendAuditEvent({
+        eventType: 'REVIEW',
+        targetType: 'background_node',
+        targetId: id,
+        details: {
+          backgroundSource: 'plugin',
+          reason: 'admission_unavailable',
+          nodeId: id,
+          label: label || id,
+        },
+      }, pluginProvenance, workspaceId);
+      return { decision: 'review', node: null, audit, admission: null };
+    }
+
+    if (admission.outcome !== 'allow') {
+      const audit = this._appendAuditEvent({
+        eventType: admission.outcome === 'reject' ? 'REJECT' : 'REVIEW',
+        targetType: 'background_node',
+        targetId: id,
+        details: {
+          backgroundSource: 'plugin',
+          reason: admission.reason,
+          admissionOutcome: admission.outcome,
+          approvalStatus: admission.approvalStatus,
+          nodeId: id,
+          label: label || id,
+        },
+      }, pluginProvenance, workspaceId);
+      return { decision: admission.outcome, node: null, audit, admission };
+    }
+
+    const node = this.graph.addNode(id, label, pluginProvenance, { ...opts, workspaceId });
+    const audit = this._appendAuditEvent({
+      eventType: 'LEARN',
+      targetType: 'background_node',
+      targetId: id,
+      details: {
+        backgroundSource: 'plugin',
+        nodeId: id,
+        label: label || id,
+        admissionOutcome: 'allow',
+      },
+    }, pluginProvenance, workspaceId);
+    return { decision: 'allow', node, audit, admission };
   }
 
   _ok(type, data = null, evidence = [], meta = {}) {
