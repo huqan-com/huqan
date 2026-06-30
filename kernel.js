@@ -234,7 +234,12 @@ class Kernel {
         actor: opts.actor || opts.sessionId || 'plugin',
       },
       admissionOpts: {
-        approvalRequired: false,
+        // approvalRequired defaults to false so low-risk plugin writes resolve
+        // to 'allow'; callers may still require approval (review) or signal a
+        // rejected approval and the gate honours it. This is NOT a bypass.
+        approvalRequired: opts.approvalRequired === true,
+        approvalStatus: opts.approvalStatus || '',
+        approvalId: opts.approvalId || '',
         sourceType: opts.sourceType || 'plugin',
         sourceRef: opts.sourceRef || '',
         actor: opts.actor || opts.sessionId || 'plugin',
@@ -243,10 +248,74 @@ class Kernel {
     });
   }
 
-  // F-003: Thin wrapper so plugins avoid direct kernel.graph.addNode access.
-  proposeNode(id, label, provenance, opts = {}) {
-    if (!this.graph || typeof this.graph.addNode !== 'function') return null;
-    return this.graph.addNode(id, label, provenance, opts);
+  // F-003: Plugin-facing admission-gated node write.
+  //
+  // Mirrors proposeEdge: the proposed node is routed through the SAME
+  // admission evaluation (_evaluateLearnAdmission) and is only written to the
+  // canonical graph on an 'allow' decision. 'review'/'reject' perform NO
+  // canonical mutation and emit a REVIEW/REJECT audit event so the attempt is
+  // recorded. This is NOT a bypass: approvalRequired defaults to false (so
+  // low-risk plugin nodes resolve to 'allow'), while approval-gated or rejected
+  // proposals are deflected. The forbidden bypass pattern
+  // (admissionRequired:false + admissionBypassReason) is never used here.
+  proposeNode(id, label, provenance = null, opts = {}) {
+    if (!this.graph || typeof this.graph.addNode !== 'function') {
+      return { decision: 'review', node: null, audit: null, admission: null };
+    }
+    const workspaceId = normalizeWorkspaceId(opts.workspaceId || provenance?.workspaceId || 'default');
+    const hasProvenance = provenance && typeof provenance === 'object';
+    const effectiveProvenance = hasProvenance
+      ? provenance
+      : this._backgroundProvenance('plugin', workspaceId, {
+        sourceType: opts.sourceType || 'plugin',
+        sourceRef: opts.sourceRef || '',
+        actor: opts.actor || opts.sessionId || 'plugin',
+      });
+    const proposalText = `node:${id} ${label || ''}`.trim();
+    const admissionOpts = {
+      approvalRequired: opts.approvalRequired === true,
+      approvalStatus: opts.approvalStatus || '',
+      approvalId: opts.approvalId || '',
+      sourceType: effectiveProvenance.sourceType || opts.sourceType || 'plugin',
+      sourceRef: effectiveProvenance.sourceRef || opts.sourceRef || '',
+      actor: effectiveProvenance.actor || opts.actor || opts.sessionId || 'plugin',
+      agentId: opts.sessionId || effectiveProvenance.actor || 'plugin',
+      provenanceId: effectiveProvenance.provenanceId,
+      admissionReason: 'plugin_node_write',
+    };
+    const admission = this._evaluateLearnAdmission(proposalText, admissionOpts, effectiveProvenance, workspaceId);
+
+    if (!admission || admission.outcome !== 'allow') {
+      const outcome = admission ? admission.outcome : 'review';
+      const audit = this._appendAuditEvent({
+        eventType: outcome === 'reject' ? 'REJECT' : 'REVIEW',
+        targetType: 'plugin_node',
+        targetId: id,
+        details: {
+          source: 'plugin',
+          reason: admission ? admission.reason : 'admission_unavailable',
+          admissionOutcome: outcome,
+          approvalStatus: admission ? admission.approvalStatus : undefined,
+          id,
+          label,
+        },
+      }, effectiveProvenance, workspaceId);
+      return { decision: outcome, node: null, audit, admission: admission || null };
+    }
+
+    const node = this.graph.addNode(id, label, effectiveProvenance, { ...opts, workspaceId });
+    const audit = this._appendAuditEvent({
+      eventType: 'LEARN',
+      targetType: 'plugin_node',
+      targetId: id,
+      details: {
+        source: 'plugin',
+        id,
+        label,
+        admissionOutcome: 'allow',
+      },
+    }, effectiveProvenance, workspaceId);
+    return { decision: 'allow', node, audit, admission };
   }
 
   _ok(type, data = null, evidence = [], meta = {}) {
