@@ -11,6 +11,7 @@ const {
   queryCandidateClaims,
   queryProvenance,
 } = require('./lib/provenance-query');
+const { readReceiptById } = require('./lib/receipt/receipt-read-index');
 const pkg = require('./package.json');
 const {
   DEFAULT_MAX_UPLOAD_BODY,
@@ -159,6 +160,7 @@ function writeApiError(req, res, statusCode, code, message, details = {}) {
 const TRUST_FILTER_MAX_ID = 128;
 const TRUST_FILTER_MAX_REF = 256;
 const TRUST_FILTER_MAX_ENUM = 32;
+const TRUST_RECEIPT_READ_PREFIX = '/api/trust-receipt/';
 
 function readTrustFilters(reqUrl) {
   const params = reqUrl.searchParams;
@@ -184,6 +186,20 @@ function readTrustFilters(reqUrl) {
 
 function hasTrustQuery(filters, keys) {
   return keys.some((key) => Boolean(filters[key]));
+}
+
+function readPathReceiptId(pathname) {
+  if (!pathname.startsWith(TRUST_RECEIPT_READ_PREFIX)) return null;
+  const rawReceiptId = pathname.slice(TRUST_RECEIPT_READ_PREFIX.length);
+  if (!rawReceiptId) return { ok: false, code: 'missing_receipt_id', receiptId: '' };
+  try {
+    const decoded = decodeURIComponent(rawReceiptId);
+    const receiptId = sanitizeInput(decoded, TRUST_FILTER_MAX_ID);
+    if (!receiptId) return { ok: false, code: 'invalid_receipt_id', receiptId: '' };
+    return { ok: true, receiptId };
+  } catch (_) {
+    return { ok: false, code: 'invalid_receipt_id', receiptId: '' };
+  }
 }
 
 function getRateLimitKey(req) {
@@ -887,6 +903,46 @@ const server = http.createServer(async (req, res) => {
       console.error('[ingest-status] failed:', err);
       writeJson(req, res, 500, { error: 'ingest status failed' });
     }
+    return;
+  }
+
+  const receiptReadRequest = readPathReceiptId(reqUrl.pathname);
+  if (receiptReadRequest) {
+    if (req.method !== 'GET') {
+      writeApiError(req, res, 405, 'method_not_allowed', 'Method not allowed');
+      return;
+    }
+    if (!denyIfUnauthorized(req, res)) return;
+    if (!receiptReadRequest.ok) {
+      writeJson(req, res, 400, {
+        ok: false,
+        error: {
+          code: receiptReadRequest.code,
+          message: receiptReadRequest.code === 'missing_receipt_id'
+            ? 'receiptId is required'
+            : 'receiptId must be a non-empty string',
+        },
+      }, { 'Cache-Control': 'no-cache' });
+      return;
+    }
+    const filters = readTrustFilters(reqUrl);
+    const readFilters = filters.workspaceId ? { workspaceId: filters.workspaceId } : {};
+    const read = readReceiptById(cli.kernel.graph, receiptReadRequest.receiptId, readFilters);
+    if (!read.ok) {
+      const code = read.status === 'not_found' ? 'receipt_not_found' : 'invalid_receipt_id';
+      writeJson(req, res, read.status === 'not_found' ? 404 : 400, {
+        ok: false,
+        error: {
+          code,
+          message: read.error?.message || 'receipt could not be read',
+        },
+      }, { 'Cache-Control': 'no-cache' });
+      return;
+    }
+    writeJson(req, res, 200, {
+      ok: true,
+      receipt: read.receipt,
+    }, { 'Cache-Control': 'no-cache' });
     return;
   }
 
