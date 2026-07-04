@@ -51,4 +51,3 @@ This matrix does not claim:
 - Workbench UI covers connector trust
 - external connectors are marketplace-ready
 - V5 implementation is complete
-

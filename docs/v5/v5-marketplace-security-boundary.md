@@ -97,4 +97,3 @@ This document does not claim:
 - badges or conformance marks are ready
 - external connector paths are trusted
 - V5 implementation is complete
-

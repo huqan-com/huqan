@@ -66,4 +66,3 @@ This document does not claim:
 - external agents are already covered
 - connector identity is already trusted
 - V5 implementation is complete
-

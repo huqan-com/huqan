@@ -91,4 +91,3 @@ This document does not claim:
 - marketplace distribution is safe
 - external packages are trusted
 - V5 implementation is complete
-

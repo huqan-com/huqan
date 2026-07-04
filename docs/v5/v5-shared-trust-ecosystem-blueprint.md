@@ -118,4 +118,3 @@ V5 planning may begin.
 
 V5 implementation, marketplace behavior, connector expansion, package runtime,
 and Workbench UI remain blocked until their own narrow gates are approved.
-

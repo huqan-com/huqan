@@ -63,4 +63,3 @@ This document does not claim:
 - packages are currently certifiable
 - marketplace badges are ready
 - V5 implementation is complete
-
