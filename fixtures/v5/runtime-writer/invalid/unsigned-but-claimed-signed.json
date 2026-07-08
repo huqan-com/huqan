@@ -1,0 +1,28 @@
+{
+  "caseId": "v5-runtime-writer-invalid-unsigned-but-claimed-signed",
+  "description": "Unsigned package input claiming signing must fail closed.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "packageId": "stp-fixture-invalid-signed-claim-001",
+    "issuer": {
+      "agentId": "agent-fixture-writer-001",
+      "workspaceId": "workspace-fixture-001"
+    },
+    "subject": {
+      "type": "trust_package",
+      "id": "stp-fixture-invalid-signed-claim-001"
+    },
+    "verdict": {
+      "status": "review",
+      "reason": "unsigned_but_claimed_signed"
+    },
+    "claims": {
+      "signed": true,
+      "signatureRuntime": "not_implemented"
+    }
+  },
+  "expected": {
+    "verdict": "BLOCK",
+    "reason_category": "unsigned_but_claimed_signed"
+  }
+}

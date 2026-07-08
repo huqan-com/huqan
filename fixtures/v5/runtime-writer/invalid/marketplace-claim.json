@@ -1,0 +1,27 @@
+{
+  "caseId": "v5-runtime-writer-invalid-marketplace-claim",
+  "description": "Writer input claiming marketplace capability must fail closed.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "packageId": "stp-fixture-invalid-marketplace-claim-001",
+    "issuer": {
+      "agentId": "agent-fixture-writer-001",
+      "workspaceId": "workspace-fixture-001"
+    },
+    "subject": {
+      "type": "marketplace_package",
+      "id": "marketplace-package-fixture-001"
+    },
+    "verdict": {
+      "status": "review",
+      "reason": "marketplace_claim"
+    },
+    "claims": {
+      "marketplaceReady": true
+    }
+  },
+  "expected": {
+    "verdict": "BLOCK",
+    "reason_category": "marketplace_claim"
+  }
+}

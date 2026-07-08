@@ -1,0 +1,23 @@
+{
+  "caseId": "v5-runtime-writer-invalid-missing-trust-package-identity",
+  "description": "Writer input missing package identity must fail closed.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "issuer": {
+      "agentId": "agent-fixture-writer-001",
+      "workspaceId": "workspace-fixture-001"
+    },
+    "subject": {
+      "type": "tool_call",
+      "id": "subject-fixture-tool-call-001"
+    },
+    "verdict": {
+      "status": "review",
+      "reason": "missing_trust_package_identity"
+    }
+  },
+  "expected": {
+    "verdict": "BLOCK",
+    "reason_category": "missing_trust_package_identity"
+  }
+}

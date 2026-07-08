@@ -1,0 +1,23 @@
+{
+  "caseId": "v5-runtime-writer-invalid-missing-agent-identity",
+  "description": "Writer input missing issuer agent identity must fail closed.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "packageId": "stp-fixture-invalid-missing-agent-001",
+    "issuer": {
+      "workspaceId": "workspace-fixture-001"
+    },
+    "subject": {
+      "type": "tool_call",
+      "id": "subject-fixture-tool-call-001"
+    },
+    "verdict": {
+      "status": "review",
+      "reason": "missing_agent_identity"
+    }
+  },
+  "expected": {
+    "verdict": "BLOCK",
+    "reason_category": "missing_agent_identity"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "caseId": "v5-runtime-writer-valid-provenance-metadata",
+  "description": "Valid writer input with deterministic provenance metadata.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "packageId": "stp-fixture-valid-provenance-001",
+    "issuer": {
+      "agentId": "agent-fixture-writer-001",
+      "workspaceId": "workspace-fixture-001"
+    },
+    "subject": {
+      "type": "trust_receipt",
+      "id": "receipt-fixture-001"
+    },
+    "verdict": {
+      "status": "block",
+      "reason": "fixture_provenance_metadata_valid"
+    },
+    "provenance": {
+      "traceId": "trace-fixture-001",
+      "receiptId": "receipt-fixture-001",
+      "source": "deterministic_fixture"
+    },
+    "nonClaims": [
+      "no_package_persistence",
+      "no_package_export",
+      "no_marketplace_distribution"
+    ]
+  },
+  "expected": {
+    "verdict": "ACCEPT",
+    "reason_category": "valid_provenance_metadata"
+  }
+}

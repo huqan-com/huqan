@@ -1,0 +1,27 @@
+{
+  "caseId": "v5-runtime-writer-invalid-connector-enforcement-claim",
+  "description": "Writer input claiming connector enforcement must fail closed.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "packageId": "stp-fixture-invalid-connector-claim-001",
+    "issuer": {
+      "agentId": "agent-fixture-writer-001",
+      "workspaceId": "workspace-fixture-001"
+    },
+    "subject": {
+      "type": "connector_action",
+      "id": "connector-action-fixture-001"
+    },
+    "verdict": {
+      "status": "review",
+      "reason": "connector_enforcement_claim"
+    },
+    "claims": {
+      "connectorEnforcement": true
+    }
+  },
+  "expected": {
+    "verdict": "BLOCK",
+    "reason_category": "connector_enforcement_claim"
+  }
+}

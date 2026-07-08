@@ -1,0 +1,39 @@
+{
+  "caseId": "v5-runtime-writer-valid-reasoning-metadata",
+  "description": "Valid writer input with deterministic reasoning metadata.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "packageId": "stp-fixture-valid-reasoning-001",
+    "issuer": {
+      "agentId": "agent-fixture-writer-001",
+      "workspaceId": "workspace-fixture-001"
+    },
+    "subject": {
+      "type": "verdict",
+      "id": "verdict-fixture-001"
+    },
+    "verdict": {
+      "status": "dry_run_only",
+      "reason": "fixture_reasoning_metadata_valid"
+    },
+    "reasoning": {
+      "summary": "Deterministic fixture reasoning summary.",
+      "inputsReviewed": [
+        "issuer",
+        "workspace",
+        "verdict",
+        "provenance"
+      ],
+      "modelGenerated": false
+    },
+    "nonClaims": [
+      "no_model_output_dependency",
+      "no_truth_guarantee",
+      "no_v5_complete_claim"
+    ]
+  },
+  "expected": {
+    "verdict": "ACCEPT",
+    "reason_category": "valid_reasoning_metadata"
+  }
+}
