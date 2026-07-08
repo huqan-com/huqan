@@ -70,6 +70,7 @@ function assertWriterResultMatchesFixture(fixture, relativePath) {
     assert.deepEqual(firstResult.package.issuer, fixture.writerInput.issuer, `${relativePath} issuer should be preserved`);
     assert.deepEqual(firstResult.package.subject, fixture.writerInput.subject, `${relativePath} subject should be preserved`);
     assert.deepEqual(firstResult.package.verdict, fixture.writerInput.verdict, `${relativePath} verdict metadata should be preserved`);
+    assert.deepEqual(firstResult.package.nonClaims, fixture.writerInput.nonClaims, `${relativePath} nonClaims should be preserved`);
     return;
   }
 
