@@ -1,0 +1,41 @@
+{
+  "caseId": "v5-runtime-writer-valid-route-receipt-metadata",
+  "description": "Valid writer input with deterministic route receipt metadata.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "packageId": "stp-fixture-valid-route-001",
+    "issuer": {
+      "agentId": "agent-fixture-writer-001",
+      "workspaceId": "workspace-fixture-001"
+    },
+    "subject": {
+      "type": "route_receipt",
+      "id": "route-receipt-fixture-001"
+    },
+    "verdict": {
+      "status": "allow",
+      "reason": "fixture_route_receipt_metadata_valid"
+    },
+    "routeReceipt": {
+      "routeId": "route-fixture-001",
+      "decisionPath": [
+        "risk_classification",
+        "tool_gate",
+        "verdict_reconciliation"
+      ],
+      "handoff": {
+        "from": "local_writer_fixture",
+        "to": "shared_trust_package_candidate"
+      }
+    },
+    "nonClaims": [
+      "no_runtime_exchange",
+      "no_a2a_transport",
+      "no_connector_enforcement"
+    ]
+  },
+  "expected": {
+    "verdict": "ACCEPT",
+    "reason_category": "valid_route_receipt_metadata"
+  }
+}

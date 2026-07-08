@@ -1,0 +1,28 @@
+{
+  "caseId": "v5-runtime-writer-invalid-malformed-route-receipt-metadata",
+  "description": "Writer input with malformed route receipt metadata must fail closed.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "packageId": "stp-fixture-invalid-route-001",
+    "issuer": {
+      "agentId": "agent-fixture-writer-001",
+      "workspaceId": "workspace-fixture-001"
+    },
+    "subject": {
+      "type": "route_receipt",
+      "id": "route-receipt-fixture-001"
+    },
+    "verdict": {
+      "status": "review",
+      "reason": "malformed_route_receipt_metadata"
+    },
+    "routeReceipt": {
+      "routeId": "",
+      "decisionPath": "not-an-array"
+    }
+  },
+  "expected": {
+    "verdict": "BLOCK",
+    "reason_category": "malformed_route_receipt_metadata"
+  }
+}

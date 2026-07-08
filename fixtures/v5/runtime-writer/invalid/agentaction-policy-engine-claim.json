@@ -1,0 +1,27 @@
+{
+  "caseId": "v5-runtime-writer-invalid-agentaction-policy-engine-claim",
+  "description": "Writer input claiming AgentAction policy engine capability must fail closed.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "packageId": "stp-fixture-invalid-agentaction-claim-001",
+    "issuer": {
+      "agentId": "agent-fixture-writer-001",
+      "workspaceId": "workspace-fixture-001"
+    },
+    "subject": {
+      "type": "agent_action",
+      "id": "agent-action-fixture-001"
+    },
+    "verdict": {
+      "status": "review",
+      "reason": "agentaction_policy_engine_claim"
+    },
+    "claims": {
+      "agentActionPolicyEngine": true
+    }
+  },
+  "expected": {
+    "verdict": "BLOCK",
+    "reason_category": "agentaction_policy_engine_claim"
+  }
+}

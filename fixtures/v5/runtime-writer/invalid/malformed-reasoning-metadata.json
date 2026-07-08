@@ -1,0 +1,28 @@
+{
+  "caseId": "v5-runtime-writer-invalid-malformed-reasoning-metadata",
+  "description": "Writer input with malformed reasoning metadata must fail closed.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "packageId": "stp-fixture-invalid-reasoning-001",
+    "issuer": {
+      "agentId": "agent-fixture-writer-001",
+      "workspaceId": "workspace-fixture-001"
+    },
+    "subject": {
+      "type": "verdict",
+      "id": "verdict-fixture-001"
+    },
+    "verdict": {
+      "status": "review",
+      "reason": "malformed_reasoning_metadata"
+    },
+    "reasoning": {
+      "summary": "",
+      "inputsReviewed": "not-an-array"
+    }
+  },
+  "expected": {
+    "verdict": "BLOCK",
+    "reason_category": "malformed_reasoning_metadata"
+  }
+}

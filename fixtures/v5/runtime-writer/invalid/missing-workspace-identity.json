@@ -1,0 +1,23 @@
+{
+  "caseId": "v5-runtime-writer-invalid-missing-workspace-identity",
+  "description": "Writer input missing issuer workspace identity must fail closed.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "packageId": "stp-fixture-invalid-missing-workspace-001",
+    "issuer": {
+      "agentId": "agent-fixture-writer-001"
+    },
+    "subject": {
+      "type": "tool_call",
+      "id": "subject-fixture-tool-call-001"
+    },
+    "verdict": {
+      "status": "review",
+      "reason": "missing_workspace_identity"
+    }
+  },
+  "expected": {
+    "verdict": "BLOCK",
+    "reason_category": "missing_workspace_identity"
+  }
+}

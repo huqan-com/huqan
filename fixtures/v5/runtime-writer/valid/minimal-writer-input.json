@@ -1,0 +1,30 @@
+{
+  "caseId": "v5-runtime-writer-valid-minimal",
+  "description": "Minimal deterministic input shape for a future Shared Trust Package runtime writer.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "packageId": "stp-fixture-valid-minimal-001",
+    "issuer": {
+      "agentId": "agent-fixture-writer-001",
+      "workspaceId": "workspace-fixture-001"
+    },
+    "subject": {
+      "type": "tool_call",
+      "id": "subject-fixture-tool-call-001"
+    },
+    "verdict": {
+      "status": "review",
+      "reason": "fixture_minimal_writer_input"
+    },
+    "nonClaims": [
+      "no_runtime_writer_implementation",
+      "no_runtime_reader_implementation",
+      "no_signing_runtime",
+      "no_verification_runtime"
+    ]
+  },
+  "expected": {
+    "verdict": "ACCEPT",
+    "reason_category": "valid_minimal_writer_input"
+  }
+}

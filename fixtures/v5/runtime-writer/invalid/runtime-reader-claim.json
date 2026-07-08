@@ -1,0 +1,27 @@
+{
+  "caseId": "v5-runtime-writer-invalid-runtime-reader-claim",
+  "description": "Writer input claiming runtime reader behavior must fail closed.",
+  "writerInput": {
+    "schemaVersion": "v5.shared_trust_package.writer_input.v1",
+    "packageId": "stp-fixture-invalid-reader-claim-001",
+    "issuer": {
+      "agentId": "agent-fixture-writer-001",
+      "workspaceId": "workspace-fixture-001"
+    },
+    "subject": {
+      "type": "trust_package",
+      "id": "stp-fixture-invalid-reader-claim-001"
+    },
+    "verdict": {
+      "status": "review",
+      "reason": "runtime_reader_claim"
+    },
+    "claims": {
+      "runtimeReaderImplemented": true
+    }
+  },
+  "expected": {
+    "verdict": "BLOCK",
+    "reason_category": "runtime_reader_claim"
+  }
+}
