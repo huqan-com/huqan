@@ -1,8 +1,8 @@
 # V5-IMPL-2L - Runtime Writer Test Task-Pack
 
-**Mode:** Task-pack only  
-**Current checkpoint:** `NEXT-GATE-SELECTION_AFTER_V5-IMPL-2K_CLOSEOUT_GREEN`  
-**Canonical branch:** `main`  
+**Mode:** Task-pack only
+**Current checkpoint:** `NEXT-GATE-SELECTION_AFTER_V5-IMPL-2K_CLOSEOUT_GREEN`
+**Canonical branch:** `main`
 **Required base:** `main @ 51d7db3cad4a4fb060c53fba20fe2e6cba8cc8b9`
 
 ## Purpose
