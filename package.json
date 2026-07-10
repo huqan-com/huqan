@@ -41,24 +41,21 @@
                  ],
     "repository":  {
                        "type":  "git",
-                       "url":  "git+https://github.com/agiulucom42-del/axiom.git"
+                       "url":  "git+https://github.com/agiulucom42-del/huqan.git"
                    },
     "bugs":  {
-                 "url":  "https://github.com/agiulucom42-del/axiom/issues"
+                 "url":  "https://github.com/agiulucom42-del/huqan/issues"
              },
-    "homepage":  "https://github.com/agiulucom42-del/axiom#readme",
+    "homepage":  "https://github.com/agiulucom42-del/huqan#readme",
     "author": "Huqan Contributors",
     "license": "Apache-2.0",
     "huqan": {
-                  "testStatus":  "1277 pass / 0 fail / 16 skipped"
+                  "testStatus":  "1773 tests / 1744 pass / 0 fail / 29 skipped"
               },
     "engines":  {
                     "node":  "\u003e=18.0.0"
                 },
-    "optionalDependencies":  {
-                                 "better-sqlite3":  "^12.10.0"
-                             },
     "dependencies":  {
-                         "better-sqlite3":  "^11.0.0"
+                         "better-sqlite3":  "^12.10.0"
                      }
 }
