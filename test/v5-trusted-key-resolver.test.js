@@ -133,6 +133,61 @@ test('rejects malformed key references and unknown record fields', () => {
   );
 });
 
+test('rejects impossible calendar dates without normalizing them', () => {
+  const malformedDates = [
+    '2026-02-30T00:00:00.000Z',
+    '2026-00-01T00:00:00.000Z',
+    '2026-01-00T00:00:00.000Z',
+    '2026-02-01T00:00:00.000'
+  ];
+
+  for (const evaluationTime of malformedDates) {
+    assertExactOutput(resolveTrustedKeyState(validInput({ evaluationTime })), malformed);
+  }
+
+  assertExactOutput(
+    resolveTrustedKeyState(validInput({
+      records: [{ ...validInput().records[0], expiresAt: '2028-02-29T00:00:00.000Z' }]
+    })),
+    { keyState: 'active' }
+  );
+});
+
+test('rejects URL, provider, and network-shaped key references', () => {
+  const invalidReferences = [
+    'https://example.invalid/key',
+    'http://example.invalid/key',
+    'provider:key-record',
+    'key-host/path?query=value#fragment'
+  ];
+
+  for (const keyReference of invalidReferences) {
+    assertExactOutput(resolveTrustedKeyState(validInput({ keyReference })), malformed);
+    assertExactOutput(
+      resolveTrustedKeyState(validInput({
+        records: [{ ...validInput().records[0], keyReference }]
+      })),
+      malformed
+    );
+  }
+});
+
+test('rejects sparse and non-object record arrays before record selection', () => {
+  const record = validInput().records[0];
+  const sparse = new Array(1);
+  const interleaved = [];
+  interleaved[0] = record;
+  interleaved[2] = record;
+
+  for (const records of [sparse, interleaved, [undefined], [null]]) {
+    assertExactOutput(resolveTrustedKeyState(validInput({ records })), malformed);
+  }
+
+  assertExactOutput(resolveTrustedKeyState(validInput({ records: [record] })), {
+    keyState: 'active'
+  });
+});
+
 test('rejects recursive secret and key material content', () => {
   const cases = [
     { metadata: { privateKey: 'synthetic-private-key' } },
