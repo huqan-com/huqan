@@ -79,6 +79,47 @@ test('bounded verification core fails closed for malformed inputs', () => {
   });
 });
 
+test('bounded verification core rejects unbounded trusted-key metadata', () => {
+  const positive = readFixtures().find(({ caseId }) => caseId === 'verified-supported-algorithm');
+  const cases = [
+    ['nested privateKey', (input) => { input.trustedKeyMetadata.details = { privateKey: 'synthetic-secret' }; }],
+    ['nested networkEndpoint', (input) => { input.trustedKeyMetadata.details = { networkEndpoint: 'https://example.invalid' }; }],
+    ['array secret', (input) => { input.trustedKeyMetadata.expiresAt = [{ secret: 'synthetic-secret' }]; }],
+    ['top-level unknown field', (input) => { input.trustedKeyMetadata.unexpected = true; }]
+  ];
+
+  for (const [name, mutate] of cases) {
+    const input = JSON.parse(JSON.stringify(positive.input));
+    mutate(input);
+    assert.deepEqual(evaluateBoundedVerification(input), {
+      verificationStatus: 'not_verified',
+      reasonCategory: 'malformed_trusted_key_record'
+    }, name);
+  }
+});
+
+test('bounded verification core rejects signature evidence smuggling', () => {
+  const positive = readFixtures().find(({ caseId }) => caseId === 'verified-supported-algorithm');
+  const validSignature = positive.input.signature;
+  const signatures = [
+    `${validSignature}:suffix`,
+    `${validSignature}\n`,
+    `${validSignature}:-----BEGIN PRIVATE KEY-----`,
+    `${validSignature}\u0000`,
+    'synthetic-signature-placeholder:v1:case-',
+    'synthetic-signature-placeholder:v1:case-01:unexpected'
+  ];
+
+  for (const signature of signatures) {
+    const input = JSON.parse(JSON.stringify(positive.input));
+    input.signature = signature;
+    assert.deepEqual(evaluateBoundedVerification(input), {
+      verificationStatus: 'not_verified',
+      reasonCategory: 'malformed_signature_evidence'
+    }, JSON.stringify(signature));
+  }
+});
+
 test('bounded verification core does not use network or system clock', () => {
   const positive = readFixtures().find(({ caseId }) => caseId === 'verified-supported-algorithm');
   const originalFetch = globalThis.fetch;
