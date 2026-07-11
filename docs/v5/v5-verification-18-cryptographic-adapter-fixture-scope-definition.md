@@ -111,7 +111,7 @@ V17A profile, stop with `V5-VERIFICATION-18_BLOCKED_BY_VECTOR_PROFILE_MISMATCH`.
 | 05 | `05-unsupported-algorithm.json` / `unsupported-algorithm` | unsupported algorithm | `unsupported/algorithm_unsupported` | exact `ed25519-v2` identifier |
 | 06 | `06-unsupported-algorithm-case-variant.json` / `unsupported-algorithm-case-variant` | unsupported algorithm | `unsupported/algorithm_unsupported` | exact `Ed25519-v1` case variant |
 | 07 | `07-malformed-empty-message.json` / `malformed-empty-message` | message failure | `malformed/message_malformed` | empty lowercase hex |
-| 08 | `08-malformed-public-key-one-byte-short.json` / `malformed-public-key-one-byte-short` | public-key failure | `malformed/public_key_malformed` | parent 01 public key byte 43 `60` removed |
+| 08 | `08-malformed-public-key-one-byte-short.json` / `malformed-public-key-one-byte-short` | public-key failure | `malformed/public_key_malformed` | parent 01 public key byte 43 `0c` removed |
 | 09 | `09-malformed-public-key-one-byte-long.json` / `malformed-public-key-one-byte-long` | public-key failure | `malformed/public_key_malformed` | parent 01 public key gains byte 44 `00` after original length 44 |
 | 10 | `10-malformed-public-key-invalid-spki.json` / `malformed-public-key-invalid-spki` | public-key failure | `malformed/public_key_malformed` | parent 01 SPKI DER byte 0 changes `30` to `31`, preserving length 44 |
 | 11 | `11-malformed-signature-one-byte-short.json` / `malformed-signature-one-byte-short` | signature failure | `malformed/signature_malformed` | parent 01 signature byte 63 `00` removed |
