@@ -1,0 +1,24 @@
+{
+  "caseId": "resolver-expired-key-metadata-boundary",
+  "description": "Fixed evaluation time after expiry yields expired fail-closed classification.",
+  "input": {
+    "keyReference": "test-key:resolver-expired-04",
+    "evaluationTime": "2026-02-01T12:00:00.000Z",
+    "trustedKeyRecord": {
+      "status": "active",
+      "keyReference": "test-key:resolver-expired-04",
+      "expiresAt": "2026-01-31T23:59:59.000Z"
+    }
+  },
+  "expected": {
+    "keyState": "expired",
+    "reasonCategory": "expired_key_metadata"
+  },
+  "nonClaims": [
+    "package_trust_not_established",
+    "action_authorization_not_established",
+    "identity_verification_not_established",
+    "external_exchange_not_established",
+    "production_crypto_not_claimed"
+  ]
+}

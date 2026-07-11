@@ -1,0 +1,19 @@
+{
+  "caseId": "resolver-unknown-key-reference",
+  "description": "Unknown bounded key reference remains fail-closed.",
+  "input": {
+    "keyReference": "test-key:resolver-unknown-02",
+    "evaluationTime": "2026-02-01T12:00:00.000Z"
+  },
+  "expected": {
+    "keyState": "unknown",
+    "reasonCategory": "unknown_key"
+  },
+  "nonClaims": [
+    "package_trust_not_established",
+    "action_authorization_not_established",
+    "identity_verification_not_established",
+    "external_exchange_not_established",
+    "production_crypto_not_claimed"
+  ]
+}

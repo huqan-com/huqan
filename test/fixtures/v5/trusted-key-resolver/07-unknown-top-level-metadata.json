@@ -1,0 +1,25 @@
+{
+  "caseId": "resolver-unknown-top-level-metadata",
+  "description": "Unexpected top-level trusted-key metadata field is treated as malformed.",
+  "input": {
+    "keyReference": "test-key:resolver-unknown-field-07",
+    "evaluationTime": "2026-02-01T12:00:00.000Z",
+    "trustedKeyRecord": {
+      "status": "active",
+      "keyReference": "test-key:resolver-unknown-field-07",
+      "expiresAt": "2026-12-31T23:59:59.000Z",
+      "sourceSystem": "synthetic-provider"
+    }
+  },
+  "expected": {
+    "keyState": "malformed",
+    "reasonCategory": "malformed_trusted_key_record"
+  },
+  "nonClaims": [
+    "package_trust_not_established",
+    "action_authorization_not_established",
+    "identity_verification_not_established",
+    "external_exchange_not_established",
+    "production_crypto_not_claimed"
+  ]
+}

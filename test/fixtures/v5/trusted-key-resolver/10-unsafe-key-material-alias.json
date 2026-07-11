@@ -1,0 +1,31 @@
+{
+  "caseId": "resolver-unsafe-key-material-alias",
+  "description": "Key-material aliases in nested arrays stay malformed and never resolve active.",
+  "input": {
+    "keyReference": "test-key:resolver-key-material-10",
+    "evaluationTime": "2026-02-01T12:00:00.000Z",
+    "trustedKeyRecord": {
+      "status": "active",
+      "keyReference": "test-key:resolver-key-material-10",
+      "expiresAt": "2026-12-31T23:59:59.000Z",
+      "metadata": {
+        "aliases": [
+          {
+            "key_material": "fixture-key-material-alias"
+          }
+        ]
+      }
+    }
+  },
+  "expected": {
+    "keyState": "malformed",
+    "reasonCategory": "malformed_trusted_key_record"
+  },
+  "nonClaims": [
+    "package_trust_not_established",
+    "action_authorization_not_established",
+    "identity_verification_not_established",
+    "external_exchange_not_established",
+    "production_crypto_not_claimed"
+  ]
+}
