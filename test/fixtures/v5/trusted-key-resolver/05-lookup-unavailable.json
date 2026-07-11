@@ -1,0 +1,23 @@
+{
+  "caseId": "resolver-lookup-unavailable",
+  "description": "Synthetic resolver outage remains unavailable and never falls through to active.",
+  "input": {
+    "keyReference": "test-key:resolver-unavailable-05",
+    "evaluationTime": "2026-02-01T12:00:00.000Z",
+    "trustedKeyRecord": {
+      "status": "unavailable",
+      "keyReference": "test-key:resolver-unavailable-05"
+    }
+  },
+  "expected": {
+    "keyState": "unavailable",
+    "reasonCategory": "key_lookup_unavailable"
+  },
+  "nonClaims": [
+    "package_trust_not_established",
+    "action_authorization_not_established",
+    "identity_verification_not_established",
+    "external_exchange_not_established",
+    "production_crypto_not_claimed"
+  ]
+}

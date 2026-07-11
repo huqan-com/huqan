@@ -1,0 +1,24 @@
+{
+  "caseId": "resolver-revoked-key-reference",
+  "description": "Revoked trusted-key metadata stays revoked at the fixed evaluation time.",
+  "input": {
+    "keyReference": "test-key:resolver-revoked-03",
+    "evaluationTime": "2026-02-01T12:00:00.000Z",
+    "trustedKeyRecord": {
+      "status": "revoked",
+      "keyReference": "test-key:resolver-revoked-03",
+      "expiresAt": "2026-12-31T23:59:59.000Z"
+    }
+  },
+  "expected": {
+    "keyState": "revoked",
+    "reasonCategory": "revoked_key"
+  },
+  "nonClaims": [
+    "package_trust_not_established",
+    "action_authorization_not_established",
+    "identity_verification_not_established",
+    "external_exchange_not_established",
+    "production_crypto_not_claimed"
+  ]
+}
