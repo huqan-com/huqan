@@ -85,6 +85,7 @@ const activeExpectedKeys = ['keyReference', 'keyState', 'publicKeySpkiDerHex'];
 const nonActiveExpectedKeys = ['keyState', 'reasonCategory'];
 const descriptorKinds = new Set(['buffer-hex', 'uint8array-hex', 'raw-json']);
 const byteDescriptorKinds = new Set(['buffer-hex', 'uint8array-hex']);
+const allowedRecordKeys = new Set(['expiresAt', 'keyReference', 'publicKeySpkiDer', 'status']);
 
 function ownKeys(value) {
   return Object.keys(value).sort();
@@ -273,6 +274,17 @@ test('fixture input roots and descriptor locations are strictly confined', () =>
       validateDescriptor(descriptor, `${fixture.caseId}:${trail.join('.')}`);
     }
 
+    for (const record of fixture.input.records) {
+      assert.ok(record && typeof record === 'object' && !Array.isArray(record), `${fixture.caseId}: record object`);
+      for (const key of Object.keys(record)) {
+        const intentionalPemViolation = fixture.caseId === '18-malformed-record-forbidden-public-key-field' && key === 'publicKeyPem';
+        assert.ok(allowedRecordKeys.has(key) || intentionalPemViolation, `${fixture.caseId}: unknown record key ${key}`);
+      }
+      if (Object.hasOwn(record, 'publicKeyPem')) {
+        assert.equal(fixture.caseId, '18-malformed-record-forbidden-public-key-field');
+      }
+    }
+
     function inspectPublicKeyFields(value, trail = []) {
       if (Array.isArray(value)) {
         value.forEach((child, index) => inspectPublicKeyFields(child, [...trail, index]));
@@ -359,6 +371,11 @@ test('hex encodings and exact decoded-length matrix remain canonical', () => {
 
 test('public key provenance is anchored to canonical public-only fixtures', () => {
   const corpus = loadBindingCorpus();
+  const sourceFiles = [
+    '01-valid-rfc8032-one-octet.json',
+    '04-invalid-different-ed25519-public-key.json'
+  ];
+  const sourceHashesBefore = new Map(sourceFiles.map((file) => [file, fixtureHash(cryptoRoot, file)]));
   const rfcSource = loadFixture(cryptoRoot, '01-valid-rfc8032-one-octet.json');
   const distinctSource = loadFixture(cryptoRoot, '04-invalid-different-ed25519-public-key.json');
   const rfc = decodeHex(rfcSource.input.publicKeySpkiDerHex, 'RFC source key');
@@ -386,6 +403,8 @@ test('public key provenance is anchored to canonical public-only fixtures', () =
   assert.match(case03.description, /opaque/i);
   assert.doesNotMatch(case03.description, /valid DER|cryptographically valid|verified/i);
   assert.deepEqual(case03.nonClaims, nonClaims);
+  const sourceHashesAfter = new Map(sourceFiles.map((file) => [file, fixtureHash(cryptoRoot, file)]));
+  assert.deepEqual(sourceHashesAfter, sourceHashesBefore, 'public-key source fixtures remain unchanged');
 });
 
 test('expected output vocabulary and confinement match the existing resolver contract', () => {
@@ -486,7 +505,7 @@ test('duplicate, reference mismatch, and whole-record precedence invariants are 
 });
 
 test('secret-material scan is precise and nonClaims remain exact', () => {
-  const forbiddenKey = /^(privateKey|private_key|privateSeed|signingSeed|pkcs8|password|credential|accessToken|apiToken|provider|keyStore|key_store|endpoint|database|environmentVariable)$/i;
+  const forbiddenKey = /^(privateKey|private_key|privateSeed|signingSeed|pkcs8|secret|token|password|credential|accessToken|apiToken|provider|keyStore|key_store|endpoint|networkEndpoint|network_endpoint|url|uri|database|databaseLocator|environmentVariable)$/i;
   const forbiddenValue = /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|private[ _-]?(?:key|seed)\s*[:=]|(?:access|api)[ _-]?token\s*[:=]|(?:password|credential)\s*[:=]|https?:\/\//i;
 
   function scan(value, fixture, trail = []) {
@@ -519,8 +538,10 @@ test('secret-material scan is precise and nonClaims remain exact', () => {
 test('original resolver corpus remains unchanged and descriptor-free', () => {
   const before = new Map(expectedResolverFiles.map((file) => [file, fixtureHash(resolverRoot, file)]));
   const fixtures = expectedResolverFiles.map((file) => loadFixture(resolverRoot, file));
+  const bindingCaseIds = new Set(loadBindingCorpus().map(({ fixture }) => fixture.caseId));
   assert.equal(fixtures.length, 12);
   assert.equal(new Set(fixtures.map((fixture) => fixture.caseId)).size, 12);
+  assert.equal(fixtures.some((fixture) => bindingCaseIds.has(fixture.caseId)), false);
 
   function assertNoBindingField(value, label) {
     if (Array.isArray(value)) {
@@ -541,11 +562,31 @@ test('validation is deterministic, file-immutable, and never loads the resolver'
   const resolverModule = require.resolve('../lib/v5/trusted-key-resolver');
   assert.equal(require.cache[resolverModule], undefined);
   const before = new Map(expectedBindingFiles.map((file) => [file, fixtureHash(bindingRoot, file)]));
-  const first = loadBindingCorpus();
-  const second = loadBindingCorpus();
-  assert.deepEqual(second, first);
-  for (const { fixture } of first) {
-    assert.deepEqual(materializeFixtureInput(fixture.input), materializeFixtureInput(fixture.input));
+  const originalDateNow = Date.now;
+  const originalRandom = Math.random;
+  const originalFetch = globalThis.fetch;
+  const originalTimezone = process.env.TZ;
+  Date.now = () => { throw new Error('system clock access forbidden'); };
+  Math.random = () => { throw new Error('randomness access forbidden'); };
+  globalThis.fetch = () => { throw new Error('network access forbidden'); };
+  process.env.TZ = 'Pacific/Honolulu';
+
+  try {
+    const first = loadBindingCorpus();
+    const second = loadBindingCorpus();
+    assert.deepEqual(second, first);
+    for (const { fixture } of first) {
+      assert.deepEqual(materializeFixtureInput(fixture.input), materializeFixtureInput(fixture.input));
+    }
+  } finally {
+    Date.now = originalDateNow;
+    Math.random = originalRandom;
+    globalThis.fetch = originalFetch;
+    if (originalTimezone === undefined) {
+      delete process.env.TZ;
+    } else {
+      process.env.TZ = originalTimezone;
+    }
   }
   const after = new Map(expectedBindingFiles.map((file) => [file, fixtureHash(bindingRoot, file)]));
   assert.deepEqual(after, before);
