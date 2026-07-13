@@ -631,3 +631,338 @@ test('F. key bytes are copied at record-snapshot time before later record side e
   assert.ok(result.publicKeySpkiDer.equals(expected), 'output uses bytes captured before later mutation');
   assert.equal(result.publicKeySpkiDer.equals(original), false, 'output is isolated from mutated caller bytes');
 });
+
+// ---------------------------------------------------------------------------
+// G. A6 adversarial coverage - resource bounds and poisoning precedence
+// ---------------------------------------------------------------------------
+
+function activeRecord(keyReference, overrides = {}) {
+  return {
+    keyReference,
+    status: 'active',
+    expiresAt: '2026-12-31T23:59:59.000Z',
+    publicKeySpkiDer: publicKey(),
+    ...overrides
+  };
+}
+
+function resolverInput(keyReference, records) {
+  return { keyReference, records, evaluationTime: FIXED_TIME };
+}
+
+function assertNoKeyMaterial(result) {
+  assert.equal(Object.prototype.hasOwnProperty.call(result, 'publicKeySpkiDer'), false);
+}
+
+test('G. resource-bound records remain finite without inventing a max-records contract', () => {
+  const ref = 'test-key:a6-resource';
+  exact(resolveTrustedKeyState(resolverInput(ref, [])), {
+    keyState: 'unknown',
+    reasonCategory: 'unknown_key'
+  });
+
+  const single = assertActive(resolverInput(ref, [activeRecord(ref)]), ref);
+  assert.ok(single.publicKeySpkiDer.equals(publicKey()));
+
+  const largeDense = Array.from({ length: 512 }, (_, index) => ({
+    keyReference: `test-key:a6-nonmatch-${index}`,
+    status: 'unknown'
+  }));
+  const startedAt = process.hrtime.bigint();
+  const largeResult = resolveTrustedKeyState(resolverInput(ref, largeDense));
+  const elapsedMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+  exact(largeResult, { keyState: 'unknown', reasonCategory: 'unknown_key' });
+  assert.ok(elapsedMs < 1500, `large dense input should stay bounded, got ${elapsedMs}ms`);
+
+  const sparse = [];
+  sparse.length = 2048;
+  sparse[2047] = activeRecord(ref);
+  assertMalformed(resolverInput(ref, sparse));
+
+  const accessorBacked = [];
+  accessorBacked.length = 2;
+  accessorBacked[0] = activeRecord('test-key:a6-other');
+  let indexGetterCalls = 0;
+  Object.defineProperty(accessorBacked, '1', {
+    enumerable: true,
+    configurable: true,
+    get() {
+      indexGetterCalls += 1;
+      return activeRecord(ref);
+    }
+  });
+  assertMalformed(resolverInput(ref, accessorBacked));
+  assert.equal(indexGetterCalls, 0, 'array index getter must not be invoked');
+});
+
+test('G. selected and nonselected poisoning precedence is explicit', () => {
+  const ref = 'test-key:a6-poisoning';
+  const selected = activeRecord(ref);
+  const boundedMalformedState = {
+    keyReference: 'test-key:a6-nonmatching-malformed-state',
+    status: 'malformed',
+    publicKeySpkiDer: publicKey()
+  };
+
+  assertActive(resolverInput(ref, [boundedMalformedState, selected]), ref);
+  assertActive(resolverInput(ref, [selected, boundedMalformedState]), ref);
+
+  for (const poison of [
+    { ...activeRecord('test-key:a6-poison-unknown-field'), unexpected: true },
+    (() => {
+      const record = activeRecord('test-key:a6-poison-accessor');
+      Object.defineProperty(record, 'publicKeySpkiDer', {
+        enumerable: true,
+        configurable: true,
+        get() { return publicKey(); }
+      });
+      return record;
+    })(),
+    new Proxy(activeRecord('test-key:a6-poison-proxy'), {
+      getPrototypeOf() { throw new Error('nonmatching prototype trap'); }
+    })
+  ]) {
+    assertMalformed(resolverInput(ref, [poison, selected]));
+    assertMalformed(resolverInput(ref, [selected, poison]));
+  }
+
+  assertMalformed(resolverInput(ref, [
+    activeRecord(ref),
+    { keyReference: ref, status: 'malformed', publicKeySpkiDer: publicKey() }
+  ]));
+  assertMalformed(resolverInput(ref, [
+    activeRecord(ref),
+    activeRecord(ref, { status: 'revoked' })
+  ]));
+});
+
+// ---------------------------------------------------------------------------
+// H. A6 adversarial coverage - typed arrays and descriptors
+// ---------------------------------------------------------------------------
+
+test('H. typed-array matrix enforces exact visible 44-byte fresh bytes', () => {
+  const ref = 'test-key:a6-typed-array';
+  const exactBuffer = Buffer.from(publicKey());
+  assertActive(resolverInput(ref, [activeRecord(ref, { publicKeySpkiDer: exactBuffer })]), ref);
+
+  const exactUint8 = new Uint8Array(publicKey());
+  const uint8Result = assertActive(
+    resolverInput(ref, [activeRecord(ref, { publicKeySpkiDer: exactUint8 })]),
+    ref
+  );
+  assert.ok(uint8Result.publicKeySpkiDer.equals(publicKey()));
+  assert.notEqual(uint8Result.publicKeySpkiDer, exactUint8);
+
+  for (const key of [
+    new Uint8Array(0),
+    new Uint8Array(43),
+    new Uint8Array(45),
+    Buffer.alloc(43),
+    Buffer.alloc(45)
+  ]) {
+    assertMalformed(resolverInput(ref, [activeRecord(ref, { publicKeySpkiDer: key })]));
+  }
+
+  const backing = new Uint8Array(80);
+  backing.fill(0xaa);
+  const offsetView = new Uint8Array(backing.buffer, 16, 44);
+  offsetView.set(publicKey());
+  backing.fill(0xbb, 60);
+  const offsetResult = assertActive(
+    resolverInput(ref, [activeRecord(ref, { publicKeySpkiDer: offsetView })]),
+    ref
+  );
+  assert.ok(offsetResult.publicKeySpkiDer.equals(publicKey()));
+  assert.equal(offsetResult.publicKeySpkiDer.includes(0xaa), false);
+  assert.equal(offsetResult.publicKeySpkiDer.includes(0xbb), false);
+  backing.fill(0xcc);
+  assert.ok(offsetResult.publicKeySpkiDer.equals(publicKey()));
+
+  class CustomUint8Array extends Uint8Array {}
+  assertMalformed(resolverInput(ref, [
+    activeRecord(ref, { publicKeySpkiDer: new CustomUint8Array(44) })
+  ]));
+
+  const { proxy, revoke } = Proxy.revocable(new Uint8Array(publicKey()), {});
+  revoke();
+  assertMalformed(resolverInput(ref, [activeRecord(ref, { publicKeySpkiDer: proxy })]));
+
+  if (typeof SharedArrayBuffer === 'function') {
+    const shared = new Uint8Array(new SharedArrayBuffer(44));
+    shared.set(publicKey());
+    const sharedResult = assertActive(
+      resolverInput(ref, [activeRecord(ref, { publicKeySpkiDer: shared })]),
+      ref
+    );
+    assert.ok(sharedResult.publicKeySpkiDer.equals(publicKey()));
+    assert.notEqual(sharedResult.publicKeySpkiDer.buffer, shared.buffer);
+  }
+});
+
+test('H. descriptor and prototype attacks fail closed without raw exceptions', () => {
+  const ref = 'test-key:a6-descriptor';
+  const nullProtoRecord = Object.assign(Object.create(null), activeRecord(ref));
+  assertActive(resolverInput(ref, [nullProtoRecord]), ref);
+
+  const customProto = Object.create({ inherited: true });
+  Object.assign(customProto, activeRecord(ref));
+  assertMalformed(resolverInput(ref, [customProto]));
+
+  for (const key of ['__proto__', 'constructor', 'prototype']) {
+    const root = resolverInput(ref, [activeRecord(ref)]);
+    Object.defineProperty(root, key, {
+      enumerable: true,
+      configurable: true,
+      value: true
+    });
+    assertMalformed(root);
+  }
+
+  const symbolRoot = resolverInput(ref, [activeRecord(ref)]);
+  symbolRoot[Symbol('poison')] = true;
+  assertMalformed(symbolRoot);
+
+  const nonEnumerableAllowed = activeRecord(ref);
+  Object.defineProperty(nonEnumerableAllowed, 'publicKeySpkiDer', {
+    enumerable: false,
+    configurable: true,
+    value: publicKey()
+  });
+  // Reflect.ownKeys sees non-enumerable own data fields, so this remains a
+  // bounded accepted key rather than an accessor/prototype bypass.
+  assertActive(resolverInput(ref, [nonEnumerableAllowed]), ref);
+
+  const nonEnumerableForbidden = activeRecord(ref);
+  Object.defineProperty(nonEnumerableForbidden, 'secret', {
+    enumerable: false,
+    configurable: true,
+    value: 'synthetic'
+  });
+  assertMalformed(resolverInput(ref, [nonEnumerableForbidden]));
+
+  assertMalformed(new Proxy(resolverInput(ref, [activeRecord(ref)]), {
+    ownKeys() { throw new Error('root ownKeys trap'); }
+  }));
+  assertMalformed(resolverInput(ref, [
+    new Proxy(activeRecord(ref), {
+      ownKeys() { throw new Error('record ownKeys trap'); }
+    })
+  ]));
+  assertActive(resolverInput(ref, new Proxy([activeRecord(ref)], {
+    ownKeys() { throw new Error('records ownKeys trap'); }
+  })), ref);
+  assertMalformed(resolverInput(ref, new Proxy([activeRecord(ref)], {
+    getOwnPropertyDescriptor() { throw new Error('records descriptor trap'); }
+  })));
+
+  const { proxy, revoke } = Proxy.revocable(activeRecord(ref), {});
+  revoke();
+  assertMalformed(resolverInput(ref, [proxy]));
+});
+
+// ---------------------------------------------------------------------------
+// I. A6 adversarial coverage - determinism, lifecycle, recursion, output
+// ---------------------------------------------------------------------------
+
+test('I. repeated-call determinism has no hidden state or alias accumulation', () => {
+  const ref = 'test-key:a6-repeat';
+  const key = publicKey();
+  const input = resolverInput(ref, [activeRecord(ref, { publicKeySpkiDer: key })]);
+  const first = resolveTrustedKeyState(input);
+
+  for (let index = 0; index < 100; index += 1) {
+    const next = resolveTrustedKeyState(input);
+    assert.deepEqual(next, first);
+    assert.notEqual(next.publicKeySpkiDer, first.publicKeySpkiDer);
+    assert.ok(next.publicKeySpkiDer.equals(publicKey()));
+  }
+
+  first.publicKeySpkiDer.fill(0xee);
+  const afterOutputMutation = resolveTrustedKeyState(input);
+  assert.ok(afterOutputMutation.publicKeySpkiDer.equals(publicKey()));
+
+  key.fill(0xdd);
+  const afterCallerMutation = resolveTrustedKeyState(input);
+  assert.equal(afterCallerMutation.keyState, 'active');
+  assert.ok(afterCallerMutation.publicKeySpkiDer.equals(Buffer.alloc(44, 0xdd)));
+  assert.notEqual(afterCallerMutation.publicKeySpkiDer, key);
+});
+
+test('I. lifecycle precedence matrix stays fail-closed and bounded', () => {
+  const ref = 'test-key:a6-lifecycle';
+  const stateRecord = (status) => activeRecord(ref, {
+    status,
+    ...(status === 'expired' ? { expiresAt: '2026-01-01T00:00:00.000Z' } : {})
+  });
+
+  for (const records of [
+    [stateRecord('active'), stateRecord('revoked')],
+    [stateRecord('active'), stateRecord('expired')],
+    [stateRecord('revoked'), stateRecord('expired')],
+    [stateRecord('active'), stateRecord('active')],
+    [stateRecord('revoked'), stateRecord('revoked')],
+    [stateRecord('unavailable'), { ...stateRecord('malformed'), publicKeySpkiDer: publicKey() }]
+  ]) {
+    assertMalformed(resolverInput(ref, records));
+  }
+
+  assertMalformed(resolverInput(ref, [
+    { ...activeRecord(ref), unknownField: true },
+    activeRecord('test-key:a6-valid-nonmatching')
+  ]));
+  assertMalformed(resolverInput(ref, [
+    activeRecord(ref),
+    { ...activeRecord('test-key:a6-malformed-nonmatching'), unknownField: true }
+  ]));
+});
+
+test('I. forbidden-content recursion rejects deep, cyclic, shared, and mixed-case poison', () => {
+  const ref = 'test-key:a6-forbidden-recursion';
+  const withMetadata = (metadata) => resolverInput(ref, [
+    activeRecord(ref, { metadata })
+  ]);
+
+  assertMalformed(withMetadata({ level1: { level2: { privateKey: 'synthetic' } } }));
+  assertMalformed(withMetadata({ level1: [{ level2: [{ networkEndpoint: 'https://example.invalid' }] }] }));
+  assertMalformed(withMetadata({ Secret: 'synthetic' }));
+  assertMalformed(withMetadata({ nested: { publicKeySpkiDer: publicKey() } }));
+
+  const cyclicObject = {};
+  cyclicObject.self = cyclicObject;
+  assertMalformed(withMetadata(cyclicObject));
+
+  const cyclicArray = [];
+  cyclicArray.push(cyclicArray);
+  assertMalformed(withMetadata({ nested: cyclicArray }));
+
+  const sharedChild = { token: 'synthetic' };
+  assertMalformed(withMetadata({ a: sharedChild, b: sharedChild }));
+});
+
+test('I. output confinement is exact for active and every non-active result', () => {
+  const ref = 'test-key:a6-output';
+  const active = resolveTrustedKeyState(resolverInput(ref, [activeRecord(ref)]));
+  assert.deepEqual(Object.keys(active).sort(), ['keyReference', 'keyState', 'publicKeySpkiDer']);
+  assert.equal(active.keyReference, ref);
+  assert.ok(Buffer.isBuffer(active.publicKeySpkiDer));
+  assert.equal(active.publicKeySpkiDer.length, 44);
+
+  const nonActiveInputs = [
+    resolverInput(ref, []),
+    resolverInput(ref, [activeRecord(ref, { status: 'revoked' })]),
+    resolverInput(ref, [activeRecord(ref, { status: 'unavailable' })]),
+    resolverInput(ref, [activeRecord(ref, { status: 'expired', expiresAt: '2026-01-01T00:00:00.000Z' })]),
+    resolverInput(ref, [activeRecord(ref, { status: 'unknown' })]),
+    resolverInput(ref, [{ ...activeRecord(ref), unknownField: true }])
+  ];
+
+  for (const input of nonActiveInputs) {
+    const result = resolveTrustedKeyState(input);
+    assert.notEqual(result.keyState, 'active');
+    assert.deepEqual(Object.keys(result).sort(), ['keyState', 'reasonCategory']);
+    assertNoKeyMaterial(result);
+    assert.equal(Object.prototype.hasOwnProperty.call(result, 'keyReference'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(result, 'trusted'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(result, 'authorized'), false);
+  }
+});
