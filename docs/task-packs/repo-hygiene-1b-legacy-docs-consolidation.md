@@ -10,12 +10,19 @@ rewrite, or otherwise modify any legacy document.
 
 - Repository: `huqan-com/huqan`
 - Required branch: `main`
-- Required base: `d9b7bb7adad519e21de53f4640fa111d417503fe`
+- Scope-definition base: `d9b7bb7adad519e21de53f4640fa111d417503fe`
 - Previous checkpoint: `REPO-HYGIENE-1_LEGACY_DOCS_AUDIT_GREEN`
 - Authorized successor: `REPO-HYGIENE-1B_LEGACY_DOCS_CONSOLIDATION`
 
-The implementation gate must stop if `HEAD`, `origin/main`, or the checked-out
-branch does not match this approved base before it begins.
+The scope-definition base records the source state against which this task-pack
+was authored. It is not the future implementation base.
+
+The 1B implementation may begin only from the exact post-merge canonical
+`main` SHA supplied in a separate implementation authorization after this
+task-pack has been merged. Before implementation, the checked-out branch must
+be `main`, `HEAD` must equal `origin/main`, `HEAD` must equal that separately
+authorized 1B implementation base, and this task-pack must exist unchanged at
+that base. Otherwise stop with `BLOCKED_BY_CANONICAL_SOURCE_MISMATCH`.
 
 ## Approved Move Set
 
