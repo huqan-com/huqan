@@ -23,6 +23,8 @@ ENV AXIOM_BACKUP_DIR=/app/data/backups
 
 COPY package*.json ./
 COPY --from=dependencies /app/node_modules ./node_modules
+RUN node -e "require('better-sqlite3')"
+RUN ! command -v python3 && ! command -v g++
 COPY . .
 
 RUN mkdir -p /app/data/backups
