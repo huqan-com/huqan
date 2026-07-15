@@ -1,5 +1,14 @@
 # ADR-006: Self-Healer Loop
 
+> Status: Superseded
+>
+> Superseded by: `docs/ADR-007-self-healer-loop.md`
+>
+> Historical design record only.
+>
+> Not authoritative for current phase numbering, contract shape, or
+> implementation status.
+
 ## Durum
 
 Önerildi / review bekliyor.

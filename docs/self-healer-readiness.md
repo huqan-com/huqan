@@ -1,6 +1,20 @@
 # AXIOM Self-Healer — Readiness & Design
 
-> **Status:** Design / Readiness only. No runtime code is introduced in this PR.
+> Historical Phase-0 Design Snapshot.
+>
+> Not authoritative for current runtime contracts.
+>
+> Canonical architecture authority: `docs/ADR-007-self-healer-loop.md`.
+>
+> Canonical phase sequence authority:
+> `docs/v0.9.2-self-healer-roadmap.md`.
+>
+> Runtime finding schema authority:
+> `lib/self-healer/finding-schema.js`.
+>
+> **Status:** Historical design/readiness snapshot. Runtime code now exists in
+> `lib/self-healer/*`, so this document must not be used as current
+> implementation status.
 > **Target phase:** Phase 0 (design contract) of the Self-Healer workstream.
 > **Authority:** `AGENTS.md` §1, §3, §4, §7, §8, §9 are binding for every later
 > phase. This document does not override them — it constrains how they apply
@@ -68,9 +82,37 @@ ayrica izin verilmez.
 
 ## 4. Core Data Contracts
 
-Self-Healer'in urettigi ve tukettigi dort temel shape. Hicbir alan
+Self-Healer'in urettigi ve tukettigi dort historical design shape. Hicbir alan
 `null` baslamadan operasyonel truth haline gelmez; zimnen "insan
 onayindan gecmemis taslak" anlamina gelir.
+
+The `SelfHealerFinding` block below is not the current runtime contract.
+Current runtime authority is `lib/self-healer/finding-schema.js`.
+
+Current runtime finding fields:
+
+- `kind`
+- `severity`
+- `confidence`
+- `title`
+- `summary`
+- `evidence[]`
+- `affectedFiles[]`
+- `suggestedTests[]`
+- `suggestedFix`
+- `riskFlags[]`
+- `status`
+- `workspaceId`
+- `createdAt`
+- `updatedAt`
+- `receiptId`
+
+Current valid runtime statuses:
+
+- `candidate`
+- `validated`
+- `rejected`
+- `resolved`
 
 ```js
 SelfHealerFinding {

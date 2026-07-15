@@ -1,5 +1,14 @@
 # Self-Healer Roadmap
 
+> Historical roadmap.
+>
+> Superseded for active phase numbering by
+> `docs/v0.9.2-self-healer-roadmap.md`.
+>
+> Do not use this document to determine current implementation status.
+>
+> The SH0-SH7 sequence below is preserved as historical design context only.
+
 ## Amaç
 
 Self-Healer hattının amacı, AXIOM'un geçmiş scan/fix/test/PR bilgisini Memory Core içinde kullanarak daha tutarlı, daha az tekrarlı ve daha güvenli mühendislik önerileri üretmesidir.

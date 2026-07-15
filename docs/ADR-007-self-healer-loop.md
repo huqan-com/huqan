@@ -2,7 +2,28 @@
 
 ## Status
 
-Proposed
+Accepted as documentation authority
+
+Implementation status: Partial
+
+## Authority
+
+This ADR is the canonical Self-Healer architecture authority.
+
+Current implemented authority remains in source and tests:
+
+- `lib/self-healer/finding-schema.js`
+- `lib/self-healer/audit-runner.js`
+- `lib/self-healer/finding-classifier.js`
+- `lib/self-healer/index.js`
+- `test/self-healer-*.test.js`
+
+The current implemented surface is limited to finding schema validation,
+caller-provided check normalization into audit reports, and finding
+classification. Nightly repo audits, autonomous repo scanning, fix proposal
+generation, draft patch/PR production, receipt emission, and memory/audit
+integration are target capabilities unless a later source file and test prove
+otherwise.
 
 ## Context
 
@@ -22,21 +43,23 @@ The codebase keeps accumulating bugs, security regressions, drift, flaky tests, 
 
 ## Decision
 
-v0.9.2 Self-Healer Loop is not an automatic fix engine. It is a human-reviewed, receipt-producing, proposal-based repo audit loop.
+v0.9.2 Self-Healer Loop is not an automatic fix engine. It is a human-reviewed,
+proposal-based repo audit loop. Receipt production is a required target
+invariant, not a current runtime capability.
 
-Self-Healer can:
+As target architecture, Self-Healer can eventually:
 
-- run nightly repo audits
-- find bugs
-- find security smells
-- find stale docs
-- find flaky tests
-- classify risk
-- suggest fixes
-- suggest tests
-- propose draft PRs
-- produce Trust Receipts
-- generate candidate Memory Core audit/event records
+- run nightly repo audits (planned)
+- find bugs (planned beyond caller-provided checks)
+- find security smells (planned beyond caller-provided checks)
+- find stale docs (planned beyond caller-provided checks)
+- find flaky tests (planned beyond caller-provided checks)
+- classify risk (implemented for supplied findings)
+- suggest fixes (planned)
+- suggest tests (planned)
+- propose draft PRs (planned)
+- produce Trust Receipts (planned)
+- generate candidate Memory Core audit/event records (planned)
 
 Self-Healer cannot:
 
@@ -50,6 +73,11 @@ Self-Healer cannot:
 - silently close security findings
 
 ## Core Loop
+
+Current runtime implements only the audit-only helper portion of this loop: it
+accepts caller-provided checks, normalizes them into validated findings, and
+returns a report. It does not scan the repository autonomously, run tests,
+inspect Git history, create branches, write memory, emit receipts, or open PRs.
 
 1. Observe
 
@@ -120,7 +148,23 @@ Self-Healer cannot:
 - Self-Healer cannot approve itself.
 - Auto-merge is forbidden.
 - Human review is mandatory for code, security, and runtime changes.
-- Every Self-Healer action must produce an auditable receipt.
+- Every Self-Healer action must eventually produce an auditable receipt. This
+  is a required target invariant; current runtime only carries nullable
+  `receiptId` fields and does not implement a receipt emitter.
+- Determinism currently means deterministic canonical IDs and normalization,
+  not bit-for-bit identical full report objects. Timestamp fields such as
+  `finding.createdAt`, `finding.updatedAt`, and `auditReport.createdAt` may
+  default to current time.
+
+## Vocabulary Namespaces
+
+The following namespaces are distinct and must not be treated as aliases:
+
+- HUQAN runtime gate verdict: `allow`, `review`, `dry_run_only`, `block`
+- Self-Healer workflow mode: `audit_only`, `proposal_only`, `draft_patch`,
+  `draft_pr`, `blocked`
+- Finding disposition / recommended action: `observe`, `propose`,
+  `require_review`, `block`, `quarantine`
 
 ## Integration Points
 
@@ -138,24 +182,25 @@ Self-Healer cannot:
 
 Self-Healer runs in constrained modes:
 
-- `audit_only`
+- `audit_only` (IMPLEMENTED)
   - read repo
-  - produce findings
+  - accept caller-provided checks
+  - produce validated findings and an audit report
   - no write
 
-- `proposal_only`
+- `proposal_only` (PLANNED)
   - produce fix/test plan
   - no patch
 
-- `draft_patch`
+- `draft_patch` (PLANNED)
   - create branch/patch
   - no merge
 
-- `draft_pr`
+- `draft_pr` (PLANNED)
   - open PR
   - no merge
 
-- `blocked`
+- `blocked` (PLANNED AS EXPLICIT REPORT STATE)
   - stop and emit receipt
 
 ## v0.9.2 Non-Goals
@@ -173,14 +218,16 @@ Self-Healer runs in constrained modes:
 
 ## Acceptance Criteria
 
-v0.9.2 PR0 is complete when:
+v0.9.2 PR0 was a docs-only architecture gate. Current source-of-truth
+reconciliation is complete when:
 
 - ADR exists
 - roadmap exists
 - safety invariants are explicit
 - PR sequence is defined
 - non-goals are explicit
-- no runtime code changed
+- current partial runtime implementation is labelled accurately
+- planned capabilities are not presented as implemented
 - no package files changed
 - docs-only PR opened
 - merge not performed
