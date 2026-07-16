@@ -1,5 +1,13 @@
 # Self-Healer Contracts
 
+> Source-of-truth note:
+>
+> This document is not fully invalid, but it is split between implemented and
+> planned contracts. The implemented finding contract is authoritative only in
+> `lib/self-healer/finding-schema.js` and its tests. The other contract
+> families below remain planned design material until source and tests prove
+> implementation.
+
 ## Amaç
 
 Bu belge, Self-Healer implementasyonundan önce gerekli veri sözleşmelerini tanımlar.
@@ -7,6 +15,25 @@ Bu belge, Self-Healer implementasyonundan önce gerekli veri sözleşmelerini ta
 Bu paket yalnız contract, schema, fixture ve acceptance criteria içindir.
 
 ## Kapsam
+
+Implemented contract:
+
+- `finding` - runtime schema authority is
+  `lib/self-healer/finding-schema.js`.
+
+Planned contracts:
+
+- `scan_run`
+- `bug_classification`
+- `memory_lookup_result`
+- `fix_proposal`
+- `regression_test_proposal`
+- `trust_receipt_summary`
+- `safety_decision_matrix`
+
+Current runtime mode is `audit_only`. The older `dry_run` / `review_only`
+language below is historical/planned terminology and is not current runtime
+authority.
 
 Bu belgede şu sözleşmeler tanımlanır:
 
@@ -56,6 +83,12 @@ Bir tarama oturumunun üst kayıt nesnesidir.
 - `status` en az `running`, `completed`, `blocked`, `failed` değerlerini desteklemelidir.
 
 ## 2. `finding` Contract
+
+This section is historical/planned shape material. Current runtime finding
+authority is `lib/self-healer/finding-schema.js`, which uses fields such as
+`kind`, `summary`, `suggestedTests`, `suggestedFix`, `createdAt`, `updatedAt`,
+and `receiptId`; it does not use this document's `type`, `description`, or
+`scanRunId` fields as runtime authority.
 
 Tarama sonucunda bulunan tekil mühendislik bulgusudur.
 
