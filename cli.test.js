@@ -21,6 +21,19 @@ function freshCLI(kernelOpts = {}) {
   return cli;
 }
 
+function closeManagedCLI(cli) {
+  const storage = cli?.agent?.storage;
+  if (storage && typeof storage.close === 'function' && storage.db?.open !== false) {
+    storage.close();
+  }
+  if (cli?.kernel?.graph && typeof cli.kernel.graph.close === 'function') {
+    cli.kernel.graph.close();
+  }
+  if (cli?.kernel?.memory && typeof cli.kernel.memory.close === 'function') {
+    cli.kernel.memory.close();
+  }
+}
+
 describe('CLI - Komut Çözümleme', () => {
   it('parse: "öğret:" komutunu tanır', () => {
     const cli = freshCLI();
@@ -92,12 +105,35 @@ describe('CLI - Komut Çalıştırma', () => {
   });
 
   it('execute: durum komutu istatistik gösterir', () => {
-    const cli = freshCLI();
-    cli.execute('öğret', 'Köpek hayvandır');
-    cli.execute('öğret', 'Kedi hayvandır');
-    const result = cli.execute('durum', '');
-    assert.ok(result.includes('düğüm'));
-    assert.ok(result.includes('kenar'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'axiom-cli-status-'));
+    const cli = new CLI({
+      kernel: {
+        memoryPath: path.join(tmpDir, 'memory.json'),
+        noLoad: true,
+        useSQLite: false,
+        memoryStoreUseSQLite: false,
+        loadPlugins: false,
+      },
+    });
+    cli.agent.storage.close();
+
+    try {
+      cli.kernel.learn('Köpek hayvandır', TEST_FIXTURE_LEARN_BYPASS);
+      cli.kernel.learn('Kedi hayvandır', TEST_FIXTURE_LEARN_BYPASS);
+      const expected = cli.kernel.graph.getStats();
+      const result = cli.execute('durum', '');
+      const firstLine = result.split(/\r?\n/)[0];
+
+      assert.ok(
+        firstLine.startsWith(
+          `Durum: ${expected.nodes} düğüm, ${expected.edges} kenar, entropi: `,
+        ),
+      );
+      assert.match(firstLine, /entropi: -?\d+\.\d{3}$/);
+    } finally {
+      closeManagedCLI(cli);
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it('execute: rüya komutu hipotez üretir', () => {
@@ -223,21 +259,82 @@ describe('CLI - Komut Çalıştırma', () => {
 
   it('execute: backup ve restore komutlari memory dosyasini geri yukler', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'axiom-cli-backup-'));
-    const memoryPath = path.join(tmpDir, 'memory.json');
-    const dbPath = path.join(tmpDir, 'memory.db');
-    fs.writeFileSync(memoryPath, JSON.stringify({ nodes: {}, edges: [] }), 'utf8');
-    fs.writeFileSync(dbPath, 'db-v1', 'utf8');
+    const memoryPath = path.join(tmpDir, 'custom-state.json');
+    const derivedDbPath = path.join(tmpDir, 'custom-state.db');
+    const independentDbPath = path.join(tmpDir, 'independent.db');
+    const cli = new CLI({
+      kernel: {
+        memoryPath,
+        dbPath: independentDbPath,
+        noLoad: true,
+        useSQLite: false,
+        memoryStoreUseSQLite: false,
+        loadPlugins: false,
+      },
+    });
+    cli.agent.storage.close();
 
-    const cli = freshCLI({ memoryPath, dbPath, useSQLite: false });
-    const backupResult = cli.execute('backup', '');
-    assert.ok(backupResult.includes('Backup tamamlandi'));
+    try {
+      fs.writeFileSync(memoryPath, JSON.stringify({ nodes: {}, edges: [] }), 'utf8');
+      fs.writeFileSync(derivedDbPath, 'db-v1', 'utf8');
+      const options = cli._backupOptions();
 
-    fs.writeFileSync(memoryPath, JSON.stringify({ nodes: { bozuldu: true }, edges: [] }), 'utf8');
-    const restoreResult = cli.execute('restore', '');
-    assert.ok(restoreResult.includes('Restore tamamlandi'));
+      assert.strictEqual(options.memoryPath, memoryPath);
+      assert.strictEqual(options.dbPath, derivedDbPath);
+      assert.notStrictEqual(options.dbPath, independentDbPath);
 
-    const restored = JSON.parse(fs.readFileSync(memoryPath, 'utf8'));
-    assert.deepStrictEqual(restored, { nodes: {}, edges: [] });
+      const backupResult = cli.execute('backup', '');
+      assert.ok(backupResult.includes('Backup tamamlandi'));
+
+      fs.writeFileSync(memoryPath, JSON.stringify({ nodes: { bozuldu: true }, edges: [] }), 'utf8');
+      const restoreResult = cli.execute('restore', '');
+      assert.ok(restoreResult.includes('Restore tamamlandi'));
+
+      const restored = JSON.parse(fs.readFileSync(memoryPath, 'utf8'));
+      assert.deepStrictEqual(restored, { nodes: {}, edges: [] });
+    } finally {
+      closeManagedCLI(cli);
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('backup options resolve default persistence paths inside isolated cwd', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'axiom-cli-default-paths-'));
+    const previousCwd = process.cwd();
+    const envKeys = ['AXIOM_MEMORY_PATH', 'AXIOM_DB_PATH', 'AXIOM_BACKUP_DIR'];
+    const previousEnv = new Map(envKeys.map(key => [key, {
+      present: Object.prototype.hasOwnProperty.call(process.env, key),
+      value: process.env[key],
+    }]));
+    let cli;
+
+    try {
+      process.chdir(tmpDir);
+      for (const key of envKeys) delete process.env[key];
+
+      cli = new CLI({
+        kernel: {
+          noLoad: true,
+          useSQLite: false,
+          memoryStoreUseSQLite: false,
+          loadPlugins: false,
+        },
+      });
+      cli.agent.storage.close();
+
+      const options = cli._backupOptions();
+      assert.strictEqual(options.memoryPath, path.join(tmpDir, 'memory.json'));
+      assert.strictEqual(options.dbPath, path.join(tmpDir, 'memory.db'));
+      assert.strictEqual(options.backupBaseDir, path.join(tmpDir, 'backups'));
+    } finally {
+      if (cli) closeManagedCLI(cli);
+      process.chdir(previousCwd);
+      for (const [key, snapshot] of previousEnv) {
+        if (snapshot.present) process.env[key] = snapshot.value;
+        else delete process.env[key];
+      }
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it('execute: "llm-sor:" AXIOM cevabı döndürür', () => {
