@@ -42,7 +42,7 @@ intent are grouped together.
 
 | CLI command / path | Current internal access | Read or mutation | Observable behavior | Existing safe replacement | Required new seam | Migration risk | Required regression test |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `_backupOptions()` used by `backup` and `restore` | `kernel.graph.memoryPath` | Read configuration | Resolves memory, database, and backup paths from the active Kernel persistence location | None outside the current graph compatibility surface | A narrow, immutable Kernel persistence-path descriptor or intent-level backup options accessor | A default path or normalization mismatch could back up or restore the wrong files | Preserve custom `memoryPath`/`dbPath`, default resolution, and backup/restore path selection |
+| `_backupOptions()` used by `backup` and `restore` | `kernel.graph.memoryPath` | Read configuration | Resolves the memory path from `graph.memoryPath` and derives the database path from that memory path | None outside the current graph compatibility surface | A narrow, immutable Kernel memory-path descriptor or intent-level backup options accessor that preserves the current derivation | A default path or normalization mismatch could back up or restore the wrong files | Preserve the current `memoryPath`-based database-path derivation, default resolution, and backup/restore path selection |
 | `restore` and direct CLI startup | `kernel.graph.load()` | Persistence mutation | Reloads the in-memory graph from configured persistence after restore and before interactive use | Kernel construction already loads unless `noLoad`; no public reload intent exists | A narrow Kernel reload lifecycle method; startup must avoid a duplicate load if constructor behavior already provides the same observable state | Double load, stale state, changed error timing, or altered startup behavior | Restore reloads restored content; default startup state and explicit `noLoad` behavior remain unchanged |
 | Interactive `kaydet` and exit | `kernel.graph.save()` | Persistence mutation | Prunes and persists graph state before confirmation or process exit | No public Kernel save intent exists | A narrow Kernel persist lifecycle method with the same synchronous completion and error behavior | Save ordering, prune side effects, confirmation timing, or exit behavior could change | `kaydet` and exit persist once, retain messages, and do not close before persistence completes |
 | `optimize` | `kernel.graph.optimize()` | Graph mutation | Prunes weak edges and removes decayed isolated nodes; reports `pruned` and `removedNodes` | `selfEvolve()` also optimizes but performs additional unrelated behavior and is not a valid replacement | A narrow intent-level Kernel graph-maintenance method preserving the exact optimize result | Reusing `selfEvolve()` would add dreams, consolidation, audit, and persistence side effects | Exact command result, mutation counts, approval-gate behavior, and no extra self-evolution side effects |
@@ -51,6 +51,22 @@ intent are grouped together.
 | CLI-owned graph lifecycle as a whole | `kernel.graph` compatibility surface | Mixed | CLI coordinates backup, restore, maintenance, status, audit, startup, and shutdown around one Kernel instance | Individual safe replacements above | No general-purpose graph adapter or broad pass-through facade | A broad adapter could merely rename direct coupling while preserving mutable graph authority | Contract test must reject new CLI references to `_nodes`/`_edges` and reject a generic mutable graph escape hatch |
 
 ## Source Findings
+
+### Independent `dbPath` is not current CLI behavior
+
+Kernel construction accepts an independent `dbPath`, but `_backupOptions()`
+does not read or retain that value. It reads `graph.memoryPath` and passes
+`normalizeDbPath(memoryPath)` to backup and restore path resolution. This gate
+must preserve that behavior rather than silently add independent `dbPath`
+support.
+
+Record the separate behavior-change question as:
+
+```text
+PERSISTENCE-PATH-ALIGNMENT:
+Determine whether backup/restore should honor an independently configured
+Kernel dbPath. This is a behavior-change decision, not part of REFACTOR-1C.
+```
 
 ### Status counts already have a safe read path
 
@@ -156,7 +172,7 @@ maintenance, audit, or status behavior cannot be changed safely in one PR.
 Future tests must cover at least:
 
 - `durum` exact node/edge counts and existing output sections;
-- custom and default backup/restore persistence paths;
+- custom `memoryPath`-derived and default backup/restore persistence paths;
 - restored state becoming visible after reload;
 - startup load behavior without duplicate observable effects;
 - `kaydet` and exit persistence ordering and messages;
