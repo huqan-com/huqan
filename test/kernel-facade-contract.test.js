@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
@@ -75,4 +76,21 @@ test('graph and memory remain observable compatibility surfaces', () => {
   } finally {
     kernel.graph.close();
   }
+});
+
+test('kernel.d.ts remains aligned with observable graph and memory surfaces', () => {
+  const declaration = fs.readFileSync(path.join(__dirname, '..', 'kernel.d.ts'), 'utf8');
+  const classStart = declaration.indexOf('declare class Kernel');
+
+  assert.notEqual(classStart, -1, 'Kernel declaration must remain present');
+
+  const kernelDeclaration = declaration.slice(classStart);
+  assert.match(
+    kernelDeclaration,
+    /\bgraph\s*:\s*\{[\s\S]*?\bload\(\)\s*:\s*void\s*;[\s\S]*?\bsave\(\)\s*:\s*void\s*;[\s\S]*?\}\s*;/,
+  );
+  assert.match(
+    kernelDeclaration,
+    /\bmemory\s*:\s*\{[\s\S]*?\bclose\(\)\s*:\s*void\s*;[\s\S]*?\}\s*;/,
+  );
 });
