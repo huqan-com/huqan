@@ -206,6 +206,29 @@ test('CLI selects KernelV2 only through an explicit v2 selector', { concurrency:
   }
 });
 
+test('CLI-selected Kernel variants expose the bounded audit seam', { concurrency: false }, () => {
+  const defaultKernel = createManagedCliKernel({
+    label: 'cli-audit-seam-v1',
+    env: { AXIOM_KERNEL_VERSION: undefined },
+  });
+  const v2Kernel = createManagedCliKernel({
+    label: 'cli-audit-seam-v2',
+    options: { version: 'v2' },
+    env: { AXIOM_KERNEL_VERSION: undefined },
+  });
+
+  try {
+    assert.equal(require('..'), Kernel);
+    assert.ok(defaultKernel.instance instanceof Kernel);
+    assert.ok(v2Kernel.instance instanceof KernelV2);
+    assert.equal(typeof defaultKernel.instance.recordCliMutationAudit, 'function');
+    assert.equal(typeof v2Kernel.instance.recordCliMutationAudit, 'function');
+  } finally {
+    defaultKernel.dispose();
+    v2Kernel.dispose();
+  }
+});
+
 test('CLI preserves option then environment then v1 selector precedence', { concurrency: false }, () => {
   const optionV2 = createManagedCliKernel({
     label: 'cli-precedence-option-v2',

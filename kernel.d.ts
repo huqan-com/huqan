@@ -74,6 +74,59 @@ export interface DreamData {
   learned?: unknown[];
   cycle?: number;
 }
+export type CliMutationAuditDecision =
+  | 'allow'
+  | 'review'
+  | 'dry_run_only'
+  | 'block';
+
+export type CliMutationAuditIntent = Readonly<{
+  sourceCommand: string;
+  mutationType:
+    | 'persistence'
+    | 'export'
+    | 'state_replace'
+    | 'canonical'
+    | 'automation';
+  eventType: 'UPDATE' | 'EXPORTED' | 'IMPORTED' | 'REVIEW';
+  decision: CliMutationAuditDecision;
+  executionEligible: boolean;
+  reason:
+    | 'cli_persist_local'
+    | 'cli_backup_export_local'
+    | 'cli_restore_state_replace_local'
+    | 'cli_canonical_mutation_requires_review'
+    | 'cli_automation_requires_review';
+  actor?: string;
+  workspaceId?: string;
+  approvalState?:
+    | 'pending'
+    | 'approved'
+    | 'rejected'
+    | 'expired'
+    | 'cancelled';
+  receiptReference?: string;
+}>;
+
+export interface NormalizedAuditEvent {
+  auditId: string;
+  eventType: string;
+  targetType: string;
+  targetId: string;
+  workspaceId: string;
+  actor: string;
+  timestamp: string;
+  sourceRef: string;
+  provenanceId: string;
+  trustPolicyVersion: string;
+  details: Readonly<Record<string, unknown>>;
+}
+
+export type CliMutationAuditResult = Readonly<{
+  auditRecorded: boolean;
+  event: NormalizedAuditEvent | null;
+  errorCode: null | 'AUDIT_WRITE_FAILED';
+}>;
 
 export interface KernelOptions {
   noLoad?: boolean;
@@ -119,6 +172,8 @@ declare class Kernel {
     pruned: number;
     removedNodes: number;
   };
+
+  recordCliMutationAudit(intent: CliMutationAuditIntent): CliMutationAuditResult;
 
   paranoidMode: boolean;
 

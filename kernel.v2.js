@@ -115,6 +115,9 @@ class KernelV2 {
   getPersistenceDescriptor() {
     return this.kernel.getPersistenceDescriptor();
   }
+  recordCliMutationAudit(intent) {
+    return this.kernel.recordCliMutationAudit(intent);
+  }
 
   reload() {
     return this.kernel.reload();

@@ -3,6 +3,9 @@ import Kernel = require('./kernel');
 declare class KernelV2 {
   constructor(opts?: Record<string, unknown>);
   kernel: Kernel;
+  recordCliMutationAudit(
+    intent: Parameters<Kernel['recordCliMutationAudit']>[0]
+  ): ReturnType<Kernel['recordCliMutationAudit']>;
   learn(text: string, opts?: Record<string, unknown>): ReturnType<Kernel['learn']>;
   learnDocument(text: string, opts?: Record<string, unknown>): any;
   learnFromLLM(text: string, opts?: Record<string, unknown>): any;

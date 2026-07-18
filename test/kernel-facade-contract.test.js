@@ -20,6 +20,7 @@ const FACADE_METHODS = Object.freeze([
   'reload',
   'persist',
   'optimize',
+  'recordCliMutationAudit',
   'entropy',
   'consolidate',
   'selfEvolve',
@@ -113,6 +114,24 @@ test('kernel.d.ts remains aligned with observable graph and memory surfaces', ()
     kernelDeclaration,
     /\boptimize\(\)\s*:\s*\{\s*pruned\s*:\s*number\s*;\s*removedNodes\s*:\s*number\s*;\s*\}\s*;/,
   );
+  assert.match(
+    declaration,
+    /export type CliMutationAuditIntent\s*=\s*Readonly<\{/,
+  );
+  assert.match(
+    declaration,
+    /export interface NormalizedAuditEvent\s*\{/,
+  );
+  assert.match(
+    declaration,
+    /export type CliMutationAuditResult\s*=\s*Readonly<\{/,
+  );
+  assert.match(
+    kernelDeclaration,
+    /\brecordCliMutationAudit\(intent\s*:\s*CliMutationAuditIntent\)\s*:\s*CliMutationAuditResult\s*;/,
+  );
+  assert.doesNotMatch(kernelDeclaration, /\bappendAuditEvent\s*\(/);
+  assert.doesNotMatch(kernelDeclaration, /\b_appendAuditEvent\s*\(/);
 
   const seamDeclarations = kernelDeclaration.slice(
     kernelDeclaration.indexOf('getPersistenceDescriptor'),
