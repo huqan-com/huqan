@@ -3,6 +3,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const readline = require('readline');
 const CLI = require('./cli');
 const Kernel = require('./kernel');
 const KernelV2 = require('./kernel.v2');
@@ -32,6 +33,58 @@ function closeManagedCLI(cli) {
   if (cli?.kernel?.memory && typeof cli.kernel.memory.close === 'function') {
     cli.kernel.memory.close();
   }
+}
+function createInteractiveHarness(cli, saveImpl = () => undefined) {
+  const events = [];
+  const originalCreateInterface = readline.createInterface;
+  const originalLog = console.log;
+  const originalExit = process.exit;
+  const originalSave = cli.kernel.graph.save;
+  const originalGraphClose = cli.kernel.graph.close;
+  const originalMemoryClose = cli.kernel.memory.close;
+  let lineHandler;
+  let closeHandler;
+  const rl = {
+    on(event, handler) {
+      if (event === 'line') lineHandler = handler;
+      if (event === 'close') closeHandler = handler;
+      return this;
+    },
+    prompt() { events.push('prompt'); },
+    close() {
+      events.push('close');
+      closeHandler?.();
+    },
+  };
+  readline.createInterface = () => rl;
+  console.log = message => events.push(`log:${message}`);
+  process.exit = code => events.push(`exit:${code}`);
+  cli.kernel.graph.save = () => {
+    events.push('save');
+    return saveImpl();
+  };
+  cli.kernel.graph.close = function closeGraphSpy() {
+    events.push('graph-close');
+    return originalGraphClose.call(this);
+  };
+  cli.kernel.memory.close = function closeMemorySpy() {
+    events.push('memory-close');
+    return originalMemoryClose.call(this);
+  };
+  cli.start();
+  events.length = 0;
+  return {
+    events,
+    line: input => lineHandler(input),
+    restore() {
+      readline.createInterface = originalCreateInterface;
+      console.log = originalLog;
+      process.exit = originalExit;
+      cli.kernel.graph.save = originalSave;
+      cli.kernel.graph.close = originalGraphClose;
+      cli.kernel.memory.close = originalMemoryClose;
+    },
+  };
 }
 
 describe('CLI - Komut Çözümleme', () => {
@@ -410,5 +463,101 @@ describe('CLI - Komut Çalıştırma', () => {
     const result = cli.execute(parsed.command, parsed.args);
     assert.ok(result.includes('review gerektiriyor'));
     assert.ok(!cli.kernel.graph.getNode('cats'));
+  });
+});
+async function withIsolatedInteractiveCLI(run) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'huqan-cli-lifecycle-'));
+  const previousCwd = process.cwd();
+  let cli;
+  process.chdir(root);
+  try {
+    cli = new CLI({
+      kernel: {
+        noLoad: true,
+        loadPlugins: false,
+        useSQLite: false,
+        memoryStoreUseSQLite: false,
+        memoryPath: path.join(root, 'memory.json'),
+        dbPath: path.join(root, 'memory.db'),
+        memoryStorePath: path.join(root, 'memory-store.json'),
+        memoryStoreDbPath: path.join(root, 'memory-store.db'),
+      },
+    });
+    return await run(cli);
+  } finally {
+    closeManagedCLI(cli);
+    process.chdir(previousCwd);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+describe('CLI - Lifecycle and maintenance baseline contracts', { concurrency: false }, () => {
+  it('kaydet persists before success output and keeps the session open', async () => {
+    await withIsolatedInteractiveCLI(async cli => {
+      const harness = createInteractiveHarness(cli);
+      try {
+        await harness.line('kaydet');
+        assert.deepStrictEqual(harness.events, [
+          'save',
+          'log:Hafiza kaydedildi.',
+          'prompt',
+        ]);
+      } finally {
+        harness.restore();
+      }
+    });
+  });
+
+  it('exit persists before output, close, and process exit', async () => {
+    await withIsolatedInteractiveCLI(async cli => {
+      const harness = createInteractiveHarness(cli);
+      try {
+        await harness.line('exit');
+        assert.deepStrictEqual(harness.events, [
+          'save',
+          'log:Hafiza kaydedildi. Gule gule.',
+          'close',
+          'exit:0',
+        ]);
+      } finally {
+        harness.restore();
+      }
+    });
+  });
+
+  it('interactive persistence errors propagate without success output or prompt', async () => {
+    await withIsolatedInteractiveCLI(async cli => {
+      const expected = new Error('persist failed');
+      const harness = createInteractiveHarness(cli, () => { throw expected; });
+      try {
+        await assert.rejects(harness.line('kaydet'), error => error === expected);
+        assert.deepStrictEqual(harness.events, ['save']);
+      } finally {
+        harness.restore();
+      }
+    });
+  });
+
+  it('optimize preserves graph return formatting and calls the graph once', async () => {
+    await withIsolatedInteractiveCLI(async cli => {
+      const originalGate = cli._evaluateCliGate;
+      const originalOptimize = cli.kernel.graph.optimize;
+      const calls = [];
+      cli._evaluateCliGate = () => null;
+      cli.kernel.graph.optimize = (...args) => {
+        calls.push(args);
+        return { pruned: 3, removedNodes: 2 };
+      };
+      try {
+        assert.strictEqual(
+          cli.execute('optimize', ''),
+          'Optimize: 3 kenar budandi, 2 dugum silindi.',
+        );
+        assert.deepStrictEqual(calls, [[]]);
+      } finally {
+        cli._evaluateCliGate = originalGate;
+        cli.kernel.graph.optimize = originalOptimize;
+      }
+    });
   });
 });
