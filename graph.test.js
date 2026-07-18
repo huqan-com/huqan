@@ -1,6 +1,9 @@
 const { describe, it, after } = require('node:test');
 const assert = require('node:assert');
 const Graph = require('./graph');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 describe('Graph - Düğüm Yönetimi', () => {
   let g;
@@ -400,4 +403,119 @@ describe('Graph - Save/Load', { concurrency: false }, () => {
     try { fs.unlinkSync(testDb); } catch (_) {}
     try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (_) {}
   });
+});
+describe('Graph - Lifecycle and maintenance baseline contracts', { concurrency: false }, () => {
+  function withTempGraph(run) {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'huqan-graph-contract-'));
+    try {
+      return run(root);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  }
+
+  it('load replaces stale JSON state and rebuilds public edge indexes', () => withTempGraph(root => {
+    const memoryPath = path.join(root, 'memory.json');
+    const writer = new Graph({ memoryPath, useSQLite: false });
+    writer.addNode('source', 'source');
+    writer.addNode('target', 'target');
+    writer.addEdge('source', 'target', 'relates');
+    writer.save();
+
+    const graph = new Graph({ memoryPath, useSQLite: false });
+    graph.addNode('stale', 'stale');
+    assert.strictEqual(graph.load(), undefined);
+    assert.strictEqual(graph.getNode('stale'), null);
+    assert.ok(graph.getNode('source'));
+    assert.ok(graph.getNode('target'));
+    assert.strictEqual(graph.getEdges('source').length, 1);
+    assert.strictEqual(graph.getInEdges('target').length, 1);
+  }));
+
+  it('load clears stale state when the JSON file is missing', () => withTempGraph(root => {
+    const graph = new Graph({ memoryPath: path.join(root, 'missing.json'), useSQLite: false });
+    graph.addNode('stale', 'stale');
+    graph.addNode('target', 'target');
+    graph.addEdge('stale', 'target', 'relates');
+    assert.strictEqual(graph.load(), undefined);
+    assert.strictEqual(graph.nodeCount(), 0);
+    assert.strictEqual(graph.edgeCount(), 0);
+  }));
+
+  it('load swallows malformed JSON after clearing stale state', () => withTempGraph(root => {
+    const memoryPath = path.join(root, 'malformed.json');
+    fs.writeFileSync(memoryPath, '{ invalid json', 'utf8');
+    const graph = new Graph({ memoryPath, useSQLite: false });
+    graph.addNode('stale', 'stale');
+    const originalError = console.error;
+    const errors = [];
+    console.error = (...args) => errors.push(args);
+    try {
+      assert.strictEqual(graph.load(), undefined);
+      assert.strictEqual(graph.nodeCount(), 0);
+      assert.strictEqual(graph.edgeCount(), 0);
+      assert.strictEqual(errors.length, 1);
+    } finally {
+      console.error = originalError;
+    }
+  }));
+
+  it('save completes synchronously and persists public graph state', () => withTempGraph(root => {
+    const memoryPath = path.join(root, 'memory.json');
+    const graph = new Graph({ memoryPath, useSQLite: false });
+    graph.addNode('source', 'source');
+    graph.addNode('target', 'target');
+    graph.addEdge('source', 'target', 'relates');
+    assert.strictEqual(graph.save(), undefined);
+    assert.ok(fs.existsSync(memoryPath));
+
+    const reloaded = new Graph({ memoryPath, useSQLite: false });
+    reloaded.load();
+    assert.ok(reloaded.getNode('source'));
+    assert.strictEqual(reloaded.getEdges('source').length, 1);
+  }));
+
+  it('save prunes only the default workspace before persistence', () => withTempGraph(root => {
+    const graph = new Graph({
+      memoryPath: path.join(root, 'memory.json'),
+      useSQLite: false,
+      pruneThreshold: 0.3,
+    });
+    for (const workspaceId of ['default', 'other']) {
+      graph.addNode('source', 'source', null, { workspaceId });
+      graph.addNode('target', 'target', null, { workspaceId });
+      graph.addEdge('source', 'target', 'relates', { workspaceId, weight: 0.1 });
+    }
+    graph.save();
+    assert.strictEqual(graph.getEdge('source', 'target', 'relates', 'default'), null);
+    assert.ok(graph.getEdge('source', 'target', 'relates', 'other'));
+  }));
+
+  it('save propagates filesystem write errors', () => withTempGraph(root => {
+    const graph = new Graph({ memoryPath: root, useSQLite: false });
+    graph.addNode('source', 'source');
+    assert.throws(() => graph.save());
+  }));
+
+  it('optimize returns the exact baseline shape without persisting', () => withTempGraph(root => {
+    const graph = new Graph({
+      memoryPath: path.join(root, 'memory.json'),
+      useSQLite: false,
+      pruneThreshold: 0.3,
+    });
+    for (const workspaceId of ['default', 'other']) {
+      graph.addNode('source', 'source', null, { workspaceId });
+      graph.addNode('target', 'target', null, { workspaceId });
+      graph.addEdge('source', 'target', 'relates', { workspaceId, weight: 0.1 });
+    }
+    let saveCalls = 0;
+    graph.save = () => { saveCalls += 1; };
+
+    const result = graph.optimize();
+    assert.deepStrictEqual(Object.keys(result), ['pruned', 'removedNodes']);
+    assert.deepStrictEqual(result, { pruned: 1, removedNodes: 0 });
+    assert.strictEqual(graph.getEdge('source', 'target', 'relates', 'default'), null);
+    assert.ok(graph.getEdge('source', 'target', 'relates', 'other'));
+    assert.strictEqual(saveCalls, 0);
+  }));
 });
