@@ -193,6 +193,21 @@ test('rejects every forbidden or unknown top-level field without append', () => 
     const symbolIntent = validIntent();
     symbolIntent[Symbol('unknown')] = true;
     assert.deepEqual(managed.kernel.recordCliMutationAudit(symbolIntent), FAILURE);
+
+    const nonEnumerableInputs = [
+      ['auditId', 'caller-controlled'],
+      ['unexpected', true],
+      [Symbol('unknown'), true],
+    ];
+    for (const [key, value] of nonEnumerableInputs) {
+      const intent = validIntent();
+      Object.defineProperty(intent, key, { value, enumerable: false });
+      let result;
+      assert.doesNotThrow(() => {
+        result = managed.kernel.recordCliMutationAudit(intent);
+      });
+      assert.deepEqual(result, FAILURE);
+    }
     assert.equal(appendCount, 0);
   } finally {
     managed.kernel.graph.appendAuditEvent = originalAppend;

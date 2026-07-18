@@ -86,9 +86,8 @@ function isPlainObject(value) {
 function validateCliMutationAuditIntent(intent) {
   if (!isPlainObject(intent)) return null;
 
-  const enumerableKeys = Reflect.ownKeys(intent)
-    .filter((key) => Object.prototype.propertyIsEnumerable.call(intent, key));
-  if (enumerableKeys.some((key) => typeof key !== 'string' || !CLI_MUTATION_AUDIT_FIELDS.has(key))) {
+  const ownKeys = Reflect.ownKeys(intent);
+  if (ownKeys.some((key) => typeof key !== 'string' || !CLI_MUTATION_AUDIT_FIELDS.has(key))) {
     return null;
   }
   if (CLI_MUTATION_AUDIT_REQUIRED_FIELDS.some(
