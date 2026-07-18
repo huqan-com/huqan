@@ -44,6 +44,19 @@ function createInteractiveHarness(cli, saveImpl = () => undefined) {
   const originalMemoryClose = cli.kernel.memory.close;
   let lineHandler;
   let closeHandler;
+  let restored = false;
+
+  function restore() {
+    if (restored) return;
+    restored = true;
+    readline.createInterface = originalCreateInterface;
+    console.log = originalLog;
+    process.exit = originalExit;
+    cli.kernel.graph.save = originalSave;
+    cli.kernel.graph.close = originalGraphClose;
+    cli.kernel.memory.close = originalMemoryClose;
+  }
+
   const rl = {
     on(event, handler) {
       if (event === 'line') lineHandler = handler;
@@ -56,35 +69,39 @@ function createInteractiveHarness(cli, saveImpl = () => undefined) {
       closeHandler?.();
     },
   };
-  readline.createInterface = () => rl;
-  console.log = message => events.push(`log:${message}`);
-  process.exit = code => events.push(`exit:${code}`);
-  cli.kernel.graph.save = () => {
-    events.push('save');
-    return saveImpl();
-  };
-  cli.kernel.graph.close = function closeGraphSpy() {
-    events.push('graph-close');
-    return originalGraphClose.call(this);
-  };
-  cli.kernel.memory.close = function closeMemorySpy() {
-    events.push('memory-close');
-    return originalMemoryClose.call(this);
-  };
-  cli.start();
-  events.length = 0;
-  return {
-    events,
-    line: input => lineHandler(input),
-    restore() {
-      readline.createInterface = originalCreateInterface;
-      console.log = originalLog;
-      process.exit = originalExit;
-      cli.kernel.graph.save = originalSave;
-      cli.kernel.graph.close = originalGraphClose;
-      cli.kernel.memory.close = originalMemoryClose;
-    },
-  };
+
+  try {
+    readline.createInterface = () => rl;
+    console.log = message => events.push(`log:${message}`);
+    process.exit = code => events.push(`exit:${code}`);
+    cli.kernel.graph.save = () => {
+      events.push('save');
+      return saveImpl();
+    };
+    cli.kernel.graph.close = function closeGraphSpy() {
+      events.push('graph-close');
+      return originalGraphClose.call(this);
+    };
+    cli.kernel.memory.close = function closeMemorySpy() {
+      events.push('memory-close');
+      return originalMemoryClose.call(this);
+    };
+
+    cli.start();
+    if (typeof lineHandler !== 'function' || typeof closeHandler !== 'function') {
+      throw new Error('interactive CLI handlers were not registered');
+    }
+    events.length = 0;
+
+    return {
+      events,
+      line: input => lineHandler(input),
+      restore,
+    };
+  } catch (error) {
+    restore();
+    throw error;
+  }
 }
 
 describe('CLI - Komut Çözümleme', () => {
@@ -560,4 +577,36 @@ describe('CLI - Lifecycle and maintenance baseline contracts', { concurrency: fa
       }
     });
   });
+  it('interactive harness restores every mutated reference when setup fails', async () => {
+    await withIsolatedInteractiveCLI(async cli => {
+      const originalStart = cli.start;
+      const originalCreateInterface = readline.createInterface;
+      const originalLog = console.log;
+      const originalExit = process.exit;
+      const originalSave = cli.kernel.graph.save;
+      const originalGraphClose = cli.kernel.graph.close;
+      const originalMemoryClose = cli.kernel.memory.close;
+      const expected = new Error('interactive setup failed');
+
+      cli.start = () => {
+        throw expected;
+      };
+
+      try {
+        assert.throws(
+          () => createInteractiveHarness(cli),
+          error => error === expected,
+        );
+        assert.strictEqual(readline.createInterface, originalCreateInterface);
+        assert.strictEqual(console.log, originalLog);
+        assert.strictEqual(process.exit, originalExit);
+        assert.strictEqual(cli.kernel.graph.save, originalSave);
+        assert.strictEqual(cli.kernel.graph.close, originalGraphClose);
+        assert.strictEqual(cli.kernel.memory.close, originalMemoryClose);
+      } finally {
+        cli.start = originalStart;
+      }
+    });
+  });
+
 });
