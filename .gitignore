@@ -1,15 +1,21 @@
+```
+# Build artifacts
+dist/
+build/
+*.js.map
+
+# Dependencies
 node_modules/
-memory.json
-memory.db
-memory.embeddings.json
-agent.memory.json
-*.agent.json
-memory.db-shm
-memory.db-wal
-test_memory.db
+
+# Editors
+.vscode/
+.idea/
+
+# Logs
 *.log
+
+# Environment
 .env
-demo-sonuc.json
-tbk-demo.js
-tbk-kira.js
-backups/
+.env.local
+*.env.*
+```

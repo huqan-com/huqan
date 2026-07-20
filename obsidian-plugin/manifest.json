@@ -1,9 +1,9 @@
 {
-  "id": "axiom-plugin",
-  "name": "Axiom",
-  "version": "1.0.0",
-  "minAppVersion": "1.5.0",
-  "description": "Deterministic reasoning engine — learn facts, detect contradictions, generate hypotheses",
-  "author": "AXIOM",
+  "id": "huqan-gerceklik-katmani",
+  "name": "HUQAN Gerçeklik Katmanı",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Notlarınızı yerel HUQAN motoruyla doğrular: çelişkileri yakalar, iddiaları işaretler. Tamamen offline — verileriniz makinenizden çıkmaz.",
+  "author": "huqan",
   "isDesktopOnly": true
 }
