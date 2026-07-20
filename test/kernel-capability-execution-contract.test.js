@@ -167,10 +167,31 @@ test('capability declarations match the existing Kernel and KernelV2 runtime fac
     'runCapability',
   ];
 
-  assert.match(kernelDeclaration, /capabilities\?: Partial<Record<KernelCapabilityName, boolean>>/);
+  assert.match(kernelDeclaration, /capabilities\?: Record<string, boolean>/);
   for (const method of methods) {
     assert.match(kernelDeclaration, new RegExp(`\\b${method}\\s*\\(`));
     assert.match(kernelV2Declaration, new RegExp(`\\b${method}\\s*\\(`));
   }
   assert.doesNotMatch(kernelV2Declaration, /\bplugins\s*:/);
+});
+
+test('KernelV2 workflow execution preserves wrapped Kernel fail-closed policy', async () => {
+  let pluginCalls = 0;
+  const wrapped = Object.create(Kernel.prototype);
+  wrapped.capabilities = { pluginCapabilities: false };
+  wrapped.plugins = {
+    async runCapability() {
+      pluginCalls += 1;
+    },
+  };
+  const kernelV2 = Object.create(KernelV2.prototype);
+  kernelV2.kernel = wrapped;
+  const tool = createWorkflowTools(kernelV2).find(candidate => candidate.name === 'runCapability');
+
+  const result = await tool.run({}, { name: 'demo' });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, 'CAPABILITY_REQUIRED');
+  assert.equal(pluginCalls, 0);
+  assert.equal(result.meta.source, 'kernel.runCapability');
 });

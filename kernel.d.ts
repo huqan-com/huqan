@@ -1,16 +1,5 @@
 export type VerifyStatus = 'dogrulandi' | 'celiski' | 'bilinmiyor';
 
-export type KernelCapabilityName =
-  | 'graph'
-  | 'temporal'
-  | 'pluginCapabilities'
-  | 'llm'
-  | 'contradictionDetection'
-  | 'evidenceRanking'
-  | 'agentApi'
-  | 'companyMode'
-  | 'discoveryLoop';
-
 export interface EvidenceEdgeRef {
   from: string;
   to: string;
@@ -150,7 +139,7 @@ export interface KernelOptions {
   paranoidMode?: boolean;
   lang?: string;
   loadPlugins?: boolean;
-  capabilities?: Partial<Record<KernelCapabilityName, boolean>>;
+  capabilities?: Record<string, boolean>;
 }
 
 declare class Kernel {
@@ -189,9 +178,9 @@ declare class Kernel {
 
   paranoidMode: boolean;
 
-  hasCapability(name: KernelCapabilityName): boolean;
-  enableCapability(name: KernelCapabilityName): boolean;
-  requireCapability(name: KernelCapabilityName): true;
+  hasCapability(name: string): boolean;
+  enableCapability(name: string): boolean;
+  requireCapability(name: string): true;
   listCapabilities(): Array<Record<string, unknown>>;
   getCapability(name: string): Record<string, unknown> | null;
   runCapability(

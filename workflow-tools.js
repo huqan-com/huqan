@@ -400,6 +400,7 @@ function createWorkflowTools(kernel) {
             confidence: 0,
             meta: {
               source: 'company-brain',
+              runnerSource: runner.source,
               capability: 'companyBrain',
             },
           });
@@ -410,6 +411,7 @@ function createWorkflowTools(kernel) {
           input: request,
         }, {
           source: 'company-brain',
+          runnerSource: runner.source,
           capability: 'companyBrain',
         });
       } catch (error) {
@@ -426,6 +428,7 @@ function createWorkflowTools(kernel) {
           confidence: 0,
           meta: {
             source: 'company-brain',
+            runnerSource: runner.source,
             capability: 'companyBrain',
           },
         });
@@ -491,6 +494,7 @@ function createWorkflowTools(kernel) {
             confidence: 0,
             meta: {
               source: 'discovery-engine',
+              runnerSource: runner.source,
               capability: 'discoveryEngine',
             },
           });
@@ -501,6 +505,7 @@ function createWorkflowTools(kernel) {
           input: request,
         }, {
           source: 'discovery-engine',
+          runnerSource: runner.source,
           capability: 'discoveryEngine',
         });
       } catch (error) {
@@ -517,6 +522,7 @@ function createWorkflowTools(kernel) {
           confidence: 0,
           meta: {
             source: 'discovery-engine',
+            runnerSource: runner.source,
             capability: 'discoveryEngine',
           },
         });
@@ -582,6 +588,7 @@ function createWorkflowTools(kernel) {
             confidence: 0,
             meta: {
               source: 'experiment-planner',
+              runnerSource: runner.source,
               capability: 'experimentPlanner',
             },
           });
@@ -592,6 +599,7 @@ function createWorkflowTools(kernel) {
           input: request,
         }, {
           source: 'experiment-planner',
+          runnerSource: runner.source,
           capability: 'experimentPlanner',
         });
       } catch (error) {
@@ -608,6 +616,7 @@ function createWorkflowTools(kernel) {
           confidence: 0,
           meta: {
             source: 'experiment-planner',
+            runnerSource: runner.source,
             capability: 'experimentPlanner',
           },
         });
@@ -673,6 +682,7 @@ function createWorkflowTools(kernel) {
             confidence: 0,
             meta: {
               source: 'result-analyzer',
+              runnerSource: runner.source,
               capability: 'resultAnalyzer',
             },
           });
@@ -683,6 +693,7 @@ function createWorkflowTools(kernel) {
           input: request,
         }, {
           source: 'result-analyzer',
+          runnerSource: runner.source,
           capability: 'resultAnalyzer',
         });
       } catch (error) {
@@ -699,6 +710,7 @@ function createWorkflowTools(kernel) {
           confidence: 0,
           meta: {
             source: 'result-analyzer',
+            runnerSource: runner.source,
             capability: 'resultAnalyzer',
           },
         });
@@ -764,6 +776,7 @@ function createWorkflowTools(kernel) {
             confidence: 0,
             meta: {
               source: 'replication-checker',
+              runnerSource: runner.source,
               capability: 'replicationChecker',
             },
           });
@@ -774,6 +787,7 @@ function createWorkflowTools(kernel) {
           input: request,
         }, {
           source: 'replication-checker',
+          runnerSource: runner.source,
           capability: 'replicationChecker',
         });
       } catch (error) {
@@ -790,6 +804,7 @@ function createWorkflowTools(kernel) {
           confidence: 0,
           meta: {
             source: 'replication-checker',
+            runnerSource: runner.source,
             capability: 'replicationChecker',
           },
         });
