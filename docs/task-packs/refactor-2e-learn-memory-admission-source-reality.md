@@ -65,9 +65,10 @@ The older REFACTOR-2B contract listed Memory as a LearnUseCase dependency.
 Current canonical source does not use `kernel.memory` in `learn`,
 `learnDocument`, `learnFromLLM`, admission, audit, or receipt materialization.
 For REFACTOR-2E, source reality is authoritative: MemoryStore must not be added
-to the learn path merely to satisfy the older planning label.
-
-MemoryStore decomposition remains a separate REFACTOR-3 concern.
+to the learn path merely to satisfy the older planning label. Any future
+MemoryStore integration or decomposition requires a separate source-reality,
+scope, and authorization gate; this task-pack does not assign that work to a
+specific future phase.
 
 ## Conflict and Graph Ownership
 
@@ -94,8 +95,13 @@ use fixed inputs; raw output identity is not a valid invariant.
 
 Current production consumers include CLI, MCP direct and approval execution,
 HTTP upload, Agent, markdown/GitHub adapters, provenance ingest, Shield, and the
-LLM memory plugin. KernelV2 decorates and delegates learning; it is not a second
-learn authority.
+LLM memory plugin.
+
+KernelV2 is not a transparent delegate. Its `learn` path delegates to Kernel v1
+and then mutates edge metadata through its compatibility Graph surface. Its
+`learnFromLLM` path applies additional manipulation-risk filtering, blocking or
+downgrade behavior, and a V2-specific `risk` result field. These behaviors are
+part of the compatibility contract and must be characterized before extraction.
 
 No consumer migration is authorized until existing entry-point behavior is
 contract-tested.
@@ -132,6 +138,8 @@ The contract-test gate must cover at least:
 - `learnDocument` default-review details and stable line order;
 - `learnDocument` approved count/details compatibility;
 - `learnFromLLM` synchronous default-review and approved behavior;
+- KernelV2 post-learn edge metadata behavior;
+- KernelV2 LLM risk blocking, downgrade, and result-shape behavior;
 - no implicit `kernel.memory` write;
 - strict-provenance and plugin-hook error propagation;
 - conflict behavior based on cloned Graph reads;
