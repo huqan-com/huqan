@@ -30,7 +30,7 @@ No new test should duplicate an already exact assertion.
 
 ## Baseline Clusters
 
-### 1. Causal no-touch node reads
+### 1. Causal direct reads and traversal touches
 
 Owner: `causalSimulator.test.js`.
 
@@ -39,13 +39,18 @@ Lock current behavior for:
 - missing-node result;
 - terminal-node label projection;
 - default-workspace node lookup;
-- unchanged `lastAccessed` after simulation;
-- no SQLite touch/write caused only by node existence or label reads;
+- zero touch for the missing-node path;
+- exactly two `getNode()` calls for the successful simulation start node from
+  the current `getCausalChain()` preflight;
+- the resulting start-node `lastAccessed` update and, when SQLite is active,
+  the corresponding two `touchNode` writes;
+- no additional touch caused by the simulator's direct node existence or label
+  reads;
 - deterministic result ordering and existing error/result shape.
 
-The baseline may inspect source state before and after the call. It must not
-call `getNode()` to obtain its own comparison value because that method itself
-touches the node.
+The baseline may wrap `getNode()` to count the existing traversal calls and may
+inspect source state before and after the operation. It must not call
+`getNode()` to obtain its own comparison value because that would add a touch.
 
 ### 2. Provenance and candidate query reads
 
@@ -179,8 +184,8 @@ Only this task-pack document may change in REFACTOR-3B2.
 
 Stop and report `REFACTOR-3B2_BLOCKED_BY_READ_CONTRACT_CONFLICT` if:
 
-- a green baseline cannot distinguish callers that currently touch through
-  `getNode()` from direct no-touch reads;
+- a green baseline cannot distinguish the simulator's direct no-touch reads
+  from the two existing `getCausalChain()` start-node touches;
 - cross-workspace ordering or storage-key behavior is contradictory;
 - the server payload depends on live mutable edge identity;
 - plugin callers require different known-node shapes that cannot share a

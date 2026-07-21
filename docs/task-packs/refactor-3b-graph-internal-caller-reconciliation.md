@@ -48,7 +48,7 @@ workspace, identity, ordering, access-touch, or persistence behavior.
 | `kernel.js` `consolidate()` | scans `_edges`, replaces the array, rebuilds indexes, saves | Mutation | Ordering, duplicate selection, dry-run output, index rebuild, and save/error behavior | None | Dedicated maintenance ownership contract; do not expose mutable edges |
 | `kernel.v2.js` temporal metadata | scans and mutates all live `_edges` | Mutation | Edge identity, insertion order, timestamp/source/evidence mutation, v1 delegation, and the current workspace-blind edge key | None | Dedicated temporal-metadata ownership contract; do not silently fix cross-workspace key collisions |
 | `dream.js` | all-node scans, embedding reads, and in-place embedding writes | Mixed | Global node order, embedding identity/type, random-walk inputs, and no access-touch | None | Dedicated Dream/embedding ownership contract |
-| `causalSimulator.js` | direct node existence and label reads | Pure read | No `lastAccessed` mutation or SQLite touch | None | Preserve as-is until a no-touch lookup contract is separately approved |
+| `causalSimulator.js` | direct node existence and label reads around `getCausalChain()` | Read with an existing traversal touch | The direct reads add no touch, but a successful simulation calls `getNode()` twice for the start node through `getCausalChain()`, updating `lastAccessed` and potentially issuing two SQLite touches | None | Preserve the whole-operation touch behavior until a no-touch traversal contract is separately approved |
 | `lib/provenance-query.js` | all nodes, edges, and cross-workspace candidates | Read | Cross-workspace visibility, sort order, public projection, and target lookup | `getCandidateClaims()` is exact for the unfiltered candidate source; no single equivalent exists for nodes or edges | Reuse the candidate method mechanically; define query-specific bounded node/edge reads without widening default getters |
 | `server.js` graph view | workspace-filtered scans of all edges | Read | Workspace graph payload, top-node selection, confidence/evidence projection | No all-edge workspace method | Server graph-view contract; no generic snapshot API |
 | fact-extraction plugins | passes `_nodes` object into `extractFacts()` | Read | Existing object shape and all-workspace visibility | `getNodes()` is not proven equivalent | Shared fact-extraction input contract before migration |
@@ -69,7 +69,8 @@ Operational callers are `demo-causal-autolearn.js`, `egitim.js`, and
 ## Behavior That Must Not Be Collapsed
 
 - A global collection scan is not a default-workspace query.
-- A no-touch node read is not `getNode()`.
+- A direct no-touch node read is not a no-touch whole operation when the same
+  call path also invokes `getNode()` through causal traversal.
 - A defensive record is not a live mutable edge or node.
 - A node-specific edge query is not an ordered all-edge scan.
 - Cross-workspace provenance access is not a widened default getter.
@@ -90,7 +91,7 @@ Operational callers are `demo-causal-autolearn.js`, `egitim.js`, and
      are already available;
    - add no new Graph method.
 2. `REFACTOR-3B2_BOUNDED_READ_CONTRACTS`
-   - lock causal no-touch reads, provenance cross-workspace queries, server
+   - lock causal direct-read versus traversal-touch behavior, provenance cross-workspace queries, server
    graph-view projection, and plugin fact-extraction inputs;
    - replace cross-workspace direct candidate-array reads with the existing
      unfiltered `getCandidateClaims()` only after reference/order parity is
@@ -126,7 +127,8 @@ caller and recording the conflict is preferable to inventing an abstraction.
   metadata compatibility;
 - `dream.test.js`: embedding, similarity, hypothesis, and answer ordering;
 - `causalSimulator.test.js`, `graph.causal.test.js`, and focused causal tests:
-  missing-node, label, path, and no unintended write behavior;
+  missing-node, label, path, the existing two start-node traversal touches,
+  and no additional unintended write behavior;
 - `lib/provenance-query.test.js`, `provenance.test.js`, and
   `test/provenance-receipt-bridge.integration.test.js`: cross-workspace
   filtering, ordering, candidate, audit, and canonical-record projection;
