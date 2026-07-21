@@ -37,13 +37,18 @@ declare class KernelV2 {
     opts?: Parameters<Kernel['runCapability']>[2]
   ): ReturnType<Kernel['runCapability']>;
   learn(text: string, opts?: Record<string, unknown>): ReturnType<Kernel['learn']>;
+  learnDocument(text: string): number;
   learnDocument(
     text: string,
     opts: Parameters<Kernel['learnDocument']>[1] & { returnDetails: true }
   ): { learned: number; admissions: Array<Record<string, unknown>> };
   learnDocument(
     text: string,
-    opts?: Parameters<Kernel['learnDocument']>[1]
+    opts: Parameters<Kernel['learnDocument']>[1] & { returnDetails?: false }
+  ): number;
+  learnDocument(
+    text: string,
+    opts: Parameters<Kernel['learnDocument']>[1]
   ): ReturnType<Kernel['learnDocument']>;
   learnFromLLM(
     text: string,

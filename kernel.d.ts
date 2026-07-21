@@ -211,8 +211,10 @@ declare class Kernel {
   ): Promise<unknown>;
 
   learn(text: string, opts?: LearnOptions): Envelope<'learn', LearnData>;
+  learnDocument(text: string): number;
   learnDocument(text: string, opts: LearnOptions & { returnDetails: true }): LearnDocumentResult;
-  learnDocument(text: string, opts?: LearnOptions): number | LearnDocumentResult;
+  learnDocument(text: string, opts: LearnOptions & { returnDetails?: false }): number;
+  learnDocument(text: string, opts: LearnOptions): number | LearnDocumentResult;
   learnFromLLM(text: string, opts?: LearnOptions): LearnFromLLMResult;
   ask(question: string, opts?: Record<string, unknown>): Envelope<'ask', AskData>;
   verify(statement: string, opts?: Record<string, unknown>): Envelope<'verify', VerifyData>;

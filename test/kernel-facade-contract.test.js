@@ -150,13 +150,18 @@ test('Kernel declarations preserve synchronous learn return variants without any
 
   assert.match(kernelDeclaration, /export interface LearnDocumentResult\s*\{/);
   assert.match(kernelDeclaration, /export interface LearnFromLLMResult\s*\{/);
+  assert.match(kernelDeclaration, /learnDocument\(text:\s*string\):\s*number;/);
   assert.match(
     kernelDeclaration,
     /learnDocument\(text:\s*string,\s*opts:\s*LearnOptions\s*&\s*\{\s*returnDetails:\s*true\s*\}\):\s*LearnDocumentResult;/,
   );
   assert.match(
     kernelDeclaration,
-    /learnDocument\(text:\s*string,\s*opts\?:\s*LearnOptions\):\s*number\s*\|\s*LearnDocumentResult;/,
+    /learnDocument\(text:\s*string,\s*opts:\s*LearnOptions\s*&\s*\{\s*returnDetails\?:\s*false\s*\}\):\s*number;/,
+  );
+  assert.match(
+    kernelDeclaration,
+    /learnDocument\(text:\s*string,\s*opts:\s*LearnOptions\):\s*number\s*\|\s*LearnDocumentResult;/,
   );
   assert.match(
     kernelDeclaration,
@@ -165,6 +170,8 @@ test('Kernel declarations preserve synchronous learn return variants without any
   assert.doesNotMatch(kernelDeclaration, /learn(?:Document|FromLLM)[^;]*\bPromise\b/);
 
   assert.match(v2Declaration, /type KernelV2LearnFromLLMResult\s*=/);
+  assert.match(v2Declaration, /learnDocument\(text:\s*string\):\s*number;/);
   assert.match(v2Declaration, /returnDetails:\s*true/);
+  assert.match(v2Declaration, /returnDetails\?:\s*false/);
   assert.doesNotMatch(v2Declaration, /learn(?:Document|FromLLM)[\s\S]*?\):\s*any;/);
 });
