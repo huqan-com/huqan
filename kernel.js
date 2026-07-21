@@ -1781,67 +1781,7 @@ if (verbSuffix.test(predicate)) {
     return this.graph.optimize();
   }
   consolidate(dryRun = true) {
-    const edges = this.graph._edges;
-    const removed = [];
-    const marked = new Set();
-
-    // 1. Ayn? (from, to) i?in d?k weight kenarlar? temizle (tür vs değil gibi)
-    const byPair = {};
-    for (let i = 0; i < edges.length; i++) {
-      if (edges[i].kistlama) continue;
-      const key = `${edges[i].from}|${edges[i].to}`;
-      if (!byPair[key]) byPair[key] = [];
-      byPair[key].push(i);
-    }
-
-    for (const [, indices] of Object.entries(byPair)) {
-      const high = indices.filter(i => edges[i].weight >= 0.5);
-      const low = indices.filter(i => edges[i].weight < 0.3);
-      for (const li of low) {
-        // D?k weight kenar?n y?ksek weight alternatifi varsa temizle
-        if (high.length > 0) {
-          removed.push({ idx: li, edge: edges[li],
-            reason: `low-weight (${edges[li].weight}) superseded by high-weight (${edges[high[0]].weight}) for same pair` });
-          marked.add(li);
-        }
-      }
-    }
-
-    // 2. Ayn? (from, relation) i?in d?k weight kenarlar? temizle (restriction artifacts)
-    const byRel = {};
-    for (let i = 0; i < edges.length; i++) {
-      if (marked.has(i) || edges[i].kistlama) continue;
-      const key = `${edges[i].from}|${edges[i].relation}`;
-      if (!byRel[key]) byRel[key] = [];
-      byRel[key].push(i);
-    }
-
-    for (const [, indices] of Object.entries(byRel)) {
-      const high = indices.filter(i => edges[i].weight >= 0.5);
-      const low = indices.filter(i => edges[i].weight < 0.3);
-      for (const li of low) {
-        if (high.length > 0 && !marked.has(li)) {
-          removed.push({ idx: li, edge: edges[li],
-            reason: `low-weight restriction (${edges[li].weight}) â€” subject already has high-weight '${edges[li].relation}'` });
-          marked.add(li);
-        }
-      }
-    }
-
-    // 3. Uygula
-    if (!dryRun && removed.length > 0) {
-      this.graph._edges = edges.filter((_, i) => !marked.has(i));
-      this.graph._rebuildIndex();
-      try { this.graph.save(); } catch (e) { console.error("[Kernel] Graph save hatası:", e.message); }
-    }
-
-    return {
-      dryRun,
-      removed: removed.length,
-      details: removed.map(r =>
-        `${r.edge.from} ? ${r.edge.to} (${r.edge.relation}, w:${r.edge.weight}): ${r.reason}`
-      ),
-    };
+    return this.graph._consolidateEdges(dryRun);
   }
 
   /**

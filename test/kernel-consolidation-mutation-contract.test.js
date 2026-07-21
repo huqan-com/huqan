@@ -95,6 +95,20 @@ function assertRemovalDetail(detail, expected) {
   }
 }
 
+test('Kernel consolidate delegates the exact dry-run intent to Graph', () => {
+  withKernel(kernel => {
+    const expected = { dryRun: false, removed: 1, details: ['delegated'] };
+    const calls = [];
+    kernel.graph._consolidateEdges = (...args) => {
+      calls.push(args);
+      return expected;
+    };
+
+    assert.strictEqual(kernel.consolidate(false), expected);
+    assert.deepStrictEqual(calls, [[false]]);
+  });
+});
+
 test('consolidate dry-run returns exact removal order without replacing, rebuilding, or saving', { concurrency: false }, () => {
   withKernel(kernel => {
     const pairHigh = edge('pair-subject', 'pair-object', 'kept', 0.9);
