@@ -1440,7 +1440,7 @@ if (verbSuffix.test(predicate)) {
 
     // ADIM 3: S?rekli ?ÄŸrenme dırt?s? (bilin? tikleri)
     if (eklenen > 0) {
-      this._autoThinkLog(eklenen + ' yeni baÄŸlant? - toplam ' + Object.keys(this.graph._nodes).length + ' d?ÄŸ?m');
+      this._autoThinkLog(eklenen + ' yeni baÄŸlant? - toplam ' + this.graph.nodeCount() + ' d?ÄŸ?m');
     } else if (this._dreamCount % 5 === 0) {
       // Bo? r?ya -> daha fazla girdi laz?m
       this._autoThinkLog('bo? r?ya, daha fazla bilgi laz?m');
@@ -1922,7 +1922,7 @@ if (verbSuffix.test(predicate)) {
     const gaps = this.detectGaps();
     if (gaps.length === 0) return { gaps: 0, learned: 0, message: 'Bo?luk yok' };
 
-    const before = this.graph._edges.length;
+    const before = this.graph.edgeCount();
     for (const gapId of gaps) {
       const node = this.graph.getNode(gapId);
       if (!node) continue;
@@ -1932,7 +1932,7 @@ if (verbSuffix.test(predicate)) {
       const sim = this.graph.cosineSimilarity ? this.graph.cosineSimilarity(gapId, gapId) : 0;
     }
 
-    const after = this.graph._edges.length;
+    const after = this.graph.edgeCount();
     return { gaps: gaps.length, learned: after - before };
   }
 
