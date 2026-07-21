@@ -8,8 +8,9 @@
 - Mode: contract-test scope only
 
 This gate defines executable current-source baselines for the remaining
-read-only Graph-internal callers. It does not authorize runtime, declaration,
-or caller migration.
+production, server, provenance, and plugin read-only Graph-internal callers.
+Operational demo and seed callers are explicitly deferred to REFACTOR-3B4. It
+does not authorize runtime, declaration, or caller migration.
 
 ## YAGNI Decision
 
@@ -61,7 +62,14 @@ Lock current behavior for:
 - unfiltered `getCandidateClaims()` value/order/reference parity with the
   current direct candidate-array read;
 - public projection and safe-clone behavior already promised by query output;
-- no new canonical record, receipt, audit event, or Graph write during query.
+- no new canonical record, receipt, audit event, node content, edge, or
+  candidate mutation during query;
+- the current `queryTrustGraph()` target-resolution path calls `getNode()` and
+  therefore updates `lastAccessed` and may persist a SQLite touch; this existing
+  side effect must be measured and preserved until a separately approved
+  no-touch migration changes the caller and seam together;
+- direct provenance and candidate scans must not invent an access-touch side
+  effect where none currently exists.
 
 The candidate-source migration is mechanical only after this parity passes.
 Node and edge reads remain separately blocked until an exact bounded source is
@@ -130,12 +138,23 @@ devil-advocate, discovery-engine, and idea-mri.
    - keep causal, provenance, server, and plugin changes independently
      reviewable even if they share one PR.
 3. `REFACTOR-3B2C_READ_BOUNDARY_CLOSEOUT`
-   - scan all production read callers;
+   - scan production, server, provenance, and plugin read callers assigned to
+     this chain;
    - require zero unauthorized direct node/edge/candidate reads;
    - name and defer any source conflict that cannot be migrated safely.
 
 Mutation owners in Dream, KernelV2, and Kernel consolidation remain assigned to
 `REFACTOR-3B3_MUTATION_OWNERSHIP` and are forbidden in this chain.
+
+Operational callers remain assigned to `REFACTOR-3B4_DIRECT_CALLER_CLOSEOUT`:
+
+- `demo-causal-autolearn.js` direct node-label read;
+- `egitim.js` global node/edge counts;
+- `scripts/seed-demo.js` global edge count.
+
+Their omission from REFACTOR-3B2 is deliberate. They may reuse exact existing
+methods only after their output contract has an executable owner; they do not
+block the production read-boundary closeout.
 
 ## Allowed Output
 
@@ -158,7 +177,8 @@ Only this task-pack document may change in REFACTOR-3B2.
 
 Stop and report `REFACTOR-3B2_BLOCKED_BY_READ_CONTRACT_CONFLICT` if:
 
-- a green baseline cannot distinguish a no-touch read from `getNode()`;
+- a green baseline cannot distinguish callers that currently touch through
+  `getNode()` from direct no-touch reads;
 - cross-workspace ordering or storage-key behavior is contradictory;
 - the server payload depends on live mutable edge identity;
 - plugin callers require different known-node shapes that cannot share a
