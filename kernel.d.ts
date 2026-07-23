@@ -161,11 +161,19 @@ export interface KernelOptions {
   lang?: string;
   loadPlugins?: boolean;
   capabilities?: Record<string, boolean>;
+  strictProvenance?: boolean;
+}
+
+declare class ProvenanceError extends Error {
+  constructor(message?: string);
+  name: 'ProvenanceError';
+  code: 'PROVENANCE_REQUIRED';
 }
 
 declare class Kernel {
   static AXIOM_ERROR: Record<string, string>;
   static CONTRACT_VERSION: string;
+  static ProvenanceError: typeof ProvenanceError;
 
   constructor(opts?: KernelOptions);
 

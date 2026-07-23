@@ -15,6 +15,18 @@ type KernelV2LearnFromLLMResult = ReturnType<Kernel['learnFromLLM']> & {
 declare class KernelV2 {
   constructor(opts?: Record<string, unknown>);
   kernel: Kernel;
+  readonly graph: Kernel['graph'];
+  readonly contractVersion: string;
+  getPersistenceDescriptor(): ReturnType<Kernel['getPersistenceDescriptor']>;
+  reload(): void;
+  persist(): void;
+  optimize(): ReturnType<Kernel['optimize']>;
+  usePlugin(plugin: Record<string, unknown>): void;
+  entropy(): number;
+  detectGaps(): string[];
+  detectContradictions(): ReturnType<Kernel['detectContradictions']>;
+  startAutoThink(intervalMs?: number): void;
+  stopAutoThink(): void;
   recordCliMutationAudit(
     intent: Parameters<Kernel['recordCliMutationAudit']>[0]
   ): ReturnType<Kernel['recordCliMutationAudit']>;
