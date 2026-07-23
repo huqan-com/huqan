@@ -65,7 +65,7 @@ const EVENTS = [
 2. Her dosya için:
    - `verifyPluginFile()` → hash/imza doğrulaması (fail → skip, hata loglanır)
    - `require(filePath)` → plugin modülü yüklenir
-   - `__verification` non-enumerable property olarak eklenir
+   - `plugin.__verification = verification` ile doğrudan atanır ve normal enumerable property'dir. Ayrıca `VERIFIED_PLUGIN` symbol alanı `Object.defineProperty()` ile non-enumerable olarak eklenir.
    - `this.register(plugin)` çağrılır
 3. `require()` hatası → plugin skip, hata loglanır (fail-open: diğer plugin'ler yüklenmeye devam eder)
 
@@ -119,7 +119,7 @@ if (opts.loadPlugins !== false) {
 | `learn()` | `beforeLearn` | `emitStrict()` → pipeline, dönüş değeri payload'u modifiye eder |
 | `introspect()` | `beforeIntrospect`, `afterIntrospect` | `emit()` |
 
-**Not:** `enableCapability()` → `capability:enabled` emit'i `kernel.js`'de bulunur ama bu hook EVENTS listesinde olmadığı için `_handlers`'da karşılığı yoktur; hiçbir plugin tetiklenmez.
+**Not:** `kernel.enableCapability()`, önce `this.plugins._handlers['capability:enabled']` alanının bir array olup olmadığını kontrol eder. `capability:enabled` EVENTS listesinde bulunmadığı için bu handler array'i oluşturulmaz; guard başarısız olur ve `emit()` çağrılmaz. Bu nedenle mevcut yol guard nedeniyle no-op/unreachable durumundadır.
 
 ### 2.3 Kernel'ın Plugin'lere Açtığı Yüzey
 
@@ -157,11 +157,11 @@ if (opts.loadPlugins !== false) {
 
 | Plugin | Public Metod | Kullanım |
 |--------|-------------|----------|
-| `company-brain` | `kernel.proposeNode()`, `kernel.proposeEdge()`, `kernel.graph.getEdges()`, `kernel.graph.getInEdges()`, `kernel.graph.getStats()`, `kernel.extractFacts()` | Graph yazma + okuma |
+| `company-brain` | `kernel.proposeNode()`, `kernel.proposeEdge()`, `kernel.graph.getEdges()`, `kernel.graph.getInEdges()`, `kernel.graph.getStats()`, `kernel.extractFacts()`, `kernel.hasCapability()` | Graph yazma + okuma + capability kontrolü |
 | `repo-memory` | `kernel.proposeNode()`, `kernel.proposeEdge()` | Graph yazma |
-| `contradiction-alert` | `kernel.graph.getEdges()`, `kernel.extractFacts()` | Graph okuma |
-| `devil-advocate` | `kernel.graph.getEdges()`, `kernel.extractFacts()` | Graph okuma |
-| `discovery-engine` | `kernel.extractFacts()` | Fact çıkarma |
+| `contradiction-alert` | `kernel.graph.getEdges()`, `kernel.extractFacts()`, `kernel.hasCapability()` | Graph okuma + capability kontrolü |
+| `devil-advocate` | `kernel.graph.getEdges()`, `kernel.extractFacts()`, `kernel.hasCapability()` | Graph okuma + capability kontrolü |
+| `discovery-engine` | `kernel.extractFacts()`, `kernel.hasCapability()` | Fact çıkarma + capability kontrolü |
 | `idea-mri` | `kernel.extractFacts()` | Fact çıkarma |
 | `llm-memory (llm-memory-plugin.js)` | `kernel.learnFromLLM()`, `kernel.graph.getStats()` | Öğrenme + istatistik |
 | `experiment-planner` | `kernel.hasCapability()` | Capability kontrolü |
@@ -303,7 +303,7 @@ Default Kernel capabilities'te `companyMode: false` ve `temporal: false` olduğu
 6. **3 plugin default'ta yüklenemez:** `company-brain`, `contradiction-alert`, `repo-memory` (missing required capability). `idea-mri` yüklenir (`requires: []`).
 7. **Plugin bağımlılıkları:** Plugin'ler arasında runtime capability çağrısı zinciri yoktur. Her plugin bağımsız çalışır.
 8. **Sandbox ayrı konumda:** `sandboxRunner.js` root'ta, PluginManager üzerinden değil; plugin sisteminin parçası değil.
-9. **`capability:enabled` emit'i boşa çalışıyor:** `kernel.js`'de `emit('capability:enabled', ...)` çağrılıyor ama bu event EVENTS listesinde olmadığı için hiçbir handler tetiklenmez.
+9. **`capability:enabled` unreachable event yolu:** `kernel.enableCapability()` guard nedeniyle `emit()` çağrılmaz; handler array'i oluşturulmadığı için bu yol no-op/unreachable durumundadır.
 
 ---
 
@@ -312,7 +312,7 @@ Default Kernel capabilities'te `companyMode: false` ve `temporal: false` olduğu
 | Madde | Sebep |
 |-------|-------|
 | Plugin'lerin production ortamındaki gerçek davranışı | Sadece CI logları ve kaynak kod analizi |
-| `AXIOM_PLUGIN_SIGNING_KEY` ile imzalı plugin yükleme | Test ortamında imzalı plugin yok |
+| `AXIOM_PLUGIN_SIGNING_KEY` env ile `PluginManager.load()` akışı | `verifyPluginFile()` için shared-key ile imzalı manifest doğrulama testi vardır. Doğrulanmayan kısım, `AXIOM_PLUGIN_SIGNING_KEY` environment variable kullanılarak gerçek `PluginManager.load()` akışının çalıştırılmasıdır. |
 | `emitStrict` pipeline'ın gerçek dönüş değeri zinciri | Sadece kod analizi; `beforeLearn` dışında kullanılmıyor |
 | Plugin'lerin eşzamanlı yükleme race condition'ları | Test ortamında tek thread |
 
